@@ -4,13 +4,11 @@ import (
 	"errors"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	abci "github.com/tendermint/tendermint/abci/types"
-	tmlog "github.com/tendermint/tendermint/libs/log"
-	"os"
 )
 
-var logger = tmlog.NewTMLogger(os.Stdout)
-
+// List available snapshots
 func (blockchain *Blockchain) ListSnapshots(req abci.RequestListSnapshots) abci.ResponseListSnapshots {
+	blockchain.logger.Debug("ListSnapshots")
 	resp := abci.ResponseListSnapshots{Snapshots: []*abci.Snapshot{}}
 	if blockchain.snapshotManager == nil {
 		return resp
@@ -34,14 +32,16 @@ func (blockchain *Blockchain) ListSnapshots(req abci.RequestListSnapshots) abci.
 	return resp
 }
 
+// Offer a snapshot to the application
 func (blockchain *Blockchain) OfferSnapshot(req abci.RequestOfferSnapshot) abci.ResponseOfferSnapshot {
+	blockchain.logger.Info("Processing OfferSnapshot...", "Snapshot", req.Snapshot.String())
 	if blockchain.snapshotManager == nil {
 		//blockchain.logger.Error("snapshot manager not configured")
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ABORT}
 	}
 
 	if req.Snapshot == nil {
-		//blockchain.logger.Error("received nil snapshot")
+		blockchain.logger.Error("received nil snapshot")
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_REJECT}
 	}
 
@@ -54,7 +54,7 @@ func (blockchain *Blockchain) OfferSnapshot(req abci.RequestOfferSnapshot) abci.
 	err = blockchain.snapshotManager.Restore(snapshot)
 	switch {
 	case err == nil:
-		blockchain.initState()
+		blockchain.logger.Info("Done OfferSnapshot!", "Snapshot", req.Snapshot.String())
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
 
 	case errors.Is(err, snapshottypes.ErrUnknownFormat):
@@ -83,34 +83,39 @@ func (blockchain *Blockchain) OfferSnapshot(req abci.RequestOfferSnapshot) abci.
 	}
 }
 
+// Load a snapshot chunk
 func (blockchain *Blockchain) LoadSnapshotChunk(req abci.RequestLoadSnapshotChunk) abci.ResponseLoadSnapshotChunk {
+	blockchain.logger.Info("Processing LoadSnapshotChunk...", "req", req.String())
 	if blockchain.snapshotManager == nil {
 		return abci.ResponseLoadSnapshotChunk{}
 	}
 	chunk, err := blockchain.snapshotManager.LoadChunk(req.Height, req.Format, req.Chunk)
 	if err != nil {
-		//blockchain.logger.Error(
-		//	"failed to load snapshot chunk",
-		//	"height", req.Height,
-		//	"format", req.Format,
-		//	"chunk", req.Chunk,
-		//	"err", err,
-		//)
+		blockchain.logger.Error(
+			"failed to load snapshot chunk",
+			"height", req.Height,
+			"format", req.Format,
+			"chunk", req.Chunk,
+			"err", err,
+		)
 		return abci.ResponseLoadSnapshotChunk{}
 	}
+	blockchain.logger.Debug("Done LoadSnapshotChunk!", "req", req.String())
 	return abci.ResponseLoadSnapshotChunk{Chunk: chunk}
 }
 
+// Apply a shapshot chunk
 func (blockchain *Blockchain) ApplySnapshotChunk(req abci.RequestApplySnapshotChunk) abci.ResponseApplySnapshotChunk {
+	blockchain.logger.Info("Processing ApplySnapshotChunk...", "Index", req.Index, "Sender", req.Sender)
 	if blockchain.snapshotManager == nil {
-		//blockchain.logger.Error("snapshot manager not configured")
+		blockchain.logger.Error("snapshot manager not configured")
 		return abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ABORT}
 	}
 
 	_, err := blockchain.snapshotManager.RestoreChunk(req.Chunk)
 	switch {
 	case err == nil:
-		blockchain.initState()
+		blockchain.logger.Info("Done ApplySnapshotChunk!", "Index", req.Index, "Sender", req.Sender)
 		return abci.ResponseApplySnapshotChunk{Result: abci.ResponseApplySnapshotChunk_ACCEPT}
 
 	case errors.Is(err, snapshottypes.ErrChunkHashMismatch):

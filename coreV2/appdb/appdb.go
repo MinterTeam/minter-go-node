@@ -8,10 +8,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
+	"log"
 	"sync"
-
-	//"github.com/cosmos/cosmos-sdk/store/iavl"
-	"github.com/cosmos/iavl"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb/types"
 	sdkerrors "github.com/cosmos/cosmos-sdk/types/errors"
@@ -44,7 +42,8 @@ type AppDB struct {
 	//mu sync.RWMutex
 	WG sync.WaitGroup
 
-	store tree.MTree
+	store   tree.MTree
+	stateDB db.DB
 
 	startHeight    uint64
 	lastHeight     uint64
@@ -393,6 +392,9 @@ func (appDB *AppDB) SaveVersions() {
 func (appDB *AppDB) SetState(state tree.MTree) {
 	appDB.store = state
 }
+func (appDB *AppDB) SetStateDB(stateDB db.DB) {
+	appDB.stateDB = stateDB
+}
 
 // NewAppDB creates AppDB instance with given config
 func NewAppDB(homeDir string, cfg *config.Config) *AppDB {
@@ -414,10 +416,10 @@ const (
 	snapshotMaxItemSize = int(64e6) // SDK has no key/value size limit, so we set an arbitrary limit
 )
 
-type Store interface {
-	Export(version int64) (*iavl.Exporter, error)
-	Import(version int64) (*iavl.Importer, error)
-}
+//type Store interface {
+//Export(version int64) (*iavl.Exporter, error)
+//Import(version int64) (*iavl.Importer, error)
+//}
 
 // Snapshot implements snapshottypes.Snapshotter. The snapshot output for a given format must be
 // identical across nodes such that chunks from different sources fit together. If the output for a
@@ -606,17 +608,24 @@ func (appDB *AppDB) Restore(
 					}
 					importer.Close()
 				}
-				store, ok := appDB.store.(Store)
-				if !ok || store == nil {
-					return sdkerrors.Wrapf(sdkerrors.ErrLogic, "cannot import into non-IAVL store %q", item.Store.Name)
+				if appDB.store == nil {
+					startHeight := appDB.GetStartHeight()
+					log.Println(startHeight)
+					lastHeight := appDB.GetLastHeight()
+					log.Println(lastHeight)
+					appDB.store, err = tree.NewMutableTree(0, appDB.stateDB, 1000000, startHeight)
+					if err != nil {
+						return sdkerrors.Wrap(err, "create state failed")
+					}
 				}
-				importer, err = store.Import(int64(height))
+				importer, err = appDB.store.Import(int64(height))
 				if err != nil {
 					return sdkerrors.Wrap(err, "import failed")
 				}
 				defer importer.Close()
 
 			case validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath:
+				log.Println(item.Store.Name)
 				if err := appDB.db.Set([]byte(item.Store.Name), item.Store.Value); err != nil {
 					panic(err)
 				}
@@ -663,12 +672,6 @@ func (appDB *AppDB) Restore(
 		}
 		importer.Close()
 	}
-
-	//appDB.FlushValidators()
-	//appDB.SaveBlocksTime()
-	//appDB.SaveVersions()
-	//appDB.SaveBlocksTime()
-	// appDB.LoadLatestVersion()
 
 	return nil
 }

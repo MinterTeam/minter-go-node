@@ -102,6 +102,7 @@ func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
 func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, updateStakePeriod uint64, expiredOrdersPeriod uint64, logger tmlog.Logger) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
+	applicationDB.SetStateDB(storages.StateDB())
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -189,11 +190,11 @@ func (blockchain *Blockchain) initState() {
 	if err != nil {
 		panic(err)
 	}
+	blockchain.appDB.SetState(stateDeliver.Tree())
 
 	atomic.StoreUint64(&blockchain.height, currentHeight)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
-	blockchain.appDB.SetState(stateDeliver.Tree())
 
 	grace := upgrades.NewGrace()
 	grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true),

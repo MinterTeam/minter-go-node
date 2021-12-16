@@ -105,6 +105,7 @@ fast_sync = {{ .BaseConfig.FastSync }}
 
 # State sync snapshot interval
 snapshot_interval = {{ .BaseConfig.SnapshotInterval }}
+
 # State sync snapshot to keep
 snapshot_keep_recent = {{ .BaseConfig.SnapshotKeepRecent }}
 
