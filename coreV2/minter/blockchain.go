@@ -248,6 +248,9 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
+	if blockchain.stateDeliver == nil {
+		blockchain.initState()
+	}
 	height := uint64(req.Header.Height)
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
