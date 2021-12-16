@@ -3,14 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	"io"
-	"net/http"
-	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
-	"net/url"
-	"os"
-	"syscall"
-
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
@@ -21,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/spf13/cobra"
 	tmCfg "github.com/tendermint/tendermint/config"
 	tmLog "github.com/tendermint/tendermint/libs/log"
@@ -31,6 +24,12 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"io"
+	"net/http"
+	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
+	"net/url"
+	"os"
+	"syscall"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -232,7 +231,6 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		//
 		//	return mempoolReactor, mempool
 		//},
-		nil,
 		logger.With("module", "tendermint"),
 	)
 

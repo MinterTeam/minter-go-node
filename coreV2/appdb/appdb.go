@@ -8,7 +8,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/tree"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"log"
 	"sync"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb/types"
@@ -416,11 +415,6 @@ const (
 	snapshotMaxItemSize = int(64e6) // SDK has no key/value size limit, so we set an arbitrary limit
 )
 
-//type Store interface {
-//Export(version int64) (*iavl.Exporter, error)
-//Import(version int64) (*iavl.Importer, error)
-//}
-
 // Snapshot implements snapshottypes.Snapshotter. The snapshot output for a given format must be
 // identical across nodes such that chunks from different sources fit together. If the output for a
 // given format changes (at the byte level), the snapshot format must be bumped - see
@@ -609,11 +603,7 @@ func (appDB *AppDB) Restore(
 					importer.Close()
 				}
 				if appDB.store == nil {
-					startHeight := appDB.GetStartHeight()
-					log.Println(startHeight)
-					lastHeight := appDB.GetLastHeight()
-					log.Println(lastHeight)
-					appDB.store, err = tree.NewMutableTree(0, appDB.stateDB, 1000000, startHeight)
+					appDB.store, err = tree.NewMutableTree(0, appDB.stateDB, 1000000, appDB.GetStartHeight())
 					if err != nil {
 						return sdkerrors.Wrap(err, "create state failed")
 					}
@@ -625,7 +615,6 @@ func (appDB *AppDB) Restore(
 				defer importer.Close()
 
 			case validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath:
-				log.Println(item.Store.Name)
 				if err := appDB.db.Set([]byte(item.Store.Name), item.Store.Value); err != nil {
 					panic(err)
 				}

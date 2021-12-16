@@ -1,6 +1,7 @@
 package minter
 
 import (
+	"encoding/hex"
 	"errors"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	abci "github.com/tendermint/tendermint/abci/types"
@@ -34,7 +35,12 @@ func (blockchain *Blockchain) ListSnapshots(req abci.RequestListSnapshots) abci.
 
 // Offer a snapshot to the application
 func (blockchain *Blockchain) OfferSnapshot(req abci.RequestOfferSnapshot) abci.ResponseOfferSnapshot {
-	blockchain.logger.Info("Processing OfferSnapshot...", "Snapshot", req.Snapshot.String())
+	blockchain.logger.Info("Processing OfferSnapshot...",
+		"AppHash", hex.EncodeToString(req.AppHash),
+		"Height", req.Snapshot.Height,
+		"Format", req.Snapshot.Format,
+		"Chunks", req.Snapshot.Chunks,
+	)
 	if blockchain.snapshotManager == nil {
 		//blockchain.logger.Error("snapshot manager not configured")
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ABORT}
@@ -54,7 +60,12 @@ func (blockchain *Blockchain) OfferSnapshot(req abci.RequestOfferSnapshot) abci.
 	err = blockchain.snapshotManager.Restore(snapshot)
 	switch {
 	case err == nil:
-		blockchain.logger.Info("Done OfferSnapshot!", "Snapshot", req.Snapshot.String())
+		blockchain.logger.Info("Done OfferSnapshot!",
+			"AppHash", hex.EncodeToString(req.AppHash),
+			"Height", req.Snapshot.Height,
+			"Format", req.Snapshot.Format,
+			"Chunks", req.Snapshot.Chunks,
+		)
 		return abci.ResponseOfferSnapshot{Result: abci.ResponseOfferSnapshot_ACCEPT}
 
 	case errors.Is(err, snapshottypes.ErrUnknownFormat):
