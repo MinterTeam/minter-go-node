@@ -641,7 +641,7 @@ type Limit struct {
 	PairKey
 	oldSortPrice *big.Float
 	id           uint32
-
+	*sync.RWMutex
 	mu *sync.RWMutex
 }
 
