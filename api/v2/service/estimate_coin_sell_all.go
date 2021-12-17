@@ -231,20 +231,6 @@ func (s *Service) calcSellAllFromBancor(value *big.Int, coinTo *coins.Model, coi
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
 	}
-
-	if !coinTo.ID().IsBaseCoin() {
-		value = formula.CalculatePurchaseReturn(coinTo.Volume(), coinTo.Reserve(), coinTo.Crr(), value)
-		if errResp := transaction.CheckForCoinSupplyOverflow(coinTo, value); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-		}
-	}
-
-	if !coinFrom.ID().IsBaseCoin() {
-		value = formula.CalculateSaleReturn(coinFrom.Volume(), coinFrom.Reserve(), coinFrom.Crr(), value)
-		if errResp := transaction.CheckReserveUnderflow(coinFrom, value); errResp != nil {
-			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
-		}
-	}
 	value.Sub(value, commissionInBaseCoin)
 	if value.Sign() != 1 {
 		return nil, status.New(codes.FailedPrecondition, "Not enough coins to pay commission").Err()
