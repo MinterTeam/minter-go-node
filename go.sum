@@ -77,8 +77,8 @@ github.com/Microsoft/go-winio v0.5.0 h1:Elr9Wn+sGKPlkaBvwu4mTrxtmOp3F3yV9qhaHbXG
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/MinterTeam/node-grpc-gateway v1.4.3-0.20211208134306-ae7964561da4 h1:FwYtiBig/nwzJLTuksrqbhSV1Tr+RByzEzW5dOzEJYc=
 github.com/MinterTeam/node-grpc-gateway v1.4.3-0.20211208134306-ae7964561da4/go.mod h1:kSjFnXZ52XTOaxj4+nbahfMsAt8GsEIc9DSMzOlfALI=
-github.com/MinterTeam/tendermint v0.34.15-beta1.0.20211216233158-7d1d8faa5437 h1:Y4ZyRwcCErvNlE0c5s5tD6eaMdw9g9RaBe+B+F2coUQ=
-github.com/MinterTeam/tendermint v0.34.15-beta1.0.20211216233158-7d1d8faa5437/go.mod h1:/7EDAw02rD7GT8syC317cX9ZhZTCdaFVvYjU8W+yJSs=
+github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3 h1:4T/mn9nqyHDMrNvM/aV8CQaz8fZJNrC6zmSw3G4q7Do=
+github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3/go.mod h1:/7EDAw02rD7GT8syC317cX9ZhZTCdaFVvYjU8W+yJSs=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=

@@ -107,6 +107,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
 
-replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.15-beta1.0.20211216233158-7d1d8faa5437
+replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3
 
 //replace github.com/tendermint/tendermint => /Users/klim0v/GolandProjects/tendermint
