@@ -153,8 +153,14 @@ func (t *mutableTree) DeleteVersionsRange(fromVersion, toVersion int64) error {
 func (t *mutableTree) DeleteVersion(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	if t.existVersion(version) {
+		return t.tree.DeleteVersion(version)
+	}
+	return nil
+}
 
-	return t.tree.DeleteVersion(version)
+func (t *mutableTree) existVersion(version int64) bool {
+	return t.tree.VersionExists(version)
 }
 
 func (t *mutableTree) AvailableVersions() []int {
