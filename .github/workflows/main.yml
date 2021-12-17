@@ -3,11 +3,13 @@ name: docker
 on:
   push:
     branches:
+      - todo
   #      - master
   #      - dev
 
   pull_request:
     branches:
+      - todo
 #      - master
 
 jobs:
@@ -27,7 +29,7 @@ jobs:
         with:
           fetch-depth: 1
 
-      # if secret DOCKER_HUB_REPO is not set DOCKER_HUB_USER will be used instead of REPO  
+      # if secret DOCKER_HUB_REPO is not set DOCKER_HUB_USER will be used instead of REPO
       # otherwise secrets are empty and repo "testbuild" will be used
       - name: Set envs
         env:
