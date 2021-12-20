@@ -184,7 +184,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 	if !commissions.Coin.IsBaseCoin() {
 		var resp *Response
-		resp, price = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
+		resp, price, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
 		if resp != nil {
 			return *resp
 		}
@@ -215,7 +215,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 		if !commissions.Coin.IsBaseCoin() {
 			var resp *Response
-			resp, commissionInBaseCoin = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+			resp, commissionInBaseCoin, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
 			if resp != nil {
 				return *resp
 			}
@@ -265,7 +265,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				if isGasCommissionFromPoolSwap {
 					if !commissions.Coin.IsBaseCoin() {
 						var resp *Response
-						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
+						resp, commissionInBaseCoin, _ = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
 						if resp != nil {
 							return *resp
 						}
@@ -288,8 +288,8 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			}
 
 			if deliverState, ok := context.(*state.State); ok {
-				var tagsCom *tagPoolChange
 				if isGasCommissionFromPoolSwap {
+					var tagsCom *tagPoolChange
 					var (
 						poolIDCom  uint32
 						detailsCom *swap.ChangeDetailsWithOrders
@@ -308,16 +308,19 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					for _, value := range ownersCom {
 						deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
 					}
+					response.Tags = append(response.Tags,
+						abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())})
 				} else if !tx.CommissionCoin().IsBaseCoin() {
 					deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
 					deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
+					response.Tags = append(response.Tags,
+						abcTypes.EventAttribute{Key: []byte("tx.fail_fee_reserve"), Value: []byte(commissionInBaseCoin.String())})
 				}
 
 				deliverState.Accounts.SubBalance(intruder, tx.CommissionCoin(), commission)
 
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
-					abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail"), Value: []byte{49}, Index: true}, // "1"
 				)
