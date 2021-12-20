@@ -3,14 +3,12 @@ name: docker
 on:
   push:
     branches:
-      - todo
-  #      - master
-  #      - dev
+      - master
+      - dev
 
   pull_request:
     branches:
-      - todo
-#      - master
+      - master
 
 jobs:
   docker:
