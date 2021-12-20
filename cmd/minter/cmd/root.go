@@ -54,5 +54,14 @@ var RootCmd = &cobra.Command{
 		if peers != "" {
 			cfg.P2P.PersistentPeers = peers
 		}
+
+		stateSync, err := cmd.Flags().GetBool("state-sync")
+		if err != nil {
+			panic(err)
+		}
+
+		if stateSync {
+			cfg.StateSync.Enable = stateSync
+		}
 	},
 }
