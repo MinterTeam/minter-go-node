@@ -14,7 +14,7 @@ jobs:
   docker:
     env:
       CONTAINER_NAME: minter_node
-      CONTAINER_TIMEOUT_SEC: 90
+      CONTAINER_TIMEOUT_SEC: 60
       API_RUN_PORT: 8843
       SECRET_DOCKER_HUB_PASSWORD: ${{ secrets.DOCKER_HUB_PASSWORD }}
       SECRET_DOCKER_HUB_USER: ${{ secrets.DOCKER_HUB_USER }}
