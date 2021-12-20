@@ -143,7 +143,7 @@ prof_laddr = "{{ .BaseConfig.ProfListenAddress }}"
 enable = {{ .StateSync.Enable }}
 
 # At least 2 available RPC servers.
-rpc_servers = {{ .StateSync.RPCServers }}
+rpc_servers = [{{range $element := .StateSync.RPCServers}} "{{$element}}", {{end}}]
 
 # A trusted height
 trust_height = {{ .StateSync.TrustHeight }}
