@@ -347,7 +347,16 @@ func (v *Validators) PayRewards() {
 					continue
 				}
 
-				v.bus.Accounts().AddBalance(stake.Owner, types.GetBaseCoinID(), reward)
+				if stake.Coin.IsBaseCoin() {
+					// add to stake
+					candidate.AddUpdate(types.GetBaseCoinID(), reward, reward, stake.Owner)
+
+					//stake.AddValue(reward)
+				} else {
+					candidate.AddUpdate(types.GetBaseCoinID(), reward, reward, stake.Owner)
+				}
+				v.bus.Checker().AddCoin(types.GetBaseCoinID(), reward)
+
 				remainder.Sub(remainder, reward)
 
 				v.bus.Events().AddEvent(&eventsdb.RewardEvent{

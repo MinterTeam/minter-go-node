@@ -6,7 +6,7 @@ import (
 )
 
 type Candidates interface {
-	GetStakes(types.Pubkey) []Stake
+	GetStakes(types.Pubkey) []*Stake
 	Punish(uint64, types.TmAddress)
 	ID(types.Pubkey) uint32
 	SetOffline(types.Pubkey)
@@ -19,6 +19,7 @@ type Stake struct {
 	Value    *big.Int
 	Coin     types.CoinID
 	BipValue *big.Int
+	AddValue func(*big.Int)
 }
 
 type Candidate struct {
@@ -29,4 +30,5 @@ type Candidate struct {
 	ControlAddress types.Address
 	Commission     uint32
 	Status         byte
+	AddUpdate      func(types.CoinID, *big.Int, *big.Int, types.Address)
 }
