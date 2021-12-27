@@ -1475,7 +1475,7 @@ func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
 }
 
 func (c *Candidates) loadDeletedCandidates() {
-	if c.deletedCandidates != nil {
+	if len(c.deletedCandidates) != 0 {
 		return
 	}
 
