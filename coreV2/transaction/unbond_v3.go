@@ -142,22 +142,18 @@ func (data UnbondDataV3) Run(tx *Transaction, context state.Interface, rewardPoo
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		var isWL bool
-		var stake = data.Value
 		if waitList := deliverState.Waitlist.Get(sender, data.PubKey, data.Coin); waitList != nil {
-			isWL = true
 			diffValue := big.NewInt(0).Sub(data.Value, waitList.Value)
 			deliverState.Waitlist.Delete(sender, data.PubKey, data.Coin)
 			switch diffValue.Sign() {
 			case -1:
 				deliverState.Waitlist.AddWaitList(sender, data.PubKey, data.Coin, big.NewInt(0).Neg(diffValue))
 			case 1:
-				isWL = false
-				stake.Sub(stake, diffValue)
+				deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, diffValue)
+			default:
 			}
-		}
-		if !isWL {
-			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, stake)
+		} else {
+			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
 		}
 
 		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, nil)
