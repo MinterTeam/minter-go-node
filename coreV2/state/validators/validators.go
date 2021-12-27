@@ -291,7 +291,10 @@ func (v *Validators) PayRewards() {
 			DAOReward := big.NewInt(0).Set(totalReward)
 			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
 			DAOReward.Div(DAOReward, big.NewInt(100))
-			v.bus.Accounts().AddBalance(dao.Address, types.GetBaseCoinID(), DAOReward)
+
+			candidate.AddUpdate(types.GetBaseCoinID(), DAOReward, DAOReward, dao.Address)
+			v.bus.Checker().AddCoin(types.GetBaseCoinID(), DAOReward)
+
 			remainder.Sub(remainder, DAOReward)
 			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDAO.String(),
@@ -305,7 +308,10 @@ func (v *Validators) PayRewards() {
 			DevelopersReward := big.NewInt(0).Set(totalReward)
 			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
 			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
-			v.bus.Accounts().AddBalance(developers.Address, types.GetBaseCoinID(), DevelopersReward)
+
+			candidate.AddUpdate(types.GetBaseCoinID(), DevelopersReward, DevelopersReward, developers.Address)
+			v.bus.Checker().AddCoin(types.GetBaseCoinID(), DevelopersReward)
+
 			remainder.Sub(remainder, DevelopersReward)
 			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 				Role:            eventsdb.RoleDevelopers.String(),
@@ -323,7 +329,10 @@ func (v *Validators) PayRewards() {
 			validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
 			validatorReward.Div(validatorReward, big.NewInt(100))
 			totalReward.Sub(totalReward, validatorReward)
-			v.bus.Accounts().AddBalance(candidate.RewardAddress, types.GetBaseCoinID(), validatorReward)
+
+			candidate.AddUpdate(types.GetBaseCoinID(), validatorReward, validatorReward, candidate.RewardAddress)
+			v.bus.Checker().AddCoin(types.GetBaseCoinID(), validatorReward)
+
 			remainder.Sub(remainder, validatorReward)
 			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 				Role:            eventsdb.RoleValidator.String(),
@@ -347,14 +356,7 @@ func (v *Validators) PayRewards() {
 					continue
 				}
 
-				if stake.Coin.IsBaseCoin() {
-					// add to stake
-					candidate.AddUpdate(types.GetBaseCoinID(), reward, reward, stake.Owner)
-
-					//stake.AddValue(reward)
-				} else {
-					candidate.AddUpdate(types.GetBaseCoinID(), reward, reward, stake.Owner)
-				}
+				candidate.AddUpdate(types.GetBaseCoinID(), reward, reward, stake.Owner)
 				v.bus.Checker().AddCoin(types.GetBaseCoinID(), reward)
 
 				remainder.Sub(remainder, reward)
