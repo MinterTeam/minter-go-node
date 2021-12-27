@@ -199,7 +199,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			PubKey: d.PubKey.String(),
 		}
 	case transaction.TypeUnbond:
-		d := data.(*transaction.UnbondDataV260)
+		d := data.(*transaction.UnbondDataV3)
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
