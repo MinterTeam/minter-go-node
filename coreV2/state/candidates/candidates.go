@@ -1478,6 +1478,7 @@ func (c *Candidates) loadDeletedCandidates() {
 	if len(c.deletedCandidates) != 0 {
 		return
 	}
+
 	c.deletedCandidates = make(map[types.Pubkey]*deletedID)
 	_, data := c.immutableTree().Get([]byte{deleteCandidatesPrefix})
 	if len(data) == 0 {

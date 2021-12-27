@@ -142,8 +142,9 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v230: {}, // add more for update
 			v250: {}, // commissions and mempool
 			v260: {}, // amm with orderbook
-			v261: {}, //
-			v262: {}, //
+			v261: {}, // hotfix
+			v262: {}, // hotfix
+			v3: {},
 		},
 		executor: GetExecutor(""),
 	}
@@ -159,6 +160,8 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
+	case v3:
+		return transaction.NewExecutorV250(transaction.GetDataV3)
 	case v260, v261, v262:
 		return transaction.NewExecutorV250(transaction.GetDataV260)
 	case v250:
@@ -180,6 +183,7 @@ const ( // known update versions
 	v260 = "v260" // orderbook
 	v261 = "v261" // hotfix
 	v262 = "v262" // hotfix
+	v3   = "v300" // tokenomics
 )
 
 func (blockchain *Blockchain) initState() {
@@ -394,7 +398,11 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// pay rewards
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
-		blockchain.stateDeliver.Validators.PayRewards()
+		if blockchain.appDB.GetVersionName(height) == v3 {
+			blockchain.stateDeliver.Validators.PayRewardsV3()
+		} else {
+			blockchain.stateDeliver.Validators.PayRewards()
+		}
 	}
 
 	{
