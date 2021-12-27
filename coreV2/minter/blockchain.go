@@ -142,6 +142,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v230: {}, // add more for update
 			v250: {}, // commissions and mempool
 			v260: {}, // amm with orderbook
+			v261: {}, // amm with orderbook
 		},
 		executor: GetExecutor(""),
 	}
@@ -157,7 +158,7 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
-	case v260:
+	case v260, v261:
 		return transaction.NewExecutorV250(transaction.GetDataV260)
 	case v250:
 		return transaction.NewExecutorV250(transaction.GetDataV250)
@@ -176,6 +177,7 @@ const ( // known update versions
 	v230 = "v230" // remove liquidity bug
 	v250 = "v250" // commissions and failed txs
 	v260 = "v260" // orderbook
+	v261 = "v261" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
