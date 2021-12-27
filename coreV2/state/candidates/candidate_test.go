@@ -60,7 +60,12 @@ func TestCandidates_DeleteCandidate(t *testing.T) {
 		if candidates.GetCandidate([32]byte{4}) != nil {
 			t.Fatal("candidate exist")
 		}
+		t.Log(candidates.deletedCandidates)
 	}
+
+	var se types.AppState
+	NewCandidates(b, mutableTree.GetLastImmutable()).Export(&se)
+	t.Log(se.DeletedCandidates)
 }
 func TestCandidates_Create_oneCandidate(t *testing.T) {
 	t.Parallel()

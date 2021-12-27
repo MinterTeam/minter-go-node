@@ -106,7 +106,6 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	} else {
 		blockchain.stateDeliver.Candidates.RecalculateStakes(height)
 	}
-
 	valsCount := validators.GetValidatorsCountForBlock(height)
 	newCandidates := blockchain.stateDeliver.Candidates.GetNewCandidates(valsCount)
 	if len(newCandidates) < valsCount {
