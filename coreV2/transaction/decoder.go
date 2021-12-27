@@ -108,6 +108,15 @@ func GetDataV260(txType TxType) (Data, bool) {
 		return GetDataV250(txType)
 	}
 }
+func GetDataV3(txType TxType) (Data, bool) {
+	switch txType {
+	case TypeUnbond:
+		return &UnbondDataV3{}, true
+
+	default:
+		return GetDataV250(txType)
+	}
+}
 func GetDataV250(txType TxType) (Data, bool) {
 	switch txType {
 	case TypeVoteCommission:
