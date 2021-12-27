@@ -399,7 +399,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	// pay rewards
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
-			blockchain.stateDeliver.Validators.PayRewardsV3(height)
+			blockchain.stateDeliver.Validators.PayRewardsV3()
 		} else {
 			blockchain.stateDeliver.Validators.PayRewards()
 		}
