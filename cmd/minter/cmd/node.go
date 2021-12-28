@@ -3,14 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-
-	"io"
-	"net/http"
-	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
-	"net/url"
-	"os"
-	"syscall"
-
 	apiV2 "github.com/MinterTeam/minter-go-node/api/v2"
 	serviceApi "github.com/MinterTeam/minter-go-node/api/v2/service"
 	"github.com/MinterTeam/minter-go-node/cli/service"
@@ -21,6 +13,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/log"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	"github.com/spf13/cobra"
 	tmCfg "github.com/tendermint/tendermint/config"
 	tmLog "github.com/tendermint/tendermint/libs/log"
@@ -31,6 +24,12 @@ import (
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 	tmTypes "github.com/tendermint/tendermint/types"
+	"io"
+	"net/http"
+	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
+	"net/url"
+	"os"
+	"syscall"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -88,10 +87,25 @@ func runNode(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 720, 0)
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 720, 0, logger.With("module", "node"))
+
+	if cfg.SnapshotInterval > 0 || cfg.StateSync.Enable {
+		snapshotDB, err := storages.InitSnapshotLevelDB("data/snapshots/metadata", minter.GetDbOpts(cfg.StateMemAvailable))
+		if err != nil {
+			return err
+		}
+
+		snapshotStore, err := snapshots.NewStore(snapshotDB, storages.GetMinterHome()+"/data/snapshots")
+		if err != nil {
+			panic(err)
+		}
+
+		app.SetSnapshotStore(snapshotStore, cfg.SnapshotInterval, cfg.SnapshotKeepRecent)
+	}
 
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
+
 	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
@@ -217,7 +231,6 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 		//
 		//	return mempoolReactor, mempool
 		//},
-		nil,
 		logger.With("module", "tendermint"),
 	)
 

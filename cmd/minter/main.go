@@ -37,6 +37,7 @@ func main() {
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
 	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v2.0/genesis.json", "path with the genesis file to download")
 	rootCmd.PersistentFlags().String("persistent-peers", "", "")
+	rootCmd.PersistentFlags().Bool("state-sync", false, "enable state sync snapshots")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")

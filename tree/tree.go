@@ -1,6 +1,7 @@
 package tree
 
 import (
+	"fmt"
 	"sync"
 
 	"github.com/cosmos/iavl"
@@ -18,6 +19,9 @@ type MTree interface {
 	Commit(...saver) ([]byte, int64, error)
 	GetLastImmutable() *iavl.ImmutableTree
 	GetImmutableAtHeight(version int64) (*iavl.ImmutableTree, error)
+
+	Export(version int64) (*iavl.Exporter, error)
+	Import(version int64) (*iavl.Importer, error)
 
 	DeleteVersion(version int64) error
 	DeleteVersionsRange(fromVersion, toVersion int64) error
@@ -54,6 +58,24 @@ func (t *mutableTree) Commit(savers ...saver) (hash []byte, version int64, err e
 
 	return hash, version, err
 }
+
+// Import imports an IAVL tree at the given version, returning an iavl.Importer for importing.
+func (t *mutableTree) Import(version int64) (*iavl.Importer, error) {
+	return t.tree.Import(version)
+}
+
+// Exports the IAVL store at the given version, returning an iavl.Exporter for the tree.
+func (t *mutableTree) Export(version int64) (*iavl.Exporter, error) {
+	itree, err := t.GetImmutableAtHeight(version)
+	if err != nil {
+		return nil, fmt.Errorf("iavl export failed for version %v: %w", version, err)
+	}
+	if itree == nil {
+		return nil, fmt.Errorf("iavl export failed: unable to fetch tree for version %v", version)
+	}
+	return itree.Export(), nil
+}
+
 func (t *mutableTree) MutableTree() *iavl.MutableTree {
 	return t.tree
 }
@@ -131,8 +153,14 @@ func (t *mutableTree) DeleteVersionsRange(fromVersion, toVersion int64) error {
 func (t *mutableTree) DeleteVersion(version int64) error {
 	t.lock.Lock()
 	defer t.lock.Unlock()
+	if t.existVersion(version) {
+		return t.tree.DeleteVersion(version)
+	}
+	return nil
+}
 
-	return t.tree.DeleteVersion(version)
+func (t *mutableTree) existVersion(version int64) bool {
+	return t.tree.VersionExists(version)
 }
 
 func (t *mutableTree) AvailableVersions() []int {

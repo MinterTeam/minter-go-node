@@ -2,6 +2,7 @@ package minter
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	"log"
 	"math/big"
 	"os"
@@ -21,6 +22,17 @@ import (
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 )
+
+// SetSnapshotStore sets the snapshot store.
+func (blockchain *Blockchain) SetSnapshotStore(snapshotStore *snapshots.Store, snapshotInterval, snapshotKeepRecent int) {
+	if snapshotStore == nil {
+		blockchain.snapshotManager = nil
+		return
+	}
+	blockchain.snapshotInterval = uint64(snapshotInterval)
+	blockchain.snapshotKeepRecent = uint32(snapshotKeepRecent)
+	blockchain.snapshotManager = snapshots.NewManager(snapshotStore, blockchain.appDB)
+}
 
 func (blockchain *Blockchain) RpcClient() *rpc.Local {
 	return blockchain.rpcClient
@@ -62,6 +74,8 @@ func (blockchain *Blockchain) stop() {
 func (blockchain *Blockchain) WaitStop() error {
 	defer close(blockchain.stopOk)
 	blockchain.tmNode.Wait()
+	blockchain.wgSnapshot.Wait()
+	blockchain.wgSnapshot.Add(1)
 	return blockchain.Close()
 }
 

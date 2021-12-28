@@ -1,0 +1,29 @@
+syntax = "proto3";
+package core.appdb.snapshot.v1beta1;
+
+option go_package = "github.com/MinterTeam/minter-go-node/coreV2/appdb/types";
+
+import "gogoproto/gogo.proto";
+
+// SnapshotItem is an item contained in a rootmulti.Store snapshot.
+message SnapshotItem {
+  // item is the specific type of snapshot item.
+  oneof item {
+    SnapshotStoreItem store = 1;
+    SnapshotIAVLItem  iavl = 2 [(gogoproto.customname) = "IAVL"];
+  }
+}
+
+// SnapshotStoreItem contains metadata about a snapshotted store.
+message SnapshotStoreItem {
+  string name = 1;
+  bytes value = 2;
+}
+
+// SnapshotIAVLItem is an exported IAVL node.
+message SnapshotIAVLItem {
+  bytes key = 1;
+  bytes value = 2;
+  int64 version = 3;
+  int32 height = 4;
+}

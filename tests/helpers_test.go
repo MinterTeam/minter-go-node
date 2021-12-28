@@ -33,7 +33,7 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
 
-	app := minter.NewMinterBlockchain(storage, cfg, nil, updateStakePeriod, expiredOrdersPeriod)
+	app := minter.NewMinterBlockchain(storage, cfg, nil, updateStakePeriod, expiredOrdersPeriod, nil)
 	var updates []tmTypes.ValidatorUpdate
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
