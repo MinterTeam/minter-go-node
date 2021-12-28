@@ -310,7 +310,7 @@ func commissionFromPool(swapChecker swap.EditableChecker, coin CalculateCoin, ba
 		}
 	}
 
-	errResp, coms := CheckSwap(swapChecker, coin, baseCoin, maxCoinSupply, commissionInBaseCoin, true)
+	errResp, coms, _ := CheckSwap(swapChecker, coin, baseCoin, maxCoinSupply, commissionInBaseCoin, true)
 	if errResp != nil {
 		return nil, errResp
 	}

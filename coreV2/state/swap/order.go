@@ -301,12 +301,12 @@ func (l *Limit) CmpOldRate() int {
 	return l.sortPrice().Cmp(l.OldSortPrice())
 }
 
-func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int) {
+func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit) {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
-	amount1Out, _ = p.calculateBuyForSellWithOrders(amount0In)
-	return amount1Out
+	amount1Out, orders = p.calculateBuyForSellWithOrders(amount0In)
+	return amount1Out, orders
 }
 
 func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big.Int, orders []*Limit) {
@@ -498,12 +498,12 @@ func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, 
 	return amount0, amount1Out
 }
 
-func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int) {
+func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, orders []*Limit) {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
-	amount0In, _ = p.calculateSellForBuyWithOrders(amount1Out)
-	return amount0In
+	amount0In, orders = p.calculateSellForBuyWithOrders(amount1Out)
+	return amount0In, orders
 }
 
 func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big.Int, orders []*Limit) {

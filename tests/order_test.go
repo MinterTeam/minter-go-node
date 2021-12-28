@@ -1953,10 +1953,11 @@ func TestOrder_buy_more_a_more(t *testing.T) {
 	app := CreateApp(state) // create application
 	SendBeginBlock(app, 1)  // send BeginBlock
 
+	v, _ := app.CurrentState().Swap().GetSwapper(1, 2).CalculateBuyForSellWithOrders(helpers.StringToBigInt("22330916069244653273092"))
 	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV230{
 		Coins:              []types.CoinID{1, 2},
 		MaximumValueToSell: helpers.StringToBigInt("22330916069244653273092"),
-		ValueToBuy:         app.CurrentState().Swap().GetSwapper(1, 2).CalculateBuyForSellWithOrders(helpers.StringToBigInt("22330916069244653273092")), // +4
+		ValueToBuy:         v, // +4
 	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx

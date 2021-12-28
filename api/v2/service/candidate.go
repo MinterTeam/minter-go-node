@@ -34,12 +34,15 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 
 	if req.Height != 0 {
 		cState.Candidates().LoadCandidates()
-		cState.Candidates().LoadStakesOfCandidate(pubkey)
 	}
 
 	candidate := cState.Candidates().GetCandidate(pubkey)
 	if candidate == nil {
 		return nil, status.Error(codes.NotFound, "Candidate not found")
+	}
+
+	if req.Height != 0 {
+		cState.Candidates().LoadStakesOfCandidate(pubkey)
 	}
 
 	result := makeResponseCandidate(cState, candidate, true, req.NotShowStakes)

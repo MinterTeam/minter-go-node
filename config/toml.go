@@ -103,6 +103,12 @@ api_simultaneous_requests = {{ .BaseConfig.APISimultaneousRequests }}
 # and verifying their commits
 fast_sync = {{ .BaseConfig.FastSync }}
 
+# State sync snapshot interval
+snapshot_interval = {{ .BaseConfig.SnapshotInterval }}
+
+# State sync snapshot to keep
+snapshot_keep_recent = {{ .BaseConfig.SnapshotKeepRecent }}
+
 # Database backend: leveldb | memdb
 db_backend = "{{ .BaseConfig.DBBackend }}"
 
@@ -131,6 +137,21 @@ node_key_file = "{{ js .BaseConfig.NodeKey}}"
 prof_laddr = "{{ .BaseConfig.ProfListenAddress }}"
 
 ##### advanced configuration options #####
+
+[statesync]
+
+enable = {{ .StateSync.Enable }}
+
+# At least 2 available RPC servers.
+rpc_servers = [{{range $element := .StateSync.RPCServers}} "{{$element}}", {{end}}]
+
+# A trusted height
+trust_height = {{ .StateSync.TrustHeight }}
+
+# The block ID hash of the trusted height
+trust_hash = "{{ .StateSync.TrustHash }}"
+
+trust_period = "{{ .StateSync.TrustPeriod }}"
 
 ##### rpc server configuration options #####
 [rpc]

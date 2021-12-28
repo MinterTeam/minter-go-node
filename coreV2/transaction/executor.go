@@ -195,7 +195,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
+		price, _ = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
 	}
 	if price == nil || price.Sign() != 1 {
 		return Response{

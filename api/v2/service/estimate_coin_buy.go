@@ -190,7 +190,7 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 			coinSell = cState.Coins().GetCoin(sellCoinID)
 		}
 
-		errResp, sellValue := transaction.CheckSwap(swapChecker, coinSell, coinBuy, coins.MaxCoinSupply(), buyValue, true)
+		errResp, sellValue, _ := transaction.CheckSwap(swapChecker, coinSell, coinBuy, coins.MaxCoinSupply(), buyValue, true)
 		if errResp != nil {
 			return nil, s.createError(status.New(codes.FailedPrecondition, errResp.Log), errResp.Info)
 		}
@@ -283,6 +283,7 @@ func (s *Service) calcBuyPoolWithCommission(ctx context.Context, commissions *co
 
 	commissionPoolSwapper := cState.Swap().GetSwapper(requestCoinCommissionID, types.GetBaseCoinID())
 	if commissionFromPool && requestCoinCommissionID != types.GetBaseCoinID() {
+		commissionInBaseCoin, _ = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 		commissionPoolSwapper = commissionPoolSwapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, false)
 	}
 

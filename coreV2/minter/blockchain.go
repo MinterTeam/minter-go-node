@@ -2,12 +2,17 @@ package minter
 
 import (
 	"context"
+	"github.com/cosmos/cosmos-sdk/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
+	tmlog "github.com/tendermint/tendermint/libs/log"
 	"log"
 	"math/big"
 	"os"
 	"sync"
 	"sync/atomic"
 	"time"
+
+	l "github.com/MinterTeam/minter-go-node/log"
 
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/config"
@@ -46,6 +51,8 @@ const votingPowerConsensus = 2. / 3.
 type Blockchain struct {
 	abciTypes.BaseApplication
 
+	logger tmlog.Logger
+
 	executor      transaction.ExecutorTx
 	statisticData *statistics.Data
 
@@ -78,6 +85,13 @@ type Blockchain struct {
 	grace        *upgrades.Grace
 	knownUpdates map[string]struct{}
 	stopOk       chan struct{}
+
+	// manages snapshots, i.e. dumps of app state at certain intervals
+	snapshotManager    *snapshots.Manager
+	snapshotInterval   uint64 // block interval between state sync snapshots
+	snapshotKeepRecent uint32 // recent state sync snapshots to keep
+	snapshotter        snapshottypes.Snapshotter
+	wgSnapshot         sync.WaitGroup
 }
 
 func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
@@ -85,9 +99,10 @@ func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
 }
 
 // NewMinterBlockchain creates Minter Blockchain instance, should be only called once
-func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, updateStakePeriod uint64, expiredOrdersPeriod uint64) *Blockchain {
+func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx context.Context, updateStakePeriod uint64, expiredOrdersPeriod uint64, logger tmlog.Logger) *Blockchain {
 	// Initiate Application DB. Used for persisting data like current block, validators, etc.
 	applicationDB := appdb.NewAppDB(storages.GetMinterHome(), cfg)
+	applicationDB.SetStateDB(storages.StateDB())
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -104,7 +119,13 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 	if expiredOrdersPeriod == 0 {
 		expiredOrdersPeriod = types.GetExpireOrdersPeriod()
 	}
+	if logger == nil {
+		logger = l.NewLogger(cfg)
+	}
 	app := &Blockchain{
+		logger: logger,
+
+		rewards:                         big.NewInt(0),
 		rewardsCounter:                  rewards.NewReward(),
 		appDB:                           applicationDB,
 		storages:                        storages,
@@ -121,6 +142,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v230: {}, // add more for update
 			v250: {}, // commissions and mempool
 			v260: {}, // amm with orderbook
+			v261: {}, // amm with orderbook
 		},
 		executor: GetExecutor(""),
 	}
@@ -136,7 +158,7 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
-	case v260:
+	case v260, v261:
 		return transaction.NewExecutorV250(transaction.GetDataV260)
 	case v250:
 		return transaction.NewExecutorV250(transaction.GetDataV250)
@@ -155,6 +177,7 @@ const ( // known update versions
 	v230 = "v230" // remove liquidity bug
 	v250 = "v250" // commissions and failed txs
 	v260 = "v260" // orderbook
+	v261 = "v261" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
@@ -169,9 +192,9 @@ func (blockchain *Blockchain) initState() {
 	if err != nil {
 		panic(err)
 	}
+	blockchain.appDB.SetState(stateDeliver.Tree())
 
 	atomic.StoreUint64(&blockchain.height, currentHeight)
-	blockchain.rewards = big.NewInt(0)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
@@ -227,6 +250,9 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
+	if blockchain.stateDeliver == nil {
+		blockchain.initState()
+	}
 	height := uint64(req.Header.Height)
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
@@ -524,6 +550,7 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	if blockchain.stopped {
+		blockchain.wgSnapshot.Wait()
 		select {
 		case <-time.After(10 * time.Second):
 			blockchain.Close()
@@ -536,8 +563,10 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 		panic(err)
 	}
 
+	height := blockchain.Height()
+
 	// Flush events db
-	err := blockchain.eventsDB.CommitEvents(uint32(blockchain.Height()))
+	err := blockchain.eventsDB.CommitEvents(uint32(height))
 	if err != nil {
 		panic(err)
 	}
@@ -550,7 +579,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	// Persist application hash and height
 	blockchain.appDB.SetLastBlockHash(hash)
-	blockchain.appDB.SetLastHeight(blockchain.Height())
+	blockchain.appDB.SetLastHeight(height)
 
 	blockchain.appDB.FlushValidators()
 	blockchain.appDB.SaveBlocksTime()
@@ -561,6 +590,11 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 
 	if blockchain.checkStop() {
 		return abciTypes.ResponseCommit{Data: hash}
+	}
+
+	if blockchain.snapshotInterval > 0 && height%blockchain.snapshotInterval == 0 && blockchain.snapshotManager != nil {
+		blockchain.appDB.WG.Add(1)
+		go blockchain.snapshot(int64(height))
 	}
 
 	return abciTypes.ResponseCommit{
@@ -588,6 +622,9 @@ func (blockchain *Blockchain) Close() error {
 		return err
 	}
 	if err := blockchain.storages.EventDB().Close(); err != nil {
+		return err
+	}
+	if err := blockchain.storages.SnapshotDB().Close(); err != nil {
 		return err
 	}
 	return nil
