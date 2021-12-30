@@ -334,7 +334,7 @@ type Pool struct {
 	Reserve0 string  `json:"reserve0"`
 	Reserve1 string  `json:"reserve1"`
 	ID       uint64  `json:"id"`
-	Orders   []Order `json:"orders"`
+	Orders   []Order `json:"orders,omitempty"`
 }
 
 type Coin struct {

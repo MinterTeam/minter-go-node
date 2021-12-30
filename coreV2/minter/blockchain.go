@@ -144,7 +144,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v260: {}, // amm with orderbook
 			v261: {}, // hotfix
 			v262: {}, // hotfix
-			v3: {},
+			v3: {}, // tokenomics
 		},
 		executor: GetExecutor(""),
 	}
