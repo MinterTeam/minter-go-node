@@ -228,20 +228,17 @@ func TestValidators_PayRewardsStake(t *testing.T) {
 	candidatesS.RecalculateStakes(1)
 	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
 
-	validators.PayRewards()
+	validators.PayRewardsV3()
 	candidatesS.RecalculateStakesV2(1)
 
-	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String() != "1000000000000000000072" {
-		t.Fatal("delegate did not receive the award")
+	d1 := candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String()
+	if d1 != "1000000000000000000072" {
+		t.Fatal("delegate did not receive the award", d1)
 	}
-	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).BipValue.String() != "1000000000000000000072" {
-		t.Fatal("delegate did not receive the award")
+	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{2}, 0).Value.String() != "8" {
+		t.Fatal("rewards_address did not receive the award")
 	}
-
 	{
-		if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{2}, 0).Value.String() != "8" {
-			t.Fatal("rewards_address did not receive the award")
-		}
 
 		if candidatesS.GetStakeOfAddress([32]byte{4}, dao.Address, 0).Value.String() != "10" {
 			t.Fatal("dao_address did not receive the award")
@@ -305,7 +302,7 @@ func TestValidators_PayRewardsStakeAndUpdate(t *testing.T) {
 		BipValue: "500000000000000000000",
 	}})
 
-	validators.PayRewards()
+	validators.PayRewardsV3()
 	candidatesS.RecalculateStakesV2(1)
 
 	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String() != "1500000000000000000072" {
