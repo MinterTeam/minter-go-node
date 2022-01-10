@@ -19,7 +19,6 @@ type Stake struct {
 	Value    *big.Int
 	Coin     types.CoinID
 	BipValue *big.Int
-	AddValue func(*big.Int)
 }
 
 type Candidate struct {

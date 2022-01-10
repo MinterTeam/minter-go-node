@@ -25,10 +25,6 @@ func (b *Bus) GetStakes(pubkey types.Pubkey) []*bus.Stake {
 			Value:    big.NewInt(0).Set(stake.Value),
 			Coin:     stake.Coin,
 			BipValue: big.NewInt(0).Set(stake.BipValue),
-			AddValue: func(b *big.Int) {
-				stake.addValue(b)
-				//stake.addBipValue(b)
-			},
 		})
 	}
 
