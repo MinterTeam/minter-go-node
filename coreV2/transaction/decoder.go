@@ -79,7 +79,7 @@ func GetDataV1(txType TxType) (Data, bool) {
 }
 
 func GetData(txType TxType) (Data, bool) {
-	return GetDataV260(txType)
+	return GetDataV3(txType)
 }
 
 func GetDataV260(txType TxType) (Data, bool) {
