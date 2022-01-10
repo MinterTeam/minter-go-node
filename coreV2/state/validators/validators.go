@@ -133,6 +133,13 @@ func (v *Validators) Commit(db *iavl.MutableTree, version int64) error {
 	return nil
 }
 
+func (v *Validators) Count() int {
+	v.lock.Lock()
+	defer v.lock.Unlock()
+
+	return len(v.list)
+}
+
 func (v *Validators) getOrderedRemoved() []types.Pubkey {
 	keys := make([]types.Pubkey, 0, len(v.removed))
 	for k := range v.removed {

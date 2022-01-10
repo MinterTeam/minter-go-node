@@ -699,7 +699,11 @@ func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	if len(c.pubKeyIDs) < 4 {
+	//if len(c.pubKeyIDs) < 4 {
+	//	return false, false
+	//}
+
+	if c.bus.Validators().Count() < 4 {
 		return false, false
 	}
 
