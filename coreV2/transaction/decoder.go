@@ -114,7 +114,7 @@ func GetDataV3(txType TxType) (Data, bool) {
 		return &UnbondDataV3{}, true
 
 	default:
-		return GetDataV250(txType)
+		return GetDataV260(txType)
 	}
 }
 func GetDataV250(txType TxType) (Data, bool) {
