@@ -184,6 +184,10 @@ func (a *Accounts) AddBalance(address types.Address, coin types.CoinID, amount *
 	a.SetBalance(address, coin, big.NewInt(0).Add(balance, amount))
 }
 
+func (a *Accounts) IsX3Mining(address types.Address, height uint64) bool {
+	return height < a.GetIncreasedRewardsUpToBlock(address)
+}
+
 func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int {
 	account := a.getOrNew(address)
 	if !account.hasCoin(coin) {
@@ -359,6 +363,20 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 	defer account.lock.RUnlock()
 
 	return account.Nonce
+}
+
+func (a *Accounts) SetGetIncreasedRewardsUpToBlock(address types.Address, h uint64) {
+	account := a.getOrNew(address)
+	account.setIncreasedRewardsUpToBlock(h)
+}
+
+func (a *Accounts) GetIncreasedRewardsUpToBlock(address types.Address) uint64 {
+	account := a.getOrNew(address)
+
+	account.lock.RLock()
+	defer account.lock.RUnlock()
+
+	return account.getIncreasedRewardsUpToBlock()
 }
 
 func (a *Accounts) GetBalances(address types.Address) []Balance {

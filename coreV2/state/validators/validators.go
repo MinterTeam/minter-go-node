@@ -378,7 +378,9 @@ func (v *Validators) PayRewards() {
 }
 
 // PayRewardsV3 distributes accumulated rewards between validator, delegators, DAO and developers addresses
-func (v *Validators) PayRewardsV3() {
+func (v *Validators) PayRewardsV3(height uint64) (moreRewards *big.Int) {
+	moreRewards = big.NewInt(0)
+
 	vals := v.GetValidators()
 
 	for _, validator := range vals {
@@ -457,15 +459,22 @@ func (v *Validators) PayRewardsV3() {
 					continue
 				}
 
-				candidate.AddUpdate(types.GetBaseCoinID(), reward, reward, stake.Owner)
-				v.bus.Checker().AddCoin(types.GetBaseCoinID(), reward)
-
 				remainder.Sub(remainder, reward)
+
+				safeRewardVariable := big.NewInt(0).Set(reward)
+				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
+					x2reward := big.NewInt(0).Add(reward, reward)
+					moreRewards.Add(moreRewards, x2reward)
+					safeRewardVariable.Add(reward, x2reward)
+				}
+
+				candidate.AddUpdate(types.GetBaseCoinID(), safeRewardVariable, safeRewardVariable, stake.Owner)
+				v.bus.Checker().AddCoin(types.GetBaseCoinID(), safeRewardVariable)
 
 				v.bus.Events().AddEvent(&eventsdb.RewardEvent{
 					Role:            eventsdb.RoleDelegator.String(),
 					Address:         stake.Owner,
-					Amount:          reward.String(),
+					Amount:          safeRewardVariable.String(),
 					ValidatorPubKey: validator.PubKey,
 					ForCoin:         uint64(stake.Coin),
 				})
@@ -480,6 +489,7 @@ func (v *Validators) PayRewardsV3() {
 			}
 		}
 	}
+	return moreRewards
 }
 
 // GetByTmAddress finds and returns validator with given tendermint-address

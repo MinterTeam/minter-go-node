@@ -6,6 +6,7 @@ import (
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"log"
+	"math"
 	"math/big"
 	"os"
 	"sync"
@@ -381,18 +382,12 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// accumulate rewards
 	var reward = big.NewInt(0)
+	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			reward = blockchain.stateDeliver.App.Reward()
-			//if reward.Cmp(big.NewInt(1000)) == 1 {
-			//	reward.Set(big.NewInt(1000))
-			//} else if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), reward); diff.Sign() == 1 {
-			//	// todo: move and use x3 changes
-			//	blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
-			//}
-			emission.Add(emission, reward)
-			blockchain.appDB.SetEmission(emission)
+			heightIsMaxIfIssueIsOverOrNotDynamic = height
 		}
 	} else if h == height {
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height) // or reward = blockchain.stateDeliver.App.Reward()
@@ -403,28 +398,29 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
 	}
 
-	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), reward)
-	reward.Add(reward, blockchain.rewards)
+	{
+		rewardWithTxs := big.NewInt(0).Add(reward, blockchain.rewards)
 
-	// compute remainder to keep total emission consist
-	remainder := big.NewInt(0).Set(reward)
+		// compute remainder to keep total emission consist
+		remainder := big.NewInt(0).Set(rewardWithTxs)
 
-	for i, val := range vals {
-		// skip if candidate is not present
-		if val.IsToDrop() || blockchain.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
-			continue
+		for i, val := range vals {
+			// skip if candidate is not present
+			if val.IsToDrop() || blockchain.GetValidatorStatus(val.GetAddress()) != ValidatorPresent {
+				continue
+			}
+
+			r := big.NewInt(0).Set(rewardWithTxs)
+			r.Mul(r, val.GetTotalBipStake())
+			r.Div(r, blockchain.totalPower)
+
+			remainder.Sub(remainder, r)
+			vals[i].AddAccumReward(r)
 		}
 
-		r := big.NewInt(0).Set(reward)
-		r.Mul(r, val.GetTotalBipStake())
-		r.Div(r, blockchain.totalPower)
-
-		remainder.Sub(remainder, r)
-		vals[i].AddAccumReward(r)
+		// add remainder to total slashed
+		blockchain.stateDeliver.App.AddTotalSlashed(remainder)
 	}
-
-	// add remainder to total slashed
-	blockchain.stateDeliver.App.AddTotalSlashed(remainder)
 
 	// expire orders
 	if height > blockchain.expiredOrdersPeriod && height%blockchain.updateStakesAndPayRewardsPeriod == blockchain.updateStakesAndPayRewardsPeriod/2 {
@@ -432,12 +428,22 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	// pay rewards
+	var x2rewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
-			blockchain.stateDeliver.Validators.PayRewardsV3()
-			// todo: return and inc emission for x3 rewards
+			x2rewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic)
 		} else {
 			blockchain.stateDeliver.Validators.PayRewards()
+		}
+	}
+
+	fullRewards := big.NewInt(0).Add(reward, x2rewards)
+	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), fullRewards)
+	blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), fullRewards))
+
+	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
+		if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), fullRewards); diff.Sign() == 1 {
+			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
 		}
 	}
 
