@@ -264,12 +264,16 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
 		t, _, _ := blockchain.appDB.GetPrice()
 		if t.Sub(req.Header.Time) > time.Hour*24 && req.Header.Time.Hour() > 12 {
-			reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, 1993).Reserves()
-			blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
+			reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, types.USDTID).Reserves()
+			diff := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
+			blockchain.stateDeliver.App.IncrementReward(diff)
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().Int64()})
 		}
 	} else if h == height {
-		reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, 1993).Reserves()
+		reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, types.USDTID).Reserves()
 		blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
+		blockchain.stateDeliver.App.IncrementReward(blockchain.rewardsCounter.GetRewardForBlock(height))
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().Int64()})
 	}
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
@@ -379,25 +383,22 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// accumulate rewards
 	var reward = big.NewInt(0)
-	var emission *big.Int
 	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
-		emission = blockchain.appDB.Emission()
-		if emission.String() != rewards.TotalEmission {
-			reward = blockchain.appDB.GetReward()
-			if reward.Cmp(big.NewInt(1000)) == 1 {
-				reward.Set(big.NewInt(1000))
-			} else if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), reward); diff.Sign() == 1 {
-				blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
-			}
+		emission := blockchain.appDB.Emission()
+		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
+			reward = blockchain.stateDeliver.App.Reward()
+			//if reward.Cmp(big.NewInt(1000)) == 1 {
+			//	reward.Set(big.NewInt(1000))
+			//} else if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), reward); diff.Sign() == 1 {
+			//	// todo: move and use x3 changes
+			//	blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
+			//}
 			emission.Add(emission, reward)
-			if emission.Cmp(rewards.TotalEmissionBig) == 1 {
-				emission.Set(rewards.TotalEmissionBig)
-			}
 			blockchain.appDB.SetEmission(emission)
 		}
 	} else if h == height {
-		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
-		emission = blockchain.rewardsCounter.GetBeforeBlock(height)
+		reward = blockchain.rewardsCounter.GetRewardForBlock(height) // or reward = blockchain.stateDeliver.App.Reward()
+		emission := blockchain.rewardsCounter.GetBeforeBlock(height)
 		emission.Add(emission, reward)
 		blockchain.appDB.SetEmission(emission)
 	} else {
@@ -436,6 +437,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
 			blockchain.stateDeliver.Validators.PayRewardsV3()
+			// todo: return and inc emission for x3 rewards
 		} else {
 			blockchain.stateDeliver.Validators.PayRewards()
 		}
