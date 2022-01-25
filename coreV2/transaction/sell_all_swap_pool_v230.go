@@ -276,6 +276,9 @@ func CalculateCommission(checkState *state.CheckState, swapper swap.EditableChec
 	if gasCoin.ID().IsBaseCoin() {
 		return new(big.Int).Set(commissionInBaseCoin), false, nil
 	}
+	if commissionInBaseCoin.Sign() == 0 {
+		return new(big.Int).SetInt64(0), false, nil
+	}
 	commissionFromPool, responseFromPool := commissionFromPool(swapper, gasCoin, checkState.Coins().GetCoin(types.BasecoinID), commissionInBaseCoin)
 	commissionFromReserve, responseFromReserve := commissionFromReserve(gasCoin, commissionInBaseCoin)
 

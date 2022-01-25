@@ -182,18 +182,20 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	coinCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price_coin"), Value: []byte(strconv.Itoa(int(commissions.Coin)))}
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
-	if !commissions.Coin.IsBaseCoin() {
-		var resp *Response
-		resp, price, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
-		if resp != nil {
-			return *resp
+	if price.Sign() != 0 {
+		if !commissions.Coin.IsBaseCoin() {
+			var resp *Response
+			resp, price, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
+			if resp != nil {
+				return *resp
+			}
 		}
-	}
-	if price == nil || price.Sign() != 1 {
-		return Response{
-			Code: code.CommissionCoinNotSufficient,
-			Log:  fmt.Sprint("Not possible to pay commission"),
-			Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+		if price == nil || price.Sign() != 1 {
+			return Response{
+				Code: code.CommissionCoinNotSufficient,
+				Log:  fmt.Sprint("Not possible to pay commission"),
+				Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+			}
 		}
 	}
 

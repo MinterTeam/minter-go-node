@@ -596,11 +596,6 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
-
-	// todo: FIXME
-	//log.Println("SLEEP")
-	//time.Sleep(time.Hour)
-
 	if blockchain.stopped {
 		blockchain.wgSnapshot.Wait()
 		select {
