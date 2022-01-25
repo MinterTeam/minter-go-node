@@ -258,6 +258,20 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 	height := uint64(req.Header.Height)
+
+	log.Println(blockchain.CurrentState().Swap().GetSwapper(0, 1993).Reserves())
+
+	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
+		t, _, _ := blockchain.appDB.GetPrice()
+		if t.Sub(req.Header.Time) > time.Hour*24 && req.Header.Time.Hour() > 12 {
+			reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, 1993).Reserves()
+			blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
+		}
+	} else if h == height {
+		reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, 1993).Reserves()
+		blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
+	}
+
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	// compute max gas
@@ -364,7 +378,32 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	blockchain.calculatePowers(vals)
 
 	// accumulate rewards
-	reward := blockchain.rewardsCounter.GetRewardForBlock(height)
+	var reward = big.NewInt(0)
+	var emission *big.Int
+	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
+		emission = blockchain.appDB.Emission()
+		if emission.String() != rewards.TotalEmission {
+			reward = blockchain.appDB.GetReward()
+			if reward.Cmp(big.NewInt(1000)) == 1 {
+				reward.Set(big.NewInt(1000))
+			} else if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), reward); diff.Sign() == 1 {
+				blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
+			}
+			emission.Add(emission, reward)
+			if emission.Cmp(rewards.TotalEmissionBig) == 1 {
+				emission.Set(rewards.TotalEmissionBig)
+			}
+			blockchain.appDB.SetEmission(emission)
+		}
+	} else if h == height {
+		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
+		emission = blockchain.rewardsCounter.GetBeforeBlock(height)
+		emission.Add(emission, reward)
+		blockchain.appDB.SetEmission(emission)
+	} else {
+		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
+	}
+
 	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), reward)
 	reward.Add(reward, blockchain.rewards)
 
@@ -557,6 +596,9 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
+
+	panic(1)
+
 	if blockchain.stopped {
 		blockchain.wgSnapshot.Wait()
 		select {
@@ -592,6 +634,10 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	blockchain.appDB.FlushValidators()
 	blockchain.appDB.SaveBlocksTime()
 	blockchain.appDB.SaveVersions()
+	blockchain.appDB.SaveEmission()
+	// todo
+	//blockchain.appDB.SaveReward()
+	//blockchain.appDB.SavePrice()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}
