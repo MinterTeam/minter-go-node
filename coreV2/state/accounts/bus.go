@@ -16,3 +16,7 @@ func NewBus(accounts *Accounts) *Bus {
 func (b *Bus) AddBalance(address types.Address, coin types.CoinID, value *big.Int) {
 	b.accounts.AddBalance(address, coin, value)
 }
+
+func (b *Bus) IsX3Mining(address types.Address, height uint64) bool {
+	return b.accounts.IsX3Mining(address, height)
+}

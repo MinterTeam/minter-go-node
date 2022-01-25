@@ -13,6 +13,9 @@ type Model struct {
 	Nonce        uint64
 	MultisigData Multisig
 
+	// forward compatible
+	IncreasedRewardsUpToBlock []uint64 `rlp:"tail"`
+
 	address  types.Address
 	coins    []types.CoinID
 	balances map[types.CoinID]*big.Int
@@ -178,4 +181,25 @@ func (model *Model) Multisig() Multisig {
 	defer model.lock.RUnlock()
 
 	return model.MultisigData
+}
+
+func (model *Model) getIncreasedRewardsUpToBlock() uint64 {
+	model.lock.RLock()
+	defer model.lock.RUnlock()
+
+	if len(model.IncreasedRewardsUpToBlock) == 0 {
+		return 0
+	}
+
+	return model.IncreasedRewardsUpToBlock[0]
+}
+
+func (model *Model) setIncreasedRewardsUpToBlock(h uint64) {
+	model.lock.Lock()
+	defer model.lock.Unlock()
+
+	model.IncreasedRewardsUpToBlock = []uint64{h}
+
+	model.isDirty = true
+	model.markDirty(model.address)
 }

@@ -228,7 +228,7 @@ func TestValidators_PayRewardsStake(t *testing.T) {
 	candidatesS.RecalculateStakes(1)
 	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
 
-	validators.PayRewardsV3()
+	validators.PayRewardsV3(0)
 	candidatesS.RecalculateStakesV2(1)
 
 	d1 := candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String()
@@ -302,7 +302,7 @@ func TestValidators_PayRewardsStakeAndUpdate(t *testing.T) {
 		BipValue: "500000000000000000000",
 	}})
 
-	validators.PayRewardsV3()
+	validators.PayRewardsV3(0)
 	candidatesS.RecalculateStakesV2(1)
 
 	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String() != "1500000000000000000072" {

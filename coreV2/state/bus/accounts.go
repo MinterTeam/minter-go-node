@@ -7,4 +7,5 @@ import (
 
 type Accounts interface {
 	AddBalance(types.Address, types.CoinID, *big.Int)
+	IsX3Mining(addr types.Address, height uint64) bool
 }
