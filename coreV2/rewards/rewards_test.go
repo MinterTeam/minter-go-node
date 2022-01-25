@@ -20,7 +20,9 @@ type Results struct {
 }
 
 func NewFrom0Block() *Reward {
-	return &Reward{startHeight: 0}
+	reward := NewReward()
+	reward.startHeight = 0
+	return reward
 }
 
 func TestGetRewardForBlock(t *testing.T) {

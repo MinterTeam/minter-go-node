@@ -3,6 +3,7 @@ package appdb
 import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	"math/big"
 	"sync"
@@ -17,7 +18,6 @@ import (
 
 const (
 	pricePath       = "price"
-	rewardPath      = "reward"
 	emissionPath    = "emission"
 	hashPath        = "hash"
 	heightPath      = "height"
@@ -46,8 +46,9 @@ type AppDB struct {
 	isDirtyVersions bool
 	versions        []*Version
 	emission        *big.Int
-	price           *TimePrice
-	reward          *big.Int
+
+	isDirtyPrice bool
+	price        *TimePrice
 }
 
 // Close closes db connection, panics on error
@@ -404,21 +405,25 @@ func NewAppDB(homeDir string, cfg *config.Config) *AppDB {
 }
 
 func (appDB *AppDB) SetEmission(emission *big.Int) {
-	appDB.WG.Wait()
 	appDB.emission = emission
 }
+
 func (appDB *AppDB) SaveEmission() {
+	appDB.WG.Wait()
 	if err := appDB.db.Set([]byte(emissionPath), appDB.emission.Bytes()); err != nil {
 		panic(err)
 	}
 }
 
 func (appDB *AppDB) Emission() (emission *big.Int) {
-	// todo: mutex
 	if appDB.emission == nil {
 		result, err := appDB.db.Get([]byte(emissionPath))
 		if err != nil {
 			panic(err)
+		}
+
+		if len(result) == 0 {
+			return nil
 		}
 
 		appDB.emission = big.NewInt(0).SetBytes(result)
@@ -427,51 +432,73 @@ func (appDB *AppDB) Emission() (emission *big.Int) {
 }
 
 type TimePrice struct {
-	T      time.Time
+	T      int64
 	R0, R1 *big.Int
 }
 
-func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int) {
-	// calc new reward
-	_, reserve0, reserve1 := appDB.GetPrice()
-	// update data
-	tp := &TimePrice{
-		T:  t,
-		R0: r0, // BIP
-		R1: r1, // USDTE
-	}
-	appDB.price = tp
+func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) *big.Int {
+	appDB.SetPrice(t, r0, r1)
 
-	var diff = big.NewInt(0)
-	var reward *big.Int
+	_, reserve0, reserve1 := appDB.GetPrice()
+
 	if big.NewRat(1, 1).SetFrac(r0, r1).Cmp(big.NewRat(1, 1).SetFrac(reserve0, reserve1)) == 1 {
 		//100 / 10 = 10
 		//50 / 20 = 2.5
 		//цена выросла
 		//10 / 2.5 = 4 раза
-		diff = big.NewInt(0).Div(big.NewInt(0).Mul(reserve0, r1), big.NewInt(0).Mul(reserve1, r0))
-		reward = big.NewInt(0).Add(appDB.GetReward(), diff)
-	} else {
-		// 100 / 10 = 10
-		// 150 / 5 = 30
-		// цена бип упала
-		// 30 / 10 = 3
-		diff = big.NewInt(0).Div(big.NewInt(0).Mul(reserve1, r0), big.NewInt(0).Mul(reserve0, r1))
-		reward = big.NewInt(0).Sub(appDB.GetReward(), diff)
+		return big.NewInt(0).Div(big.NewInt(0).Mul(reserve0, r1), big.NewInt(0).Mul(reserve1, r0))
 	}
-	appDB.reward = reward
 
-	panic(1)
+	// 100 / 10 = 10
+	// 150 / 5 = 30
+	// цена бип упала
+	// 30 / 10 = 3
+	diff := big.NewInt(0).Div(big.NewInt(0).Mul(reserve1, r0), big.NewInt(0).Mul(reserve0, r1))
+	return big.NewInt(0).Neg(diff)
+}
+
+func (appDB *AppDB) SetPrice(t time.Time, r0 *big.Int, r1 *big.Int) {
+	appDB.price = &TimePrice{
+		T:  int64(t.Nanosecond()),
+		R0: r0, // BIP
+		R1: r1, // USDTE
+	}
+	appDB.isDirtyPrice = true
+}
+func (appDB *AppDB) SavePrice() {
+	appDB.WG.Wait()
+
+	if appDB.isDirtyPrice == false {
+		return
+	}
+
+	bytes, err := rlp.EncodeToBytes(appDB.price)
+	if err != nil {
+		panic(err)
+	}
+
+	err = appDB.db.Set([]byte(pricePath), bytes)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
-	// todo: load
 	if appDB.price == nil {
-		return time.Time{}, nil, nil
-	}
-	return appDB.price.T, appDB.price.R0, appDB.price.R1
-}
+		result, err := appDB.db.Get([]byte(pricePath))
+		if err != nil {
+			panic(err)
+		}
+		if len(result) == 0 {
+			return time.Unix(0, 0), nil, nil
+		}
 
-func (appDB *AppDB) GetReward() *big.Int {
-	return appDB.reward
+		appDB.price = &TimePrice{}
+
+		err = rlp.DecodeBytes(result, appDB.price)
+		if err != nil {
+			panic(err)
+		}
+	}
+	return time.Unix(0, appDB.price.T), appDB.price.R0, appDB.price.R1
 }

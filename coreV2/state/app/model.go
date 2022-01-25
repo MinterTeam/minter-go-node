@@ -9,6 +9,8 @@ type Model struct {
 	TotalSlashed *big.Int
 	CoinsCount   uint32
 	MaxGas       uint64
+	More         []*big.Int `rlp:"tail"`
+	//Reward       []*big.Int
 
 	markDirty func()
 	mx        sync.RWMutex
@@ -29,6 +31,29 @@ func (model *Model) setMaxGas(maxGas uint64) {
 		model.markDirty()
 	}
 	model.MaxGas = maxGas
+}
+
+func (model *Model) reward() *big.Int {
+	model.mx.RLock()
+	defer model.mx.RUnlock()
+
+	if len(model.More) == 0 {
+		return big.NewInt(0)
+	}
+
+	return model.More[0]
+}
+
+func (model *Model) setReward(reward *big.Int) {
+	model.mx.Lock()
+	defer model.mx.Unlock()
+	if len(model.More) == 0 {
+		model.More = make([]*big.Int, 1, 1)
+	}
+
+	model.More[0] = reward
+
+	model.markDirty()
 }
 
 func (model *Model) getTotalSlashed() *big.Int {

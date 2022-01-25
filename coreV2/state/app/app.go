@@ -178,3 +178,31 @@ func (a *App) Export(state *types.AppState) {
 	state.MaxGas = a.GetMaxGas()
 	state.TotalSlashed = a.GetTotalSlashed().String()
 }
+
+func (a *App) IncrementReward(diff *big.Int) {
+	if diff.Sign() == 0 {
+		return
+	}
+	b1000 := big.NewInt(1000)
+	model := a.getOrNew()
+	curRew := model.reward()
+
+	if diff.Sign() == 1 && curRew.Cmp(b1000) == 1 {
+		return
+	}
+	if diff.Sign() == -1 && curRew.Sign() == 0 {
+		return
+	}
+
+	reward := big.NewInt(0).Add(curRew, diff)
+	if reward.Cmp(b1000) == 1 {
+		reward.Set(b1000)
+	} else if reward.Sign() == -1 {
+		reward.SetInt64(0)
+	}
+	model.setReward(reward)
+}
+
+func (a *App) Reward() *big.Int {
+	return a.getOrNew().reward()
+}
