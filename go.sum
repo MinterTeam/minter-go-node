@@ -75,8 +75,8 @@ github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXY
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Microsoft/go-winio v0.5.0 h1:Elr9Wn+sGKPlkaBvwu4mTrxtmOp3F3yV9qhaHbXGjwU=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
-github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220119134142-367bbbf56e67 h1:SHzAsVimjYD9GgS3fKmacRRxrItwWB2DvBUQA+OPHQU=
-github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220119134142-367bbbf56e67/go.mod h1:kSjFnXZ52XTOaxj4+nbahfMsAt8GsEIc9DSMzOlfALI=
+github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220125204228-d5ebd9ecf966 h1:owXNkDeUNq/HGaoUqcnrJHOfcN5b9Ph+sinN8H1S/c8=
+github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220125204228-d5ebd9ecf966/go.mod h1:pNRCr3/fm/3EKQ0frQaHOEAV/TWBmHEaxPt8oaFwimw=
 github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3 h1:4T/mn9nqyHDMrNvM/aV8CQaz8fZJNrC6zmSw3G4q7Do=
 github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3/go.mod h1:/7EDAw02rD7GT8syC317cX9ZhZTCdaFVvYjU8W+yJSs=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
@@ -791,7 +791,6 @@ github.com/prometheus/procfs v0.7.3 h1:4jVXhlkAyzOScmCkXBTOLRLTz8EeU+eyjrwB/EPq0
 github.com/prometheus/procfs v0.7.3/go.mod h1:cz+aTbrPOrUb4q7XlbU9ygM+/jj0fzG6c1xBZuNvfVA=
 github.com/prometheus/tsdb v0.6.2-0.20190402121629-4f204dcbc150/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
 github.com/prometheus/tsdb v0.7.1/go.mod h1:qhTCs0VvXwvX/y3TZrWD7rabWM+ijKTux40TwIPHuXU=
-github.com/rakyll/statik v0.1.7 h1:OF3QCZUuyPxuGEP7B4ypUa7sB/iHtqOTDYZXGM8KOdQ=
 github.com/rakyll/statik v0.1.7/go.mod h1:AlZONWzMtEnMs7W4e/1LURLiI49pIMmp6V9Unghqrcc=
 github.com/rcrowley/go-metrics v0.0.0-20181016184325-3113b8401b8a/go.mod h1:bCqnVzQkZxMG4s8nGwiZ5l3QUCyqpo9Y+/ZMZ9VjZe4=
 github.com/rcrowley/go-metrics v0.0.0-20200313005456-10cdbea86bc0 h1:MkV+77GLUNo5oJ0jf870itWm3D0Sjh7+Za9gazKc5LQ=
