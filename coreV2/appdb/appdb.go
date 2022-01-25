@@ -45,6 +45,8 @@ type AppDB struct {
 
 	isDirtyVersions bool
 	versions        []*Version
+
+	isDirtyEmission bool
 	emission        *big.Int
 
 	isDirtyPrice bool
@@ -409,6 +411,10 @@ func (appDB *AppDB) SetEmission(emission *big.Int) {
 }
 
 func (appDB *AppDB) SaveEmission() {
+	if appDB.isDirtyPrice == false {
+		return
+	}
+
 	appDB.WG.Wait()
 	if err := appDB.db.Set([]byte(emissionPath), appDB.emission.Bytes()); err != nil {
 		panic(err)
@@ -466,11 +472,11 @@ func (appDB *AppDB) SetPrice(t time.Time, r0 *big.Int, r1 *big.Int) {
 	appDB.isDirtyPrice = true
 }
 func (appDB *AppDB) SavePrice() {
-	appDB.WG.Wait()
-
 	if appDB.isDirtyPrice == false {
 		return
 	}
+
+	appDB.WG.Wait()
 
 	bytes, err := rlp.EncodeToBytes(appDB.price)
 	if err != nil {

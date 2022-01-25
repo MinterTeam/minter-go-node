@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.17
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220119134142-367bbbf56e67
+	github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220125204228-d5ebd9ecf966
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/cosmos/cosmos-sdk v0.44.5
@@ -18,7 +18,6 @@ require (
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.11.0
-	github.com/rakyll/statik v0.1.7
 	github.com/spf13/cobra v1.2.1
 	github.com/spf13/viper v1.9.0
 	github.com/stretchr/testify v1.7.0

@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -132,11 +131,9 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 					Version: e.Version,
 				}
 			case *events.UpdatedBlockRewardPriceEvent:
-				// todo
-				log.Println(e.Type(), e.Value)
-				//m = &pb.UpdatedBlockRewardPriceEvent{
-				//	Value: e.Value,
-				//}
+				m = &pb.UpdatedBlockRewardPriceEvent{
+					Value: uint64(e.Value),
+				}
 			case *events.UpdateCommissionsEvent:
 				m = &pb.UpdateCommissionsEvent{
 					Coin:                    e.Coin,

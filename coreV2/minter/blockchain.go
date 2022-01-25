@@ -259,8 +259,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 	height := uint64(req.Header.Height)
 
-	log.Println(blockchain.CurrentState().Swap().GetSwapper(0, types.USDTID).Reserves())
-
 	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
 		t, _, _ := blockchain.appDB.GetPrice()
 		if t.Sub(req.Header.Time) > time.Hour*24 && req.Header.Time.Hour() > 12 {
@@ -598,6 +596,11 @@ func (blockchain *Blockchain) CheckTx(req abciTypes.RequestCheckTx) abciTypes.Re
 
 // Commit the state and return the application Merkle root hash
 func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
+
+	// todo: FIXME
+	//log.Println("SLEEP")
+	//time.Sleep(time.Hour)
+
 	if blockchain.stopped {
 		blockchain.wgSnapshot.Wait()
 		select {
@@ -634,9 +637,7 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 	blockchain.appDB.SaveBlocksTime()
 	blockchain.appDB.SaveVersions()
 	blockchain.appDB.SaveEmission()
-	// todo
-	//blockchain.appDB.SaveReward()
-	//blockchain.appDB.SavePrice()
+	blockchain.appDB.SavePrice()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}

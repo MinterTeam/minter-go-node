@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	_ "github.com/MinterTeam/node-grpc-gateway/statik"
+	"github.com/MinterTeam/node-grpc-gateway/docs"
 	kit_log "github.com/go-kit/kit/log"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -15,7 +15,6 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/rakyll/statik/fs"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"golang.org/x/sync/errgroup"
@@ -146,14 +145,8 @@ func preflightHandler(w http.ResponseWriter, _ *http.Request) {
 func serveOpenAPI(prefix string, mux *http.ServeMux) error {
 	_ = mime.AddExtensionType(".svg", "image/svg+xml")
 
-	statikFS, err := fs.New()
-	if err != nil {
-		return err
-	}
-
 	// Expose files in static on <host>/v2/openapi-ui
-	fileServer := http.FileServer(statikFS)
-	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
+	mux.Handle(prefix, http.StripPrefix(prefix, http.FileServer(http.FS(docs.FS))))
 	return nil
 }
 
