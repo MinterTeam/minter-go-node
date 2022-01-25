@@ -9,8 +9,9 @@ type Model struct {
 	TotalSlashed *big.Int
 	CoinsCount   uint32
 	MaxGas       uint64
-	More         []*big.Int `rlp:"tail"`
-	//Reward       []*big.Int
+
+	// forward compatible
+	Reward []*big.Int `rlp:"tail"`
 
 	markDirty func()
 	mx        sync.RWMutex
@@ -37,21 +38,18 @@ func (model *Model) reward() *big.Int {
 	model.mx.RLock()
 	defer model.mx.RUnlock()
 
-	if len(model.More) == 0 {
+	if len(model.Reward) == 0 {
 		return big.NewInt(0)
 	}
 
-	return model.More[0]
+	return model.Reward[0]
 }
 
 func (model *Model) setReward(reward *big.Int) {
 	model.mx.Lock()
 	defer model.mx.Unlock()
-	if len(model.More) == 0 {
-		model.More = make([]*big.Int, 1, 1)
-	}
 
-	model.More[0] = reward
+	model.Reward = []*big.Int{reward}
 
 	model.markDirty()
 }
