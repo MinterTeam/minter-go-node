@@ -439,9 +439,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	fullRewards := big.NewInt(0).Add(reward, x2rewards)
 	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), fullRewards)
-	blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), fullRewards))
 
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
+		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), fullRewards))
 		if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), fullRewards); diff.Sign() == 1 {
 			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
 		}
