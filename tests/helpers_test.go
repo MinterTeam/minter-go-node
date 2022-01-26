@@ -57,12 +57,13 @@ func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 // SendBeginBlock sends BeginBlock message to given Blockchain instance
 func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginBlock {
 	var voteInfos []tmTypes.VoteInfo
-	for _, validator := range app.CurrentState().Validators().GetValidators() {
+	validators := app.CurrentState().Validators().GetValidators()
+	for _, validator := range validators {
 		address := validator.GetAddress()
 		voteInfos = append(voteInfos, tmTypes.VoteInfo{
 			Validator: tmTypes.Validator{
 				Address: address[:],
-				Power:   0,
+				//Power:   int64(100 / len(validators)),
 			},
 			SignedLastBlock: true,
 		})

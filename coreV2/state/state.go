@@ -435,6 +435,12 @@ func (s *State) Import(state types.AppState, version string) error {
 		}
 	}
 
+	for _, vote := range state.UpdateVotes {
+		for _, pubkey := range vote.Votes {
+			s.Updates.AddVote(vote.Height, pubkey, vote.Version)
+		}
+	}
+
 	return nil
 }
 
