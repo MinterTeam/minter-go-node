@@ -378,7 +378,7 @@ func (v *Validators) PayRewards() {
 }
 
 // PayRewardsV3 distributes accumulated rewards between validator, delegators, DAO and developers addresses
-func (v *Validators) PayRewardsV3(height uint64) (moreRewards *big.Int) {
+func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big.Int) {
 	moreRewards = big.NewInt(0)
 
 	vals := v.GetValidators()
@@ -461,9 +461,14 @@ func (v *Validators) PayRewardsV3(height uint64) (moreRewards *big.Int) {
 
 				remainder.Sub(remainder, reward)
 
+				rewardForBlock := v.bus.App().Reward()
 				safeRewardVariable := big.NewInt(0).Set(reward)
 				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
-					x2reward := big.NewInt(0).Add(reward, reward)
+					x2reward := big.NewInt(0).Mul(rewardForBlock, big.NewInt(period))
+					x2reward.Mul(x2reward, stake.BipValue)
+					x2reward.Div(x2reward, validator.GetTotalBipStake())
+					x2reward.Mul(x2reward, big.NewInt(2))
+
 					moreRewards.Add(moreRewards, x2reward)
 					safeRewardVariable.Add(reward, x2reward)
 				}
