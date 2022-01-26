@@ -266,13 +266,13 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 			reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, types.USDTID).Reserves()
 			diff := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.IncrementReward(diff)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().Int64()})
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().String()})
 		}
 	} else if h == height {
 		reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, types.USDTID).Reserves()
 		blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
 		blockchain.stateDeliver.App.IncrementReward(blockchain.rewardsCounter.GetRewardForBlock(height))
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().Int64()})
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().String()})
 	}
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
@@ -380,6 +380,18 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	blockchain.calculatePowers(vals)
 
+	{
+		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
+			blockchain.appDB.AddVersion(v, height)
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
+				Version: v,
+			})
+			blockchain.grace.AddGracePeriods(graceForUpdate(height))
+			blockchain.executor = GetExecutor(v)
+		}
+		blockchain.stateDeliver.Updates.Delete(height)
+	}
+
 	// accumulate rewards
 	var reward = big.NewInt(0)
 	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
@@ -391,6 +403,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		}
 	} else if h == height {
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height) // or reward = blockchain.stateDeliver.App.Reward()
+		blockchain.stateDeliver.App.IncrementReward(reward)
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: reward.String()})
 		emission := blockchain.rewardsCounter.GetBeforeBlock(height)
 		emission.Add(emission, reward)
 		blockchain.appDB.SetEmission(emission)
@@ -438,14 +452,16 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	fullRewards := big.NewInt(0).Add(reward, x2rewards)
-	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), fullRewards)
 
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
 		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), fullRewards))
 		if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), fullRewards); diff.Sign() == 1 {
 			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
+			fullRewards.Add(fullRewards, diff)
 		}
 	}
+
+	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), fullRewards)
 
 	{
 		var updateCommissionsBlockPrices []byte
@@ -507,18 +523,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)
-	}
-
-	{
-		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
-			blockchain.appDB.AddVersion(v, height)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
-				Version: v,
-			})
-			blockchain.grace.AddGracePeriods(graceForUpdate(height))
-			blockchain.executor = GetExecutor(v)
-		}
-		blockchain.stateDeliver.Updates.Delete(height)
 	}
 
 	hasChangedPublicKeys := false

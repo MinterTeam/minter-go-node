@@ -522,7 +522,7 @@ func (ue *RemoveCandidateEvent) convert(pubKeyID uint16) compact {
 }
 
 type UpdatedBlockRewardPriceEvent struct {
-	Value int64 `json:"value"`
+	Value string `json:"value"`
 }
 
 func (pe *UpdatedBlockRewardPriceEvent) Type() string {

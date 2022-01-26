@@ -132,7 +132,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 				}
 			case *events.UpdatedBlockRewardPriceEvent:
 				m = &pb.UpdatedBlockRewardPriceEvent{
-					Value: uint64(e.Value),
+					Value: e.Value,
 				}
 			case *events.UpdateCommissionsEvent:
 				m = &pb.UpdateCommissionsEvent{

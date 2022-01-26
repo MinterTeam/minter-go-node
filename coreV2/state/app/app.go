@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -184,7 +185,7 @@ func (a *App) IncrementReward(diff *big.Int) {
 	if diff.Sign() == 0 {
 		return
 	}
-	b1000 := big.NewInt(1000)
+	b1000 := helpers.BipToPip(big.NewInt(1000))
 	model := a.getOrNew()
 	curRew := model.reward()
 
