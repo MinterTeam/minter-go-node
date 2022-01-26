@@ -262,7 +262,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	if h := blockchain.appDB.GetVersionHeight(v3); h > 0 && height > h {
 		t, _, _ := blockchain.appDB.GetPrice()
-		if t.Sub(req.Header.Time) > time.Hour*24 && req.Header.Time.Hour() > 12 {
+		if req.Header.Time.Sub(t) > time.Hour*24*3 && req.Header.Time.Hour() > 12 {
 			reserve0, reserve1 := blockchain.CurrentState().Swap().GetSwapper(0, types.USDTID).Reserves()
 			diff := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.IncrementReward(diff)
@@ -380,18 +380,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	blockchain.calculatePowers(vals)
 
-	{
-		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
-			blockchain.appDB.AddVersion(v, height)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
-				Version: v,
-			})
-			blockchain.grace.AddGracePeriods(graceForUpdate(height))
-			blockchain.executor = GetExecutor(v)
-		}
-		blockchain.stateDeliver.Updates.Delete(height)
-	}
-
 	// accumulate rewards
 	var reward = big.NewInt(0)
 	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
@@ -403,8 +391,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		}
 	} else if h == height {
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height) // or reward = blockchain.stateDeliver.App.Reward()
-		blockchain.stateDeliver.App.IncrementReward(reward)
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: reward.String()})
 		emission := blockchain.rewardsCounter.GetBeforeBlock(height)
 		emission.Add(emission, reward)
 		blockchain.appDB.SetEmission(emission)
@@ -523,6 +509,18 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)
+	}
+
+	{
+		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
+			blockchain.appDB.AddVersion(v, height)
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
+				Version: v,
+			})
+			blockchain.grace.AddGracePeriods(graceForUpdate(height))
+			blockchain.executor = GetExecutor(v)
+		}
+		blockchain.stateDeliver.Updates.Delete(height)
 	}
 
 	hasChangedPublicKeys := false

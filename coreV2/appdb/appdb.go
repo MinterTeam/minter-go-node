@@ -328,7 +328,7 @@ func (appDB *AppDB) GetVersionName(height uint64) string {
 func (appDB *AppDB) GetVersionHeight(name string) uint64 {
 	for _, version := range appDB.GetVersions() {
 		if version.Name == name {
-			return version.Height
+			return version.Height + 1
 		}
 	}
 
@@ -438,36 +438,28 @@ func (appDB *AppDB) Emission() (emission *big.Int) {
 }
 
 type TimePrice struct {
-	T      int64
+	T      uint64
 	R0, R1 *big.Int
 }
 
 func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) *big.Int {
-	appDB.SetPrice(t, r0, r1)
-
 	_, reserve0, reserve1 := appDB.GetPrice()
+	defer appDB.SetPrice(t, r0, r1)
 
-	if big.NewRat(1, 1).SetFrac(r0, r1).Cmp(big.NewRat(1, 1).SetFrac(reserve0, reserve1)) == 1 {
-		//100 / 10 = 10
-		//50 / 20 = 2.5
-		//цена выросла
-		//10 / 2.5 = 4 раза
-		return big.NewInt(0).Div(big.NewInt(0).Mul(reserve0, r1), big.NewInt(0).Mul(reserve1, r0))
-	}
+	fOld := big.NewRat(1, 1).SetFrac(reserve1, reserve0)
+	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
 
-	// 100 / 10 = 10
-	// 150 / 5 = 30
-	// цена бип упала
-	// 30 / 10 = 3
-	diff := big.NewInt(0).Div(big.NewInt(0).Mul(reserve1, r0), big.NewInt(0).Mul(reserve0, r1))
-	return big.NewInt(0).Neg(diff)
+	rat := new(big.Rat).Mul(new(big.Rat).Quo(new(big.Rat).Sub(fNew, fOld), fOld), new(big.Rat).SetInt64(100))
+	diff := big.NewInt(0).Div(new(big.Int).Mul(rat.Num(), big.NewInt(1e18)), rat.Denom())
+
+	return diff
 }
 
-func (appDB *AppDB) SetPrice(t time.Time, r0 *big.Int, r1 *big.Int) {
+func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int) {
 	appDB.price = &TimePrice{
-		T:  int64(t.Nanosecond()),
-		R0: r0, // BIP
-		R1: r1, // USDTE
+		T:  uint64(t.Nanosecond()),
+		R0: big.NewInt(0).Set(r0), // BIP
+		R1: big.NewInt(0).Set(r1), // USDTE
 	}
 	appDB.isDirtyPrice = true
 }
@@ -506,5 +498,5 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
 			panic(err)
 		}
 	}
-	return time.Unix(0, appDB.price.T), appDB.price.R0, appDB.price.R1
+	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1
 }

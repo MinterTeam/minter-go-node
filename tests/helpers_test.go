@@ -55,7 +55,7 @@ func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 }
 
 // SendBeginBlock sends BeginBlock message to given Blockchain instance
-func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginBlock {
+func SendBeginBlock(app *minter.Blockchain, height int64, times ...time.Time) tmTypes.ResponseBeginBlock {
 	var voteInfos []tmTypes.VoteInfo
 	validators := app.CurrentState().Validators().GetValidators()
 	for _, validator := range validators {
@@ -68,13 +68,18 @@ func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginB
 			SignedLastBlock: true,
 		})
 	}
+
+	var t time.Time
+	if len(times) == 1 {
+		t = times[0]
+	}
 	return app.BeginBlock(tmTypes.RequestBeginBlock{
 		Hash: nil,
 		Header: tmTypes1.Header{
 			Version:            version.Consensus{},
 			ChainID:            "",
 			Height:             height,
-			Time:               time.Time{},
+			Time:               t,
 			LastBlockId:        tmTypes1.BlockID{},
 			LastCommitHash:     nil,
 			DataHash:           nil,
