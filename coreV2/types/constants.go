@@ -15,15 +15,19 @@ const unbondPeriod = 518400
 func GetUnbondPeriod() uint64 {
 	return GetUnbondPeriodWithChain(CurrentChainID)
 }
+func GetMovePeriod() uint64 {
+	return GetMovePeriodWithChain(CurrentChainID)
+}
 
 func GetExpireOrdersPeriod() uint64 {
 	return GetExpireOrdersPeriodWithChain(CurrentChainID)
 }
 
-const mounth = week * 4   // 1m
-const week = day * 7      // 1w
-const day = 8640 * 2      // 1d
-const m15 = 518400 / 2920 // 15m
+const mounth = week * 4    // 1m
+const week = day * 7       // 1w
+const weekCorrect = 134400 // 1w
+const day = 8640 * 2       // 1d
+const m15 = 518400 / 2920  // 15m
 
 func GetExpireOrdersPeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
@@ -37,6 +41,12 @@ func GetUnbondPeriodWithChain(chain ChainID) uint64 {
 		return m15
 	}
 	return 518400
+}
+func GetMovePeriodWithChain(chain ChainID) uint64 {
+	if chain == ChainTestnet {
+		return m15 / 3
+	}
+	return weekCorrect
 }
 
 const jailPeriod = day

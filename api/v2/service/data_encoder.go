@@ -365,6 +365,20 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 		m = &pb.RemoveLimitOrderData{
 			Id: uint64(d.ID),
 		}
+	case transaction.TypeMoveStake:
+		d := data.(*transaction.MoveStakeData)
+		m = &pb.MoveStakeData{
+			FromPubKey: d.FromPubKey.String(),
+			ToPubKey:   d.ToPubKey.String(),
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Value: d.Value.String(),
+		}
+	case transaction.TypeActivateIncreasedRewards:
+		//d := data.(*transaction.ActivateIncreasedRewardsData)
+		m = &pb.ActivateIncreasedRewardsData{}
 	default:
 		return nil, errors.New("unknown tx type")
 	}

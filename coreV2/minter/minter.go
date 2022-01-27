@@ -181,6 +181,12 @@ func (blockchain *Blockchain) UpdateVersions() []*appdb.Version {
 
 	return blockchain.appDB.GetVersions()
 }
+func (blockchain *Blockchain) GetVersionHeight(v string) uint64 {
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+
+	return blockchain.appDB.GetVersionHeight(v)
+}
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height
 func (blockchain *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
