@@ -243,7 +243,7 @@ func TestReward_Update_Down(t *testing.T) {
 				},
 				{
 					Coin:  uint64(types.USDTID),
-					Value: helpers.StringToBigInt("1000000000000000000000000").String(),
+					Value: helpers.StringToBigInt("10000000000000000000000000").String(),
 				},
 			},
 			Nonce:        0,
@@ -298,7 +298,7 @@ func TestReward_Update_Down(t *testing.T) {
 			ID:           types.USDTID,
 			Name:         "USDT (Tether USD, Ethereum)",
 			Symbol:       types.StrToCoinBaseSymbol("USDTE"),
-			Volume:       "11000000000000000000000000",
+			Volume:       "20000000000000000000000000",
 			Crr:          0,
 			Reserve:      "0",
 			MaxSupply:    "10000000000000000000000000",
@@ -359,4 +359,30 @@ func TestReward_Update_Down(t *testing.T) {
 
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.GetEventsDB().LoadEvents(13)[0])
+
+	{
+		SendBeginBlock(app, 14) // send BeginBlock
+
+		tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV230{
+			Coins:             []types.CoinID{types.USDTID, 0},
+			ValueToSell:       helpers.StringToBigInt("5000000000000000000000000"),
+			MinimumValueToBuy: helpers.StringToBigInt("1"),
+		}, 0)
+
+		response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+		// check that result is OK
+		if response.Code != code.OK {
+			t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+		}
+
+		SendEndBlock(app, 14) // send EndBlock
+		SendCommit(app)       // send Commit
+	}
+
+	SendBeginBlock(app, 15, time.Unix(1643640154, 0)) // send BeginBlock
+	SendEndBlock(app, 15)                             // send EndBlock
+	SendCommit(app)                                   // send Commit
+
+	t.Log(app.GetEventsDB().LoadEvents(15)[0])
 }
