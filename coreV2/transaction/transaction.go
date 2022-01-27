@@ -100,10 +100,11 @@ const (
 
 	gasRedeemCheck = 20
 
-	gasDeclareCandidacy = 10
-	gasDelegate         = 6
-	gasUnbond           = 6
-	gasMoveStake        = 6
+	gasDeclareCandidacy         = 10
+	gasDelegate                 = 6
+	gasUnbond                   = 6
+	gasMoveStake                = 6
+	gasActivateIncreasedRewards = 2
 
 	gasSetCandidateOnline      = 1
 	gasSetCandidateOffline     = 1
