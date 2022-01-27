@@ -22,6 +22,7 @@ type RApp interface {
 	GetTotalSlashed() *big.Int
 	GetCoinsCount() uint32
 	GetNextCoinID() types.CoinID
+	Reward() *big.Int
 }
 
 type App struct {

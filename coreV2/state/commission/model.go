@@ -86,6 +86,20 @@ func (d *Price) RemoveLimitOrderPrice() *big.Int {
 	return d.RemoveLiquidity
 }
 
+func (d *Price) MoveStakePrice() *big.Int {
+	if len(d.More) > 3 {
+		return d.More[3]
+	}
+	return d.Unbond
+}
+
+func (d *Price) ActivateIncreasedRewardsPrice() *big.Int {
+	if len(d.More) > 4 {
+		return d.More[4]
+	}
+	return d.Unbond
+}
+
 func Decode(s string) *Price {
 	var p Price
 	err := rlp.DecodeBytes([]byte(s), &p)

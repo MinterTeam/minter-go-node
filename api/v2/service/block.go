@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
 	"strings"
 	"time"
 
@@ -211,7 +212,19 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockField_size:
 			response.Size = uint64(block.Block.Size())
 		case pb.BlockField_block_reward:
-			response.BlockReward = s.rewards.GetRewardForBlock(uint64(height)).String()
+			if h := s.blockchain.GetVersionHeight(minter.V3); req.Height < h {
+				response.BlockReward = s.rewards.GetRewardForBlock(uint64(height)).String()
+				continue
+			}
+
+			state, err := s.blockchain.GetStateForHeight(req.Height)
+			if err != nil {
+				response.BlockReward = err.Error()
+				//return nil, status.Error(codes.NotFound, err.Error())
+				continue
+			}
+
+			response.BlockReward = state.App().Reward().String()
 		case pb.BlockField_transactions:
 			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
 			if err != nil {

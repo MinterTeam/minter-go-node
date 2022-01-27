@@ -28,42 +28,43 @@ func (t TxType) UInt64() uint64 {
 }
 
 const (
-	TypeSend                    TxType = 0x01
-	TypeSellCoin                TxType = 0x02
-	TypeSellAllCoin             TxType = 0x03
-	TypeBuyCoin                 TxType = 0x04
-	TypeCreateCoin              TxType = 0x05
-	TypeDeclareCandidacy        TxType = 0x06
-	TypeDelegate                TxType = 0x07
-	TypeUnbond                  TxType = 0x08
-	TypeRedeemCheck             TxType = 0x09
-	TypeSetCandidateOnline      TxType = 0x0A
-	TypeSetCandidateOffline     TxType = 0x0B
-	TypeCreateMultisig          TxType = 0x0C
-	TypeMultisend               TxType = 0x0D
-	TypeEditCandidate           TxType = 0x0E
-	TypeSetHaltBlock            TxType = 0x0F
-	TypeRecreateCoin            TxType = 0x10
-	TypeEditCoinOwner           TxType = 0x11
-	TypeEditMultisig            TxType = 0x12
-	TypePriceVote               TxType = 0x13
-	TypeEditCandidatePublicKey  TxType = 0x14
-	TypeAddLiquidity            TxType = 0x15
-	TypeRemoveLiquidity         TxType = 0x16
-	TypeSellSwapPool            TxType = 0x17
-	TypeBuySwapPool             TxType = 0x18
-	TypeSellAllSwapPool         TxType = 0x19
-	TypeEditCandidateCommission TxType = 0x1A
-	TypeMoveStake               TxType = 0x1B
-	TypeMintToken               TxType = 0x1C
-	TypeBurnToken               TxType = 0x1D
-	TypeCreateToken             TxType = 0x1E
-	TypeRecreateToken           TxType = 0x1F
-	TypeVoteCommission          TxType = 0x20
-	TypeVoteUpdate              TxType = 0x21
-	TypeCreateSwapPool          TxType = 0x22
-	TypeAddLimitOrder           TxType = 0x23
-	TypeRemoveLimitOrder        TxType = 0x24
+	TypeSend                     TxType = 0x01
+	TypeSellCoin                 TxType = 0x02
+	TypeSellAllCoin              TxType = 0x03
+	TypeBuyCoin                  TxType = 0x04
+	TypeCreateCoin               TxType = 0x05
+	TypeDeclareCandidacy         TxType = 0x06
+	TypeDelegate                 TxType = 0x07
+	TypeUnbond                   TxType = 0x08
+	TypeRedeemCheck              TxType = 0x09
+	TypeSetCandidateOnline       TxType = 0x0A
+	TypeSetCandidateOffline      TxType = 0x0B
+	TypeCreateMultisig           TxType = 0x0C
+	TypeMultisend                TxType = 0x0D
+	TypeEditCandidate            TxType = 0x0E
+	TypeSetHaltBlock             TxType = 0x0F
+	TypeRecreateCoin             TxType = 0x10
+	TypeEditCoinOwner            TxType = 0x11
+	TypeEditMultisig             TxType = 0x12
+	TypePriceVote                TxType = 0x13
+	TypeEditCandidatePublicKey   TxType = 0x14
+	TypeAddLiquidity             TxType = 0x15
+	TypeRemoveLiquidity          TxType = 0x16
+	TypeSellSwapPool             TxType = 0x17
+	TypeBuySwapPool              TxType = 0x18
+	TypeSellAllSwapPool          TxType = 0x19
+	TypeEditCandidateCommission  TxType = 0x1A
+	TypeMoveStake                TxType = 0x1B
+	TypeMintToken                TxType = 0x1C
+	TypeBurnToken                TxType = 0x1D
+	TypeCreateToken              TxType = 0x1E
+	TypeRecreateToken            TxType = 0x1F
+	TypeVoteCommission           TxType = 0x20
+	TypeVoteUpdate               TxType = 0x21
+	TypeCreateSwapPool           TxType = 0x22
+	TypeAddLimitOrder            TxType = 0x23
+	TypeRemoveLimitOrder         TxType = 0x24
+	TypeActivateIncreasedRewards TxType = 0x25
 )
 
 const (
@@ -102,6 +103,7 @@ const (
 	gasDeclareCandidacy = 10
 	gasDelegate         = 6
 	gasUnbond           = 6
+	gasMoveStake        = 6
 
 	gasSetCandidateOnline      = 1
 	gasSetCandidateOffline     = 1
