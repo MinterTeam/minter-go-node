@@ -56,8 +56,21 @@ func (data UnbondDataV3) basicCheck(tx *Transaction, context *state.CheckState) 
 
 	stake := context.Candidates().GetStakeValueOfAddress(data.PubKey, sender, data.Coin)
 
-	if stake != nil {
+	if stake != nil && stake.Sign() == 1 {
 		wlStake.Add(wlStake, stake)
+	} else if wlStake.Cmp(data.Value) < 0 {
+		if wlStake.Sign() != 1 {
+			return &Response{
+				Code: code.StakeNotFound,
+				Log:  "Stake of current user not found",
+				Info: EncodeError(code.NewStakeNotFound(data.PubKey.String(), sender.String(), data.Coin.String(), context.Coins().GetCoin(data.Coin).GetFullSymbol())),
+			}
+		}
+		return &Response{
+			Code: code.InsufficientWaitList,
+			Log:  "Insufficient amount at waitlist for sender account",
+			Info: EncodeError(code.NewInsufficientWaitList(wlStake.String(), data.Value.String())),
+		}
 	}
 
 	if wlStake.Cmp(data.Value) < 0 {
@@ -156,7 +169,7 @@ func (data UnbondDataV3) Run(tx *Transaction, context state.Interface, rewardPoo
 			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
 		}
 
-		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, nil)
+		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, 0)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		tags = []abcTypes.EventAttribute{

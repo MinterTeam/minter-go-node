@@ -167,7 +167,7 @@ func (data UnbondData) Run(tx *Transaction, context state.Interface, rewardPool 
 			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
 		}
 
-		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, nil)
+		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, 0)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		tags = []abcTypes.EventAttribute{

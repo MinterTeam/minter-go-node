@@ -21,6 +21,10 @@ import (
 
 type mockValisators struct{}
 
+func (m mockValisators) Count() int {
+	return 0
+}
+
 func (m mockValisators) IsValidator(pubkey types.Pubkey) bool {
 	return false
 }

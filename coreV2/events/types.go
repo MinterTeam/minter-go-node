@@ -14,6 +14,7 @@ const (
 	TypeJailEvent                    = "minter/JailEvent"
 	TypeUnbondEvent                  = "minter/UnbondEvent"
 	TypeStakeKickEvent               = "minter/StakeKickEvent"
+	TypeStakeMoveEvent               = "minter/StakeMoveEvent"
 	TypeUpdateNetworkEvent           = "minter/UpdateNetworkEvent"
 	TypeUpdateCommissionsEvent       = "minter/UpdateCommissionsEvent"
 	TypeOrderExpiredEvent            = "minter/OrderExpiredEvent"
@@ -360,6 +361,68 @@ func (ue *UnbondEvent) convert(pubKeyID uint16, addressID uint32) compact {
 	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
 	result.Amount = bi.Bytes()
 	result.PubKeyID = pubKeyID
+	return result
+}
+
+type move struct {
+	AddressID    uint32
+	Amount       []byte
+	Coin         uint32
+	FromPubKeyID uint16
+	ToPubKeyID   uint16
+	WaitList     bool
+}
+
+func (u *move) compile(fromPubKey [32]byte, toPubKey [32]byte, address [20]byte) Event {
+	event := new(StakeMoveEvent)
+	event.CandidatePubKey = fromPubKey
+	event.ToCandidatePubKey = toPubKey
+	event.Address = address
+	event.Coin = uint64(u.Coin)
+	event.Amount = big.NewInt(0).SetBytes(u.Amount).String()
+	return event
+}
+
+func (u *move) addressID() uint32 {
+	return u.AddressID
+}
+
+type StakeMoveEvent struct {
+	Address           types.Address `json:"address"`
+	Amount            string        `json:"amount"`
+	Coin              uint64        `json:"coin"`
+	CandidatePubKey   types.Pubkey  `json:"candidate_pub_key"`
+	ToCandidatePubKey types.Pubkey  `json:"to_candidate_pub_key"`
+}
+
+func (ue *StakeMoveEvent) Type() string {
+	return TypeStakeMoveEvent
+}
+
+func (ue *StakeMoveEvent) AddressString() string {
+	return ue.Address.String()
+}
+
+func (ue *StakeMoveEvent) address() types.Address {
+	return ue.Address
+}
+
+func (ue *StakeMoveEvent) CandidatePubKeyString() string {
+	return ue.CandidatePubKey.String()
+}
+
+func (ue *StakeMoveEvent) candidatePubKey() types.Pubkey {
+	return ue.CandidatePubKey
+}
+
+func (ue *StakeMoveEvent) convert(fromPubKeyID uint16, toPubKeyID uint16, addressID uint32) compact {
+	result := new(move)
+	result.AddressID = addressID
+	result.Coin = uint32(ue.Coin)
+	bi, _ := big.NewInt(0).SetString(ue.Amount, 10)
+	result.Amount = bi.Bytes()
+	result.FromPubKeyID = fromPubKeyID
+	result.ToPubKeyID = toPubKeyID
 	return result
 }
 

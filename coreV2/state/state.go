@@ -310,7 +310,7 @@ func (s *State) Import(state types.AppState, version string) error {
 	for _, ff := range state.FrozenFunds {
 		coinID := types.CoinID(ff.Coin)
 		value := helpers.StringToBigInt(ff.Value)
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, ff.CandidateKey, uint32(ff.CandidateID), coinID, value, nil)
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, ff.CandidateKey, uint32(ff.CandidateID), coinID, value, uint32(ff.MoveToCandidateID))
 	}
 
 	s.Swap.Import(&state)

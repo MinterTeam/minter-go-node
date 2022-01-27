@@ -342,13 +342,25 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	if frozenFunds != nil {
 		for _, item := range frozenFunds.List {
 			amount := item.Value
-			blockchain.eventsDB.AddEvent(&eventsdb.UnbondEvent{
-				Address:         item.Address,
-				Amount:          amount.String(),
-				Coin:            uint64(item.Coin),
-				ValidatorPubKey: item.CandidateKey,
-			})
-			blockchain.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
+			if item.GetMoveToCandidateID() == 0 {
+				blockchain.eventsDB.AddEvent(&eventsdb.UnbondEvent{
+					Address:         item.Address,
+					Amount:          amount.String(),
+					Coin:            uint64(item.Coin),
+					ValidatorPubKey: item.CandidateKey,
+				})
+				blockchain.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
+			} else {
+				moveTo := blockchain.stateDeliver.Candidates.PubKey(item.GetMoveToCandidateID())
+				blockchain.eventsDB.AddEvent(&eventsdb.StakeMoveEvent{
+					Address:           item.Address,
+					Amount:            amount.String(),
+					Coin:              uint64(item.Coin),
+					CandidatePubKey:   *item.CandidateKey,
+					ToCandidatePubKey: moveTo,
+				})
+				blockchain.stateDeliver.Candidates.Delegate(item.Address, moveTo, item.Coin, amount, big.NewInt(0))
+			}
 		}
 
 		// delete from db
