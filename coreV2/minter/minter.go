@@ -101,7 +101,7 @@ func (blockchain *Blockchain) calculatePowers(vals []*validators2.Validator) {
 func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	height := blockchain.Height()
 
-	if h := blockchain.appDB.GetVersionHeight(v260); h > 0 && height > h {
+	if h := blockchain.GetVersionHeight(v260); h > 0 && height > h {
 		blockchain.stateDeliver.Candidates.RecalculateStakesV2(height)
 	} else {
 		blockchain.stateDeliver.Candidates.RecalculateStakes(height)
@@ -134,9 +134,10 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	// update validators in state
 	blockchain.stateDeliver.Validators.SetNewValidators(newCandidates)
 
+	blockchain.lock.Lock()
 	activeValidators := blockchain.appDB.GetValidators()
-
 	blockchain.appDB.SetValidators(newValidators)
+	blockchain.lock.Unlock()
 
 	updates := newValidators
 
@@ -186,6 +187,13 @@ func (blockchain *Blockchain) GetVersionHeight(v string) uint64 {
 	defer blockchain.lock.RUnlock()
 
 	return blockchain.appDB.GetVersionHeight(v)
+}
+
+func (blockchain *Blockchain) GetEmission() *big.Int {
+	blockchain.lock.RLock()
+	defer blockchain.lock.RUnlock()
+
+	return blockchain.appDB.Emission()
 }
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height

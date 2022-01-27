@@ -11,7 +11,6 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 	abciTypes "github.com/tendermint/tendermint/abci/types"
 	tmjson "github.com/tendermint/tendermint/libs/json"
-	"github.com/tendermint/tm-db"
 	"sync/atomic"
 	"time"
 )
@@ -32,7 +31,6 @@ const (
 // AppDB is responsible for storing basic information about app state on disk
 type AppDB struct {
 	db db.DB
-	//mu sync.RWMutex
 	WG sync.WaitGroup
 
 	store   tree.MTree
@@ -63,9 +61,6 @@ func (appDB *AppDB) Close() error {
 
 // GetLastBlockHash returns latest block hash stored on disk
 func (appDB *AppDB) GetLastBlockHash() []byte {
-	// appDB.mu.RLock()
-	// defer appDB.mu.RUnlock()
-
 	rawHash, err := appDB.db.Get([]byte(hashPath))
 	if err != nil {
 		panic(err)
@@ -82,10 +77,7 @@ func (appDB *AppDB) GetLastBlockHash() []byte {
 
 // SetLastBlockHash stores given block hash on disk, panics on error
 func (appDB *AppDB) SetLastBlockHash(hash []byte) {
-
 	appDB.WG.Wait()
-	// appDB.mu.Lock()
-	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(hashPath), hash); err != nil {
 		panic(err)
@@ -94,8 +86,6 @@ func (appDB *AppDB) SetLastBlockHash(hash []byte) {
 
 // GetLastHeight returns latest block height stored on disk
 func (appDB *AppDB) GetLastHeight() uint64 {
-	// appDB.mu.RLock()
-	// defer appDB.mu.RUnlock()
 	return appDB.getLastHeight()
 }
 func (appDB *AppDB) getLastHeight() uint64 {
@@ -123,8 +113,6 @@ func (appDB *AppDB) SetLastHeight(height uint64) {
 	binary.BigEndian.PutUint64(h, height)
 
 	appDB.WG.Wait()
-	// appDB.mu.Lock()
-	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(heightPath), h); err != nil {
 		panic(err)
@@ -144,8 +132,6 @@ func (appDB *AppDB) SaveStartHeight() {
 	binary.BigEndian.PutUint64(h, atomic.LoadUint64(&appDB.startHeight))
 
 	appDB.WG.Wait()
-	// appDB.mu.Lock()
-	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(startHeightPath), h); err != nil {
 		panic(err)
@@ -158,9 +144,6 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 	if val != 0 {
 		return val
 	}
-
-	// appDB.mu.RLock()
-	// defer appDB.mu.RUnlock()
 
 	result, err := appDB.db.Get([]byte(startHeightPath))
 	if err != nil {
@@ -180,9 +163,6 @@ func (appDB *AppDB) GetValidators() abcTypes.ValidatorUpdates {
 	if appDB.validators != nil {
 		return appDB.validators
 	}
-
-	// appDB.mu.RLock()
-	// defer appDB.mu.RUnlock()
 
 	result, err := appDB.db.Get([]byte(validatorsPath))
 	if err != nil {
@@ -219,8 +199,6 @@ func (appDB *AppDB) FlushValidators() {
 	}
 
 	appDB.WG.Wait()
-	// appDB.mu.Lock()
-	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(validatorsPath), data); err != nil {
 		panic(err)
@@ -233,10 +211,6 @@ const BlocksTimeCount = 4
 // GetLastBlockTimeDelta returns delta of time between latest blocks
 func (appDB *AppDB) GetLastBlockTimeDelta() (sumTimes int, count int) {
 	if len(appDB.lastTimeBlocks) == 0 {
-
-		// appDB.mu.RLock()
-		// defer appDB.mu.RUnlock()
-
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
 			panic(err)
@@ -270,10 +244,6 @@ func calcBlockDelta(times []uint64) (sumTimes int, num int) {
 
 func (appDB *AppDB) AddBlocksTime(time time.Time) {
 	if len(appDB.lastTimeBlocks) == 0 {
-
-		// appDB.mu.RLock()
-		// defer appDB.mu.RUnlock()
-
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
 			panic(err)
@@ -300,8 +270,6 @@ func (appDB *AppDB) SaveBlocksTime() {
 	}
 
 	appDB.WG.Wait()
-	// appDB.mu.Lock()
-	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(blocksTimePath), data); err != nil {
 		panic(err)
@@ -337,10 +305,6 @@ func (appDB *AppDB) GetVersionHeight(name string) uint64 {
 
 func (appDB *AppDB) GetVersions() []*Version {
 	if len(appDB.versions) == 0 {
-
-		// appDB.mu.RLock()
-		// defer appDB.mu.RUnlock()
-
 		result, err := appDB.db.Get([]byte(versionsPath))
 		if err != nil {
 			panic(err)
@@ -363,7 +327,6 @@ func (appDB *AppDB) AddVersion(v string, height uint64) {
 		Name:   v,
 		Height: height,
 	}
-	// appDB.version = elem
 	appDB.versions = append(appDB.versions, elem)
 	appDB.isDirtyVersions = true
 }
@@ -378,8 +341,6 @@ func (appDB *AppDB) SaveVersions() {
 	}
 
 	appDB.WG.Wait()
-	// appDB.mu.Lock()
-	// defer appDB.mu.Unlock()
 
 	if err := appDB.db.Set([]byte(versionsPath), data); err != nil {
 		panic(err)
