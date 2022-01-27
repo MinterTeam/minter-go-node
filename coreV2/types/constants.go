@@ -12,6 +12,9 @@ const (
 
 const unbondPeriod = 518400
 
+func GetIncreasedRewardsPeriod() uint64 {
+	return GetIncreasedRewardsPeriodWithChain(CurrentChainID)
+}
 func GetUnbondPeriod() uint64 {
 	return GetUnbondPeriodWithChain(CurrentChainID)
 }
@@ -23,6 +26,7 @@ func GetExpireOrdersPeriod() uint64 {
 	return GetExpireOrdersPeriodWithChain(CurrentChainID)
 }
 
+const yearX3 = 21024000    // 3y = 94608000sec/4.5
 const mounth = week * 4    // 1m
 const week = day * 7       // 1w
 const weekCorrect = 134400 // 1w
@@ -36,6 +40,12 @@ func GetExpireOrdersPeriodWithChain(chain ChainID) uint64 {
 	return mounth
 }
 
+func GetIncreasedRewardsPeriodWithChain(chain ChainID) uint64 {
+	if chain == ChainTestnet {
+		return m15 * 4
+	}
+	return yearX3
+}
 func GetUnbondPeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
 		return m15

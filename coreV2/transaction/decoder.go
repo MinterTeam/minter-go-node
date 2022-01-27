@@ -112,7 +112,10 @@ func GetDataV3(txType TxType) (Data, bool) {
 	switch txType {
 	case TypeUnbond:
 		return &UnbondDataV3{}, true
-
+	case TypeActivateIncreasedRewards:
+		return ActivateIncreasedRewardsData{}, true
+	case TypeMoveStake:
+		return MoveStakeData{}, true
 	default:
 		return GetDataV260(txType)
 	}
