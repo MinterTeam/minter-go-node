@@ -75,8 +75,8 @@ github.com/HdrHistogram/hdrhistogram-go v1.1.2/go.mod h1:yDgFjdqOqDEKOvasDdhWNXY
 github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible/go.mod h1:r7JcOSlj0wfOMncg0iLm8Leh48TZaKVeNIfJntJ2wa0=
 github.com/Microsoft/go-winio v0.5.0 h1:Elr9Wn+sGKPlkaBvwu4mTrxtmOp3F3yV9qhaHbXGjwU=
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
-github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220126211522-85f734f7bf13 h1:LKoHbX3j2+JKlFG0Bd8p6Q4l/mFqAYcqkXGFwmy0+wQ=
-github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220126211522-85f734f7bf13/go.mod h1:pNRCr3/fm/3EKQ0frQaHOEAV/TWBmHEaxPt8oaFwimw=
+github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220127141210-47c04042f8d3 h1:PUqd1UCFhyxCpReHEs0HNeWbrbUtySv27YiOjs4Iges=
+github.com/MinterTeam/node-grpc-gateway v1.5.2-0.20220127141210-47c04042f8d3/go.mod h1:pNRCr3/fm/3EKQ0frQaHOEAV/TWBmHEaxPt8oaFwimw=
 github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3 h1:4T/mn9nqyHDMrNvM/aV8CQaz8fZJNrC6zmSw3G4q7Do=
 github.com/MinterTeam/tendermint v0.34.11-0.20211217161414-dda5434727d3/go.mod h1:/7EDAw02rD7GT8syC317cX9ZhZTCdaFVvYjU8W+yJSs=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=

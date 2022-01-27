@@ -7,12 +7,19 @@ import (
 )
 
 type Item struct {
-	Address      types.Address
-	CandidateKey *types.Pubkey `rlp:"nil"`
-	CandidateID  uint32
-	Coin         types.CoinID
-	Value        *big.Int
-	// MoveToCandidate *uint32 `rlp:"nilList"`
+	Address         types.Address
+	CandidateKey    *types.Pubkey `rlp:"nil"`
+	CandidateID     uint32
+	Coin            types.CoinID
+	Value           *big.Int
+	MoveToCandidate []uint32 `rlp:"tail"`
+}
+
+func (i *Item) GetMoveToCandidateID() uint32 {
+	if len(i.MoveToCandidate) > 0 {
+		return i.MoveToCandidate[0]
+	}
+	return 0
 }
 
 type Model struct {
@@ -32,15 +39,15 @@ func (m *Model) delete() {
 	m.markDirty(m.height)
 }
 
-func (m *Model) addFund(address types.Address, pubkey *types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID *uint32) {
+func (m *Model) addFund(address types.Address, pubkey *types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID uint32) {
 	m.lock.Lock()
 	m.List = append(m.List, Item{
-		Address:      address,
-		CandidateKey: pubkey,
-		CandidateID:  candidateID,
-		Coin:         coin,
-		Value:        value,
-		// MoveToCandidate: moveToCandidateID,
+		Address:         address,
+		CandidateKey:    pubkey,
+		CandidateID:     candidateID,
+		Coin:            coin,
+		Value:           value,
+		MoveToCandidate: []uint32{moveToCandidateID},
 	})
 	m.lock.Unlock()
 
