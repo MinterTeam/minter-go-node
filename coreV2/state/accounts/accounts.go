@@ -27,6 +27,7 @@ type RAccounts interface {
 	Export(state *types.AppState)
 	GetAccount(address types.Address) *Model
 	GetNonce(address types.Address) uint64
+	GetIncreasedRewardsUpToBlock(address types.Address) uint64
 	GetBalance(address types.Address, coin types.CoinID) *big.Int
 	GetBalances(address types.Address) []Balance
 	ExistsMultisig(msigAddress types.Address) bool

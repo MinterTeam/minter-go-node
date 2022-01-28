@@ -62,6 +62,7 @@ const (
 	PeriodLimitReached    uint32 = 413
 	CandidateJailed       uint32 = 414
 	TooBigStake           uint32 = 415
+	UnbondBlocked         uint32 = 416
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -910,5 +911,16 @@ func NewWrongOrderVolume(v0, v1 string) *wrongOrderVolume {
 		Code:    strconv.Itoa(int(WrongOrderVolume)),
 		Volume0: v0,
 		Volume1: v1,
+	}
+}
+
+type unbondBlocked struct {
+	Code               string `json:"code,omitempty"`
+	BlockedUntilHeight string `json:"blocked_until_height"`
+}
+
+func NewUnbondBlocked(height string) *unbondBlocked {
+	return &unbondBlocked{
+		BlockedUntilHeight: strconv.Itoa(int(UnbondBlocked)),
 	}
 }
