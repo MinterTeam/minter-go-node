@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -100,6 +101,14 @@ func (data UnbondDataV3) Run(tx *Transaction, context state.Interface, rewardPoo
 	var isCheck bool
 	if checkState, isCheck = context.(*state.CheckState); !isCheck {
 		checkState = state.NewCheckState(context.(*state.State))
+	}
+
+	if h := checkState.Accounts().GetIncreasedRewardsUpToBlock(sender); h > currentBlock {
+		return Response{
+			Code: code.UnbondBlocked,
+			Log:  fmt.Sprintf("Unbond blocked for %s address until block %d. Use StakeMove to change candidate", sender.String(), h),
+			Info: EncodeError(code.NewUnbondBlocked(strconv.Itoa(int(h)))),
+		}
 	}
 
 	response := data.basicCheck(tx, checkState)
