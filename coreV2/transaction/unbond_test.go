@@ -62,7 +62,7 @@ func TestUnbondTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 5, &sync.Map{}, 0, false)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -549,7 +549,7 @@ func TestUnbondTxToInsufficientStake(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 2, &sync.Map{}, 0, false)
 	if response.Code != code.InsufficientStake {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientStake, response.Log)
 	}
