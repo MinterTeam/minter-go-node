@@ -116,6 +116,8 @@ func GetDataV3(txType TxType) (Data, bool) {
 		return LockStakeData{}, true
 	case TypeMoveStake:
 		return MoveStakeData{}, true
+	case TypeVoteCommission:
+		return &VoteCommissionDataV3{}, true
 	default:
 		return GetDataV260(txType)
 	}

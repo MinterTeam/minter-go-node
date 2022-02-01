@@ -323,7 +323,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Commission: uint64(d.Commission),
 		}
 	case transaction.TypeVoteCommission:
-		d := data.(*transaction.VoteCommissionDataV250)
+		d := data.(*transaction.VoteCommissionDataV3)
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case transaction.TypeVoteUpdate:
 		d := data.(*transaction.VoteUpdateDataV230)
@@ -391,7 +391,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 	return a, nil
 }
 
-func priceCommissionData(d *transaction.VoteCommissionDataV250, coin *coins.Model) proto.Message {
+func priceCommissionData(d *transaction.VoteCommissionDataV3, coin *coins.Model) proto.Message {
 	return &pb.VoteCommissionData{
 		PubKey: d.PubKey.String(),
 		Height: d.Height,
@@ -444,6 +444,8 @@ func priceCommissionData(d *transaction.VoteCommissionDataV250, coin *coins.Mode
 		FailedTx:                d.FailedTxPrice().String(),
 		AddLimitOrder:           d.AddLimitOrderPrice().String(),
 		RemoveLimitOrder:        d.RemoveLimitOrderPrice().String(),
+		MoveStake:               d.MoveStakePrice().String(),
+		LockStake:               d.LockStakePrice().String(),
 	}
 }
 
