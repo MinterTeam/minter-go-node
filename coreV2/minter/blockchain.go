@@ -267,13 +267,13 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
 			diff := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.IncrementReward(diff)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().String()})
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: blockchain.stateDeliver.App.Reward().String()})
 		}
 	} else if h == height {
 		reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
 		blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
 		blockchain.stateDeliver.App.IncrementReward(blockchain.rewardsCounter.GetRewardForBlock(height))
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardPriceEvent{Value: blockchain.stateDeliver.App.Reward().String()})
+		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: blockchain.stateDeliver.App.Reward().String()})
 	}
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})

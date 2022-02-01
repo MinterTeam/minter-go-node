@@ -9,17 +9,17 @@ import (
 
 // Event type names
 const (
-	TypeRewardEvent                  = "minter/RewardEvent"
-	TypeSlashEvent                   = "minter/SlashEvent"
-	TypeJailEvent                    = "minter/JailEvent"
-	TypeUnbondEvent                  = "minter/UnbondEvent"
-	TypeStakeKickEvent               = "minter/StakeKickEvent"
-	TypeStakeMoveEvent               = "minter/StakeMoveEvent"
-	TypeUpdateNetworkEvent           = "minter/UpdateNetworkEvent"
-	TypeUpdateCommissionsEvent       = "minter/UpdateCommissionsEvent"
-	TypeOrderExpiredEvent            = "minter/OrderExpiredEvent"
-	TypeRemoveCandidateEvent         = "minter/RemoveCandidateEvent"
-	TypeUpdatedBlockRewardPriceEvent = "minter/UpdatedBlockRewardPriceEvent"
+	TypeRewardEvent             = "minter/RewardEvent"
+	TypeSlashEvent              = "minter/SlashEvent"
+	TypeJailEvent               = "minter/JailEvent"
+	TypeUnbondEvent             = "minter/UnbondEvent"
+	TypeStakeKickEvent          = "minter/StakeKickEvent"
+	TypeStakeMoveEvent          = "minter/StakeMoveEvent"
+	TypeUpdateNetworkEvent      = "minter/UpdateNetworkEvent"
+	TypeUpdateCommissionsEvent  = "minter/UpdateCommissionsEvent"
+	TypeOrderExpiredEvent       = "minter/OrderExpiredEvent"
+	TypeRemoveCandidateEvent    = "minter/RemoveCandidateEvent"
+	TypeUpdatedBlockRewardEvent = "minter/UpdatedBlockRewardEvent"
 )
 
 type Stake interface {
@@ -586,10 +586,10 @@ func (ue *RemoveCandidateEvent) convert(pubKeyID uint16) compact {
 	return result
 }
 
-type UpdatedBlockRewardPriceEvent struct {
+type UpdatedBlockRewardEvent struct {
 	Value string `json:"value"`
 }
 
-func (pe *UpdatedBlockRewardPriceEvent) Type() string {
-	return TypeUpdatedBlockRewardPriceEvent
+func (pe *UpdatedBlockRewardEvent) Type() string {
+	return TypeUpdatedBlockRewardEvent
 }
