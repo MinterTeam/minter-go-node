@@ -39,7 +39,7 @@ func (model *Model) reward() *big.Int {
 	defer model.mx.RUnlock()
 
 	if len(model.Reward) == 0 {
-		return big.NewInt(0)
+		return nil
 	}
 
 	return model.Reward[0]

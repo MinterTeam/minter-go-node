@@ -134,10 +134,8 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	// update validators in state
 	blockchain.stateDeliver.Validators.SetNewValidators(newCandidates)
 
-	blockchain.lock.Lock()
 	activeValidators := blockchain.appDB.GetValidators()
 	blockchain.appDB.SetValidators(newValidators)
-	blockchain.lock.Unlock()
 
 	updates := newValidators
 
@@ -163,36 +161,21 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 
 // CurrentState returns immutable state of Minter Blockchain
 func (blockchain *Blockchain) CurrentState() *state.CheckState {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.stateCheck
 }
 
 // AvailableVersions returns all available versions in ascending order
 func (blockchain *Blockchain) AvailableVersions() []int {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.stateDeliver.Tree().AvailableVersions()
 }
 func (blockchain *Blockchain) UpdateVersions() []*appdb.Version {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.appDB.GetVersions()
 }
 func (blockchain *Blockchain) GetVersionHeight(v string) uint64 {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.appDB.GetVersionHeight(v)
 }
 
 func (blockchain *Blockchain) GetEmission() *big.Int {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	emission := blockchain.appDB.Emission()
 	if emission == nil || emission.Sign() != 1 {
 		return blockchain.rewardsCounter.GetBeforeBlock(blockchain.Height())
@@ -296,16 +279,14 @@ func (blockchain *Blockchain) StatisticData() *statistics.Data {
 
 // GetValidatorStatus returns given validator's status
 func (blockchain *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 
 	return blockchain.validatorsStatuses[address]
 }
 
 // DeleteStateVersions deletes states in given range
 func (blockchain *Blockchain) DeleteStateVersions(from, to int64) error {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
 
 	return blockchain.stateDeliver.Tree().DeleteVersionsRange(from, to)
 }
