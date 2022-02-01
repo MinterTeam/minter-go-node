@@ -289,6 +289,5 @@ func (data VoteCommissionDataV3) price() *commission.Price {
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
 		More:                    data.More,
-		// More:                    append([]*big.Int{data.FailedTX, data.AddLimitOrder, data.RemoveLimitOrder}, data.More...),
 	}
 }
