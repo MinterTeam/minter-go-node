@@ -139,8 +139,8 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 				m = &pb.UpdateNetworkEvent{
 					Version: e.Version,
 				}
-			case *events.UpdatedBlockRewardPriceEvent:
-				m = &pb.UpdatedBlockRewardPriceEvent{
+			case *events.UpdatedBlockRewardEvent:
+				m = &pb.UpdatedBlockRewardEvent{
 					Value: e.Value,
 				}
 			case *events.UpdateCommissionsEvent:

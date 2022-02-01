@@ -28,7 +28,7 @@ func init() {
 	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
 	tmjson.RegisterType(&OrderExpiredEvent{}, TypeOrderExpiredEvent)
 	tmjson.RegisterType(&RemoveCandidateEvent{}, TypeRemoveCandidateEvent)
-	tmjson.RegisterType(&UpdatedBlockRewardPriceEvent{}, TypeUpdatedBlockRewardPriceEvent)
+	tmjson.RegisterType(&UpdatedBlockRewardEvent{}, TypeUpdatedBlockRewardEvent)
 }
 
 // IEventsDB is an interface of Events

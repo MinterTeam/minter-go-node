@@ -5,6 +5,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/config"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
+	db "github.com/tendermint/tm-db"
 	"math/big"
 	"sync"
 
