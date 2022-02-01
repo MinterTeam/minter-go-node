@@ -193,7 +193,12 @@ func (blockchain *Blockchain) GetEmission() *big.Int {
 	blockchain.lock.RLock()
 	defer blockchain.lock.RUnlock()
 
-	return blockchain.appDB.Emission()
+	emission := blockchain.appDB.Emission()
+	if emission == nil || emission.Sign() != 1 {
+		return blockchain.rewardsCounter.GetBeforeBlock(blockchain.Height())
+	}
+
+	return emission
 }
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height
