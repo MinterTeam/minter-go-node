@@ -129,21 +129,28 @@ func (data CreateCoinData) String() string {
 }
 
 func (data CreateCoinData) CommissionData(price *commission.Price) *big.Int {
-	var createTicker *big.Int
+	createTickerPrice := data.PayForSymbol(price)
+
+	return big.NewInt(0).Add(createTickerPrice, price.CreateCoin)
+}
+
+type symbolCreator interface {
+	PayForSymbol(price *commission.Price) *big.Int
+}
+
+func (data CreateCoinData) PayForSymbol(price *commission.Price) *big.Int {
 	switch len(data.Symbol.String()) {
 	case 3:
-		createTicker = price.CreateTicker3
+		return price.CreateTicker3
 	case 4:
-		createTicker = price.CreateTicker4
+		return price.CreateTicker4
 	case 5:
-		createTicker = price.CreateTicker5
+		return price.CreateTicker5
 	case 6:
-		createTicker = price.CreateTicker6
+		return price.CreateTicker6
 	default:
-		createTicker = price.CreateTicker7to10
+		return price.CreateTicker7to10
 	}
-
-	return big.NewInt(0).Add(createTicker, price.CreateCoin)
 }
 
 func (data CreateCoinData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
