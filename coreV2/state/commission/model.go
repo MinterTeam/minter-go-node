@@ -93,7 +93,7 @@ func (d *Price) MoveStakePrice() *big.Int {
 	return d.Unbond
 }
 
-func (d *Price) ActivateIncreasedRewardsPrice() *big.Int {
+func (d *Price) LockStakePrice() *big.Int {
 	if len(d.More) > 4 {
 		return d.More[4]
 	}

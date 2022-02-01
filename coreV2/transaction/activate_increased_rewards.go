@@ -12,29 +12,29 @@ import (
 	abcTypes "github.com/tendermint/tendermint/abci/types"
 )
 
-type ActivateIncreasedRewardsData struct {
+type LockStakeData struct {
 }
 
-func (data ActivateIncreasedRewardsData) Gas() int64 {
-	return gasActivateIncreasedRewards
+func (data LockStakeData) Gas() int64 {
+	return gasLockStake
 }
-func (data ActivateIncreasedRewardsData) TxType() TxType {
-	return TypeActivateIncreasedRewards
+func (data LockStakeData) TxType() TxType {
+	return TypeLockStake
 }
 
-func (data ActivateIncreasedRewardsData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+func (data LockStakeData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
 	return nil
 }
 
-func (data ActivateIncreasedRewardsData) String() string {
-	return "ActivateIncreasedRewards"
+func (data LockStakeData) String() string {
+	return "LockStake"
 }
 
-func (data ActivateIncreasedRewardsData) CommissionData(price *commission.Price) *big.Int {
-	return price.ActivateIncreasedRewardsPrice()
+func (data LockStakeData) CommissionData(price *commission.Price) *big.Int {
+	return price.LockStakePrice()
 }
 
-func (data ActivateIncreasedRewardsData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
+func (data LockStakeData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
 	sender, _ := tx.Sender()
 
 	var checkState *state.CheckState

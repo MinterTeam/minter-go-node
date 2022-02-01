@@ -376,9 +376,9 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			},
 			Value: d.Value.String(),
 		}
-	case transaction.TypeActivateIncreasedRewards:
-		//d := data.(*transaction.ActivateIncreasedRewardsData)
-		m = &pb.ActivateIncreasedRewardsData{}
+	case transaction.TypeLockStake:
+		//d := data.(*transaction.LockStakeData)
+		m = &pb.LockStakeData{}
 	default:
 		return nil, errors.New("unknown tx type")
 	}
