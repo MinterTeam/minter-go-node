@@ -189,13 +189,17 @@ func (a *App) IncrementReward(diff *big.Int) {
 	b1000 := helpers.BipToPip(big.NewInt(1000))
 	model := a.getOrNew()
 	curRew := model.reward()
-	if diff.Sign() == 1 && curRew.Cmp(b1000) == 1 {
-		return
-	}
-	if diff.Sign() == -1 && curRew.Sign() == 0 {
-		return
-	}
 
+	if curRew == nil {
+		curRew = big.NewInt(0)
+	} else {
+		if diff.Sign() == 1 && curRew.Cmp(b1000) == 1 {
+			return
+		}
+		if diff.Sign() == -1 && curRew.Sign() == 0 {
+			return
+		}
+	}
 	reward := big.NewInt(0).Add(curRew, diff)
 	if reward.Cmp(b1000) == 1 {
 		reward.Set(b1000)

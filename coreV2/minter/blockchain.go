@@ -57,15 +57,18 @@ type Blockchain struct {
 	executor      transaction.ExecutorTx
 	statisticData *statistics.Data
 
-	appDB                           *appdb.AppDB
-	eventsDB                        eventsdb.IEventsDB
-	stateDeliver                    *state.State
-	stateCheck                      *state.CheckState
-	height                          uint64   // current Blockchain height
-	rewards                         *big.Int // Rewards pool
-	validatorsStatuses              map[types.TmAddress]int8
-	validatorsPowers                map[types.Pubkey]*big.Int
-	totalPower                      *big.Int
+	appDB        *appdb.AppDB
+	eventsDB     eventsdb.IEventsDB
+	stateDeliver *state.State
+	stateCheck   *state.CheckState
+	height       uint64   // current Blockchain height
+	rewards      *big.Int // Rewards pool
+
+	lockValidators     sync.RWMutex
+	validatorsStatuses map[types.TmAddress]int8
+	validatorsPowers   map[types.Pubkey]*big.Int
+	totalPower         *big.Int
+
 	rewardsCounter                  *rewards.Reward
 	updateStakesAndPayRewardsPeriod uint64
 	expiredOrdersPeriod             uint64
@@ -77,7 +80,6 @@ type Blockchain struct {
 	// currentMempool is responsive for prevent sending multiple transactions from one address in one block
 	currentMempool *sync.Map
 
-	lock         sync.RWMutex
 	haltHeight   uint64
 	cfg          *config.Config
 	storages     *utils.Storage
@@ -260,7 +262,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 	height := uint64(req.Header.Height)
 
-	blockchain.lock.Lock()
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		t, _, _ := blockchain.appDB.GetPrice()
 		if req.Header.Time.Sub(t) > time.Hour*24*3 && req.Header.Time.Hour() > 12 {
@@ -286,6 +287,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	blockchain.rewards.SetInt64(0)
 
 	// clear absent candidates
+	blockchain.lockValidators.Lock()
 	blockchain.validatorsStatuses = map[types.TmAddress]int8{}
 	// give penalty to absent validators
 	for _, v := range req.LastCommitInfo.Votes {
@@ -300,7 +302,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 			blockchain.validatorsStatuses[address] = ValidatorAbsent
 		}
 	}
-	blockchain.lock.Unlock()
+	blockchain.lockValidators.Unlock()
 
 	blockchain.calculatePowers(blockchain.stateDeliver.Validators.GetValidators())
 
@@ -396,7 +398,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	var reward = big.NewInt(0)
 	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 
-	blockchain.lock.Lock()
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
@@ -411,7 +412,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	} else {
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
 	}
-	blockchain.lock.Unlock()
 
 	{
 		rewardWithTxs := big.NewInt(0).Add(reward, blockchain.rewards)
@@ -455,10 +455,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	fullRewards := big.NewInt(0).Add(reward, x2rewards)
 
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
-
-		blockchain.lock.Lock()
 		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), fullRewards))
-		blockchain.lock.Unlock()
 
 		if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), fullRewards); diff.Sign() == 1 {
 			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
@@ -533,7 +530,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	{
-		blockchain.lock.Lock()
 		if v, ok := blockchain.isUpdateNetworkBlockV2(height); ok {
 			blockchain.appDB.AddVersion(v, height)
 			blockchain.eventsDB.AddEvent(&eventsdb.UpdateNetworkEvent{
@@ -543,7 +539,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			blockchain.executor = GetExecutor(v)
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
-		blockchain.lock.Unlock()
 	}
 
 	hasChangedPublicKeys := false
@@ -655,7 +650,6 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 		panic(err)
 	}
 
-	blockchain.lock.Lock()
 	{ // Persist application hash and height
 		blockchain.appDB.SetLastBlockHash(hash)
 		blockchain.appDB.SetLastHeight(height)
@@ -666,7 +660,6 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 		blockchain.appDB.SaveEmission()
 		blockchain.appDB.SavePrice()
 	}
-	blockchain.lock.Unlock()
 
 	// Clear mempool
 	blockchain.currentMempool = &sync.Map{}

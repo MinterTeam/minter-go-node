@@ -27,7 +27,16 @@ type AppState struct {
 	UsedChecks          []UsedCheck        `json:"used_checks,omitempty"`
 	MaxGas              uint64             `json:"max_gas"`
 	TotalSlashed        string             `json:"total_slashed"`
-	Version             string             `json:"version,omitempty"`
+
+	// TODO: Import/Export
+	Emission    string `json:"emission"`
+	BlockReward string `json:"block_reward"`
+	PrevPrice   struct {
+		AmountBIP  string `json:"amount_bip"`
+		AmountUSDT string `json:"amount_usdt"`
+	} `json:"prev_price"`
+
+	Version string `json:"version,omitempty"`
 }
 
 func (s *AppState) Verify() error {

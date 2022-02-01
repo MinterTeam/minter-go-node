@@ -19,6 +19,10 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 
 	cState := s.blockchain.CurrentState()
 
+	reward := cState.App().Reward()
+	if reward == nil {
+		reward = s.blockchain.RewardCounter().GetRewardForBlock(uint64(result.SyncInfo.LatestBlockHeight))
+	}
 	return &pb.StatusResponse{
 		Version:           s.version,
 		Network:           result.NodeInfo.Network,
@@ -30,6 +34,7 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 		KeepLastStates:    uint64(s.minterCfg.BaseConfig.KeepLastStates),
 		TotalSlashed:      cState.App().GetTotalSlashed().String(),
 		CurrentEmission:   s.blockchain.GetEmission().String(),
+		BlockReward:       reward.String(),
 		CatchingUp:        result.SyncInfo.CatchingUp,
 		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[:]),
 		NodeId:            string(result.NodeInfo.ID()),

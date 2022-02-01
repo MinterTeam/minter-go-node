@@ -33,6 +33,7 @@ const (
 type AppDB struct {
 	db db.DB
 	WG sync.WaitGroup
+	mu sync.Mutex
 
 	store   tree.MTree
 	stateDB db.DB
@@ -62,6 +63,11 @@ func (appDB *AppDB) Close() error {
 
 // GetLastBlockHash returns latest block hash stored on disk
 func (appDB *AppDB) GetLastBlockHash() []byte {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
+	// todo add field hash
+
 	rawHash, err := appDB.db.Get([]byte(hashPath))
 	if err != nil {
 		panic(err)
@@ -161,6 +167,9 @@ func (appDB *AppDB) GetStartHeight() uint64 {
 
 // GetValidators returns list of latest validators stored on dist
 func (appDB *AppDB) GetValidators() abcTypes.ValidatorUpdates {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if appDB.validators != nil {
 		return appDB.validators
 	}
@@ -186,11 +195,17 @@ func (appDB *AppDB) GetValidators() abcTypes.ValidatorUpdates {
 
 // SetValidators sets given validators list on mem
 func (appDB *AppDB) SetValidators(vals abcTypes.ValidatorUpdates) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	appDB.validators = vals
 }
 
 // FlushValidators stores validators list from mem to disk, panics on error
 func (appDB *AppDB) FlushValidators() {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if appDB.validators == nil {
 		return
 	}
@@ -211,6 +226,9 @@ const BlocksTimeCount = 4
 
 // GetLastBlockTimeDelta returns delta of time between latest blocks
 func (appDB *AppDB) GetLastBlockTimeDelta() (sumTimes int, count int) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if len(appDB.lastTimeBlocks) == 0 {
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
@@ -244,6 +262,9 @@ func calcBlockDelta(times []uint64) (sumTimes int, num int) {
 }
 
 func (appDB *AppDB) AddBlocksTime(time time.Time) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if len(appDB.lastTimeBlocks) == 0 {
 		result, err := appDB.db.Get([]byte(blocksTimePath))
 		if err != nil {
@@ -265,6 +286,9 @@ func (appDB *AppDB) AddBlocksTime(time time.Time) {
 }
 
 func (appDB *AppDB) SaveBlocksTime() {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	data, err := tmjson.Marshal(appDB.lastTimeBlocks)
 	if err != nil {
 		panic(err)
@@ -305,6 +329,9 @@ func (appDB *AppDB) GetVersionHeight(name string) uint64 {
 }
 
 func (appDB *AppDB) GetVersions() []*Version {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if len(appDB.versions) == 0 {
 		result, err := appDB.db.Get([]byte(versionsPath))
 		if err != nil {
@@ -328,11 +355,18 @@ func (appDB *AppDB) AddVersion(v string, height uint64) {
 		Name:   v,
 		Height: height,
 	}
+
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	appDB.versions = append(appDB.versions, elem)
 	appDB.isDirtyVersions = true
 }
 
 func (appDB *AppDB) SaveVersions() {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if !appDB.isDirtyVersions {
 		return
 	}
@@ -369,6 +403,9 @@ func NewAppDB(homeDir string, cfg *config.Config) *AppDB {
 }
 
 func (appDB *AppDB) SetEmission(emission *big.Int) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	appDB.emission = emission
 }
 
@@ -384,6 +421,9 @@ func (appDB *AppDB) SaveEmission() {
 }
 
 func (appDB *AppDB) Emission() (emission *big.Int) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if appDB.emission == nil {
 		result, err := appDB.db.Get([]byte(emissionPath))
 		if err != nil {
@@ -418,6 +458,9 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) *big.Int {
 }
 
 func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	appDB.price = &TimePrice{
 		T:  uint64(t.Nanosecond()),
 		R0: big.NewInt(0).Set(r0), // BIP
@@ -426,6 +469,9 @@ func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int) {
 	appDB.isDirtyPrice = true
 }
 func (appDB *AppDB) SavePrice() {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if appDB.isDirtyPrice == false {
 		return
 	}
@@ -444,6 +490,9 @@ func (appDB *AppDB) SavePrice() {
 }
 
 func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
+	appDB.mu.Lock()
+	defer appDB.mu.Unlock()
+
 	if appDB.price == nil {
 		result, err := appDB.db.Get([]byte(pricePath))
 		if err != nil {
