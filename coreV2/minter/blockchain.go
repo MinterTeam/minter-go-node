@@ -161,7 +161,7 @@ func graceForUpdate(height uint64) *upgrades.GracePeriod {
 func GetExecutor(v string) transaction.ExecutorTx {
 	switch v {
 	case V3:
-		return transaction.NewExecutorV250(transaction.GetDataV3)
+		return transaction.NewExecutorV3(transaction.GetDataV3)
 	case v260, v261:
 		return transaction.NewExecutorV250(transaction.GetDataV260)
 	case v250:
