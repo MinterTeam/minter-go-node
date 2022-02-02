@@ -130,6 +130,7 @@ func (c *Commission) Export(state *types.AppState) {
 					RemoveLimitOrder:        p.RemoveLimitOrderPrice().String(),
 					MoveStake:               p.MoveStakePrice().String(),
 					LockStake:               p.LockStakePrice().String(),
+					Lock:                    p.LockPrice().String(),
 				},
 			})
 		}
@@ -187,6 +188,7 @@ func (c *Commission) Export(state *types.AppState) {
 		RemoveLimitOrder:        current.RemoveLimitOrderPrice().String(),
 		MoveStake:               current.MoveStakePrice().String(),
 		LockStake:               current.LockStakePrice().String(),
+		Lock:                    current.LockPrice().String(),
 	}
 }
 

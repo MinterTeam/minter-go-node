@@ -100,6 +100,13 @@ func (d *Price) LockStakePrice() *big.Int {
 	return d.Unbond
 }
 
+func (d *Price) LockPrice() *big.Int {
+	if len(d.More) > 5 {
+		return d.More[5]
+	}
+	return d.Send
+}
+
 func Decode(s string) *Price {
 	var p Price
 	err := rlp.DecodeBytes([]byte(s), &p)

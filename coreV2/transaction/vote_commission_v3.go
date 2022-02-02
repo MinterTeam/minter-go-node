@@ -66,6 +66,7 @@ type VoteCommissionDataV3 struct {
 	//RemoveLimitOrder        *big.Int
 	//MoveStake               *big.Int
 	//LockStake               *big.Int
+	//Lock               *big.Int
 
 }
 
@@ -101,6 +102,12 @@ func (data *VoteCommissionDataV3) LockStakePrice() *big.Int {
 	}
 	return big.NewInt(0)
 }
+func (data *VoteCommissionDataV3) LockPrice() *big.Int {
+	if len(data.More) > 5 {
+		return data.More[5]
+	}
+	return big.NewInt(0)
+}
 
 func (data VoteCommissionDataV3) TxType() TxType {
 	return TypeVoteCommission
@@ -114,7 +121,7 @@ func (data VoteCommissionDataV3) GetPubKey() types.Pubkey {
 }
 
 func (data VoteCommissionDataV3) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) != 5 {
+	if len(data.More) != 6 {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "More or less parameters than expected",
