@@ -526,6 +526,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
 				MoveStake:               price.MoveStakePrice().String(),
 				LockStake:               price.LockStakePrice().String(),
+				Lock:                    price.LockPrice().String(),
 			})
 		}
 		blockchain.stateDeliver.Commission.Delete(height)

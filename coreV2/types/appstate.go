@@ -460,4 +460,5 @@ type Commission struct {
 	RemoveLimitOrder        string `json:"remove_limit_order"`
 	MoveStake               string `json:"move_stake"`
 	LockStake               string `json:"lock_stake"`
+	Lock                    string `json:"lock"`
 }
