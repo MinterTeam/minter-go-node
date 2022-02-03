@@ -55,6 +55,14 @@ func (data LockData) Run(tx *Transaction, context state.Interface, rewardPool *b
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
+	if uint64(data.DueBlock) <= currentBlock {
+		return Response{
+			Code: code.WrongDueHeight,
+			Log:  fmt.Sprintf("Current height is higher than the specified one"),
+			Info: EncodeError(code.NewCustomCode(code.WrongDueHeight)),
+		}
+	}
+
 	response := data.basicCheck(tx, checkState)
 	if response != nil {
 		return *response
