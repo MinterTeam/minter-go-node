@@ -9,6 +9,7 @@ import (
 	pb "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 	"strings"
 )
 
@@ -59,6 +60,10 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 					continue
 				}
 			}
+			var moveToCandidateKey *wrapperspb.StringValue
+			if len(fund.MoveToCandidate) != 0 {
+				moveToCandidateKey = wrapperspb.String(cState.Candidates().PubKey(fund.MoveToCandidate[0]).String())
+			}
 			frozen = append(frozen, &pb.FrozenResponse_Frozen{
 				Height:       funds.Height(),
 				Address:      fund.Address.String(),
@@ -67,7 +72,8 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 					Id:     uint64(fund.Coin),
 					Symbol: coin.GetFullSymbol(),
 				},
-				Value: fund.Value.String(),
+				Value:              fund.Value.String(),
+				MoveToCandidateKey: moveToCandidateKey,
 			})
 		}
 	}
