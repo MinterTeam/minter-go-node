@@ -379,6 +379,16 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 	case transaction.TypeLockStake:
 		//d := data.(*transaction.LockStakeData)
 		m = &pb.LockStakeData{}
+	case transaction.TypeLock:
+		d := data.(*transaction.LockData)
+		m = &pb.LockData{
+			DueBlock: uint64(d.DueBlock),
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Value: d.Value.String(),
+		}
 	default:
 		return nil, errors.New("unknown tx type")
 	}
