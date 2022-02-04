@@ -45,10 +45,14 @@ func (appDB *AppDB) Snapshot(height uint64, format uint32) (<-chan io.ReadCloser
 		return nil, sdkerrors.Wrap(sdkerrors.ErrLogic, "cannot snapshot height 0")
 	}
 
-	for _, name := range []string{validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath} {
+	for _, name := range []string{validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath, emissionPath, pricePath} {
 		result, err := appDB.db.Get([]byte(name))
 		if err != nil {
 			panic(err)
+		}
+
+		if len(result) == 0 {
+			continue
 		}
 
 		results = append(results, &types.SnapshotItem{
@@ -223,7 +227,7 @@ func (appDB *AppDB) Restore(
 				}
 				defer importer.Close()
 
-			case validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath:
+			case validatorsPath, heightPath, hashPath, versionsPath, blocksTimePath, startHeightPath, emissionPath, pricePath:
 				if err := appDB.db.Set([]byte(item.Store.Name), item.Store.Value); err != nil {
 					panic(err)
 				}
