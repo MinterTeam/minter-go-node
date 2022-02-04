@@ -37,6 +37,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 
 	cState.FrozenFunds().GetFrozenFunds(s.blockchain.Height())
 
+	// todo: range iavl
 	for i := s.blockchain.Height(); i <= s.blockchain.Height()+types.GetUnbondPeriod(); i++ {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
