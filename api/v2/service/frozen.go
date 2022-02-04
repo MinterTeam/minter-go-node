@@ -64,10 +64,14 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 			if len(fund.MoveToCandidate) != 0 {
 				moveToCandidateKey = wrapperspb.String(cState.Candidates().PubKey(fund.MoveToCandidate[0]).String())
 			}
+			var fromCandidateKey *wrapperspb.StringValue
+			if fund.CandidateKey != nil {
+				fromCandidateKey = wrapperspb.String(fund.CandidateKey.String())
+			}
 			frozen = append(frozen, &pb.FrozenResponse_Frozen{
 				Height:       funds.Height(),
 				Address:      fund.Address.String(),
-				CandidateKey: fund.CandidateKey.String(),
+				CandidateKey: fromCandidateKey,
 				Coin: &pb.Coin{
 					Id:     uint64(fund.Coin),
 					Symbol: coin.GetFullSymbol(),
