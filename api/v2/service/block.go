@@ -124,6 +124,12 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 					Coin:            e.Coin,
 					ValidatorPubKey: e.ValidatorPubKeyString(),
 				}
+			case *events.UnlockEvent:
+				m = &pb.UnlockEvent{
+					Address: e.AddressString(),
+					Amount:  e.Amount,
+					Coin:    e.Coin,
+				}
 			case *events.StakeMoveEvent:
 				m = &pb.StakeMoveEvent{
 					Address:           e.AddressString(),

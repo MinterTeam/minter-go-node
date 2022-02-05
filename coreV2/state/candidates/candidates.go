@@ -1373,7 +1373,16 @@ func (c *Candidates) PubKey(id uint32) types.Pubkey {
 
 	candidate, ok := c.list[id]
 	if !ok {
-		panic(fmt.Sprintf("candidate by ID %d not found", id))
+		c.muDeletedCandidates.Lock()
+		defer c.muDeletedCandidates.Unlock()
+
+		c.loadDeletedCandidates()
+		for pubkey, d := range c.deletedCandidates {
+			if d.ID == id {
+				return pubkey
+			}
+		}
+		return types.Pubkey{}
 	}
 
 	candidate.lock.RLock()

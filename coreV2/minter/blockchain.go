@@ -345,12 +345,20 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		for _, item := range frozenFunds.List {
 			amount := item.Value
 			if item.GetMoveToCandidateID() == 0 {
-				blockchain.eventsDB.AddEvent(&eventsdb.UnbondEvent{
-					Address:         item.Address,
-					Amount:          amount.String(),
-					Coin:            uint64(item.Coin),
-					ValidatorPubKey: item.CandidateKey,
-				})
+				if item.CandidateKey != nil {
+					blockchain.eventsDB.AddEvent(&eventsdb.UnbondEvent{
+						Address:         item.Address,
+						Amount:          amount.String(),
+						Coin:            uint64(item.Coin),
+						ValidatorPubKey: item.CandidateKey,
+					})
+				} else {
+					blockchain.eventsDB.AddEvent(&eventsdb.UnlockEvent{
+						Address: item.Address,
+						Amount:  amount.String(),
+						Coin:    uint64(item.Coin),
+					})
+				}
 				blockchain.stateDeliver.Accounts.AddBalance(item.Address, item.Coin, amount)
 			} else {
 				moveTo := blockchain.stateDeliver.Candidates.PubKey(item.GetMoveToCandidateID())
