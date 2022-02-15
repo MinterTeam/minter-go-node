@@ -1,8 +1,7 @@
-package swap2
+package swap
 
 import (
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"log"
@@ -16,17 +15,9 @@ import (
 	"github.com/cosmos/iavl"
 )
 
-const commissionOrder = 2
-
 var burnAddress = types.StringToAddress("MxTODO")
 
-var minimumOrderVolume int64 = 1e10
-
-func MinimumOrderVolume() int64 {
-	return minimumOrderVolume
-}
-
-func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
+func (s *SwapV2) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
 	amount1Out, ownersMap, details, expiredOrders := pair.SellWithOrders(amount0In)
 	if amount1Out.Cmp(minAmount1Out) == -1 {
@@ -41,11 +32,13 @@ func (s *Swap) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmoun
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
+
 	s.bus.Accounts().AddBalance(burnAddress, coin0, calcCommission1000(amount0In))
+
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
-func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
+func (s *SwapV2) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
 	amount0In, ownersMap, details, expiredOrders := pair.BuyWithOrders(amount1Out)
 	if amount1Out.Cmp(maxAmount0In) == 1 {
@@ -64,7 +57,7 @@ func (s *Swap) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
-func (s *Swap) hundleLittleExpiredOrders(expiredOrders []*Limit) {
+func (s *SwapV2) hundleLittleExpiredOrders(expiredOrders []*Limit) {
 	for _, limit := range expiredOrders {
 		returnVolume := big.NewInt(0).Set(limit.WantSell)
 		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)
@@ -78,37 +71,7 @@ func (s *Swap) hundleLittleExpiredOrders(expiredOrders []*Limit) {
 	}
 }
 
-type ChangeDetailsWithOrders struct {
-	AmountIn            *big.Int
-	AmountOut           *big.Int
-	CommissionAmountIn  *big.Int
-	CommissionAmountOut *big.Int
-	Orders              []*Limit
-}
-
-func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		AmountIn            string   `json:"amount_in"`
-		AmountOut           string   `json:"amount_out"`
-		CommissionAmountIn  string   `json:"commission_amount_in"`
-		CommissionAmountOut string   `json:"commission_amount_out"`
-		Orders              []*Limit `json:"orders"`
-	}{
-		AmountIn:            c.AmountIn.String(),
-		AmountOut:           c.AmountOut.String(),
-		CommissionAmountIn:  c.CommissionAmountIn.String(),
-		CommissionAmountOut: c.CommissionAmountOut.String(),
-		Orders:              c.Orders,
-	})
-}
-
-type OrderDetail struct {
-	Owner       types.Address `json:"seller"`
-	ValueBigInt *big.Int      `json:"-"`
-	Value       string        `json:"value"`
-}
-
-func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders, expiredOrders []*Limit) {
+func (p *PairV2) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders, expiredOrders []*Limit) {
 	if amount0In == nil || amount0In.Sign() != 1 {
 		panic(ErrorInsufficientInputAmount)
 	}
@@ -153,60 +116,7 @@ func (p *Pair) SellWithOrders(amount0In *big.Int) (amount1Out *big.Int, owners m
 	}, expiredOrders
 }
 
-func sortOwners(owners map[types.Address]*big.Int) (result []*OrderDetail) {
-	for address, b := range owners {
-		result = append(result, &OrderDetail{
-			Owner:       address,
-			ValueBigInt: b,
-			Value:       b.String(),
-		})
-	}
-
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Owner.Compare(result[j].Owner) == -1
-	})
-
-	return result
-}
-
-// CalcDiffPool calculates the volumes of coins purchased from the reserve and commissions from orders
-// amount0In = 1001002
-// amount1Out = 999001
-// order = 1000000/1000000
-// commission0orders = 1000
-// commission1orders = 1000
-// amount0 = 2
-// amount1 = 1
-func CalcDiffPool(amount0In, amount1Out *big.Int, orders []*Limit) (*big.Int, *big.Int, *big.Int, *big.Int, map[types.Address]*big.Int) {
-	owners := map[types.Address]*big.Int{}
-
-	amount0orders, amount1orders := big.NewInt(0), big.NewInt(0)
-	commission0orders, commission1orders := big.NewInt(0), big.NewInt(0)
-	for _, order := range orders {
-		amount0orders.Add(amount0orders, order.WantBuy)
-		cB := calcCommission1000(order.WantBuy)
-		commission0orders.Add(commission0orders, cB)
-
-		amount1orders.Add(amount1orders, order.WantSell)
-		cS := calcCommission1000(order.WantSell)
-		commission1orders.Add(commission1orders, cS)
-
-		if owners[order.Owner] == nil {
-			owners[order.Owner] = big.NewInt(0)
-		}
-		owners[order.Owner].Add(owners[order.Owner], order.WantBuy)
-	}
-
-	amount0orders.Add(amount0orders, commission0orders)
-	amount0 := big.NewInt(0).Sub(amount0In, amount0orders)
-
-	amount1orders.Sub(amount1orders, commission1orders)
-	amount1 := big.NewInt(0).Sub(amount1Out, amount1orders)
-
-	return commission0orders, commission1orders, amount0, amount1, owners
-}
-
-func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders, expiredOrders []*Limit) { // todo: add mutex
+func (p *PairV2) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners map[types.Address]*big.Int, c *ChangeDetailsWithOrders, expiredOrders []*Limit) { // todo: add mutex
 	if amount1Out == nil || amount1Out.Sign() != 1 {
 		panic(ErrorInsufficientInputAmount)
 	}
@@ -222,7 +132,6 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 		}
 		panic(ErrorInsufficientOutputAmount)
 	}
-	amount0In = big.NewInt(0).Add(amount0In, calcCommission1000(amount0In))
 
 	commission0orders, commission1orders, amount0, amount1, ownersMap := CalcDiffPool(amount0In, amount1Out, orders)
 
@@ -236,6 +145,8 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 
 	p.orderSellByIndex(0) // update list
 
+	amount0In = big.NewInt(0).Add(amount0In, calcCommission0999(amount0In))
+
 	return amount0In, ownersMap, &ChangeDetailsWithOrders{
 		AmountIn:            amount0,
 		AmountOut:           amount1,
@@ -245,7 +156,7 @@ func (p *Pair) BuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, owners ma
 	}, expiredOrders
 }
 
-func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
+func (p *PairV2) updateOrders(orders []*Limit) (littles []*Limit) {
 	for _, order := range orders {
 		limit := p.updateSellOrder(order.id, order.WantBuy, order.WantSell)
 		//fmt.Println(limit.WantBuy, limit.WantSell)
@@ -264,7 +175,7 @@ func (p *Pair) updateOrders(orders []*Limit) (littles []*Limit) {
 	return littles
 }
 
-func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
+func (p *PairV2) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 	limit := p.getOrder(id)
 	limit.OldSortPrice()
 
@@ -274,41 +185,7 @@ func (p *Pair) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 	return limit
 }
 
-func (l *Limit) isEmpty() (empty bool) {
-	if l == nil {
-		return true
-	}
-
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	if l.WantBuy.Sign() == 0 || l.WantSell.Sign() == 0 {
-		empty = true
-	}
-	if !empty {
-		return false
-	}
-
-	if l.WantBuy.Sign() != 0 || l.WantSell.Sign() != 0 {
-		panic(fmt.Sprintf("order %d has one zero volume: %s, %s. Sell %v", l.id, l.WantBuy, l.WantSell, !l.IsBuy))
-	}
-
-	return true
-}
-
-func (l *Limit) isKeepRate() bool {
-	if l == nil {
-		return false
-	}
-	//fmt.Println("is keep", l.oldSortPrice, l.sortPrice())
-	return l.CmpOldRate() == 0
-}
-
-func (l *Limit) CmpOldRate() int {
-	return l.sortPrice().Cmp(l.OldSortPrice())
-}
-
-func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit) {
+func (p *PairV2) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit) {
 	if amount0In != nil && amount0In.Sign() != 1 {
 		amount0In = big.NewInt(0).Sub(amount0In, calcCommission1000(amount0In))
 	}
@@ -320,7 +197,7 @@ func (p *Pair) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *bi
 	return amount1Out, orders
 }
 
-func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big.Int, orders []*Limit) {
+func (p *PairV2) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big.Int, orders []*Limit) {
 	amountOut = big.NewInt(0)
 	amountIn := big.NewInt(0).Set(amount0In)
 	var pair EditableChecker = p
@@ -437,37 +314,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 	return amountOut, orders
 }
 
-func calcCommission1000(amount0 *big.Int) *big.Int {
-	mul := big.NewInt(0).Mul(amount0, big.NewInt(commissionOrder/2))
-	quo := big.NewInt(0).Quo(mul, big.NewInt(1000))
-	remainder := big.NewInt(0)
-	if big.NewInt(0).Rem(mul, big.NewInt(1000)).Sign() == 1 {
-		remainder = big.NewInt(1)
-	}
-	quo.Add(quo, remainder)
-	return quo
-}
-
-func calcCommission1001(amount1 *big.Int) *big.Int {
-	quo := big.NewInt(0).Quo(amount1, big.NewInt(1000+commissionOrder/2))
-	remainder := big.NewInt(0)
-	if big.NewInt(0).Rem(amount1, big.NewInt(1000+commissionOrder/2)).Sign() == 1 {
-		remainder = big.NewInt(1)
-	}
-	quo.Add(quo, remainder)
-	return quo
-}
-func calcCommission0999(amount1 *big.Int) *big.Int {
-	quo := big.NewInt(0).Quo(amount1, big.NewInt(1000-commissionOrder/2))
-	remainder := big.NewInt(0)
-	if big.NewInt(0).Rem(amount1, big.NewInt(1000-commissionOrder/2)).Sign() == 1 {
-		remainder = big.NewInt(1)
-	}
-	quo.Add(quo, remainder)
-	return quo
-}
-
-func (p *Pair) CalculateAddAmountsForPrice(price *big.Float) (amount0In, amount1Out *big.Int) {
+func (p *PairV2) CalculateAddAmountsForPrice(price *big.Float) (amount0In, amount1Out *big.Int) {
 	if price.Cmp(p.Price()) == 1 {
 		fmt.Println("price cur and first ord", price, p.Price())
 		return nil, nil
@@ -480,7 +327,7 @@ func (p *Pair) CalculateAddAmountsForPrice(price *big.Float) (amount0In, amount1
 //	   {
 //		{ (r0 + a0) / (r1 - a1) = price
 //
-func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, amount1 *big.Int) {
+func (p *PairV2) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, amount1 *big.Int) {
 	reserve0, reserve1 := p.Reserves()
 	r0 := big.NewFloat(0).SetInt(reserve0)
 	r1 := big.NewFloat(0).SetInt(reserve1)
@@ -509,18 +356,20 @@ func (p *Pair) calculateAddAmountsForPrice(price *big.Float) (amount0 *big.Int, 
 	return amount0, amount1Out
 }
 
-func (p *Pair) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, orders []*Limit) {
+func (p *PairV2) CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, orders []*Limit) {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
 	amount0In, orders = p.calculateSellForBuyWithOrders(amount1Out)
+
 	if amount0In != nil && amount0In.Sign() == 1 {
-		amount0In = big.NewInt(0).Add(amount0In, calcCommission1000(amount0In))
+		amount0In = big.NewInt(0).Add(amount0In, calcCommission0999(amount0In))
 	}
+
 	return amount0In, orders
 }
 
-func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big.Int, orders []*Limit) {
+func (p *PairV2) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big.Int, orders []*Limit) {
 	amountIn = big.NewInt(0)
 	amountOut := big.NewInt(0).Set(amount1Out)
 	var pair EditableChecker = p
@@ -632,113 +481,24 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	return amountIn, orders
 }
 
-func CalcPriceSell(sell, buy *big.Int) *big.Float {
-	return new(big.Float).SetPrec(Precision).SetRat(
-		CalcPriceSellRat(sell, buy),
-	)
-}
-
-func CalcPriceSellRat(sell, buy *big.Int) *big.Rat {
-	return new(big.Rat).SetFrac(
-		big.NewInt(0).Set(buy),
-		big.NewInt(0).Set(sell),
-	)
-}
-
-type Limit struct {
-	WantBuy  *big.Int
-	WantSell *big.Int
-	Owner    types.Address
-	IsBuy    bool
-	Height   uint64
-
-	PairKey
-	oldSortPrice *big.Float
-	id           uint32
-
-	mu *sync.RWMutex
-}
-
-func (l *Limit) ID() uint32 {
-	if l == nil {
-		return 0
-	}
-
-	return l.id
-}
-
-func (l *Limit) MarshalJSON() ([]byte, error) {
-	return json.Marshal(struct {
-		WantBuy  string `json:"buy"`
-		WantSell string `json:"sell"`
-		Owner    string `json:"seller"`
-		ID       uint32 `json:"id"`
-	}{
-		WantBuy:  l.WantBuy.String(),
-		WantSell: l.WantSell.String(),
-		Owner:    l.Owner.String(),
-		ID:       l.id,
-	})
-}
-
-type limits struct {
-	ids []uint32
-}
-
-type orderList struct {
-	mu   sync.RWMutex
-	list map[uint32]*Limit
-}
-
-type orderDirties struct {
-	mu   sync.RWMutex
-	list map[uint32]struct{}
-}
-
-const (
-	Precision = 53 // todo: 0 // supported precision
-)
-
-func (l *Limit) Price() *big.Float {
-	if l.isEmpty() {
-		return big.NewFloat(0)
-	}
-
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	return CalcPriceSell(l.WantBuy, l.WantSell)
-}
-
-func (l *Limit) PriceRat() *big.Rat {
-	if l.isEmpty() {
-		return new(big.Rat)
-	}
-
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	return CalcPriceSellRat(l.WantBuy, l.WantSell)
-}
-
-func (p *Pair) Price() *big.Float {
+func (p *PairV2) Price() *big.Float {
 	return p.pairData.Price()
 }
-func (p *Pair) PriceRat() *big.Rat {
+func (p *PairV2) PriceRat() *big.Rat {
 	return p.pairData.PriceRat()
 }
-func (p *Pair) PriceRatCmp(rat *big.Rat) int {
+func (p *PairV2) PriceRatCmp(rat *big.Rat) int {
 	return p.pairData.PriceRat().Cmp(rat)
 }
 
-func (p *Pair) getOrder(id uint32) *Limit {
+func (p *PairV2) getOrder(id uint32) *Limit {
 	p.orders.mu.Lock()
 	defer p.orders.mu.Unlock()
 
 	return p.order(id)
 }
 
-func (p *Pair) order(id uint32) *Limit {
+func (p *PairV2) order(id uint32) *Limit {
 	l, ok := p.orders.list[id]
 	if ok {
 		if l == nil {
@@ -766,7 +526,7 @@ func (p *Pair) order(id uint32) *Limit {
 	return l.Reverse()
 }
 
-func (p *Pair) GetOrders(ids []uint32) []*Limit {
+func (p *PairV2) GetOrders(ids []uint32) []*Limit {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
@@ -776,7 +536,7 @@ func (p *Pair) GetOrders(ids []uint32) []*Limit {
 	return p.getOrders(ids)
 }
 
-func (p *Pair) getOrders(ids []uint32) []*Limit {
+func (p *PairV2) getOrders(ids []uint32) []*Limit {
 	var result []*Limit
 	for _, id := range ids {
 		result = append(result, p.order(id))
@@ -784,107 +544,21 @@ func (p *Pair) getOrders(ids []uint32) []*Limit {
 	return result
 }
 
-func (p *Pair) setOrder(l *Limit) {
+func (p *PairV2) setOrder(l *Limit) {
 	p.orders.mu.Lock()
 	defer p.orders.mu.Unlock()
 
 	p.orders.list[l.id] = l
 }
 
-func (p *Pair) DirectionSortPrice() int {
+func (p *PairV2) DirectionSortPrice() int {
 	if !p.isSorted() {
 		return 1
 	}
 	return -1
 }
 
-func (l *Limit) sortPrice() *big.Float {
-	if l.isSorted() {
-		return l.Price()
-	}
-	return l.Reverse().Price()
-}
-
-func (l *Limit) sortPriceRat() *big.Rat {
-	if l.isSorted() {
-		return l.PriceRat()
-	}
-	return l.Reverse().PriceRat()
-}
-
-func (l *Limit) OldSortPrice() *big.Float {
-	if l.oldSortPrice == nil {
-		l.oldSortPrice = new(big.Float).SetPrec(Precision).Set(l.sortPrice())
-	}
-
-	return new(big.Float).SetPrec(Precision).Set(l.oldSortPrice)
-}
-
-func (l *Limit) isSell() bool {
-	return !l.IsBuy
-}
-
-// reCalcOldSortPrice saves before change, need for update on disk
-func (l *Limit) reCalcOldSortPrice() *big.Float {
-	l.oldSortPrice.Set(l.sortPrice())
-	return l.OldSortPrice()
-}
-
-func (l *Limit) Reverse() *Limit {
-	if l == nil {
-		return nil
-	}
-
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	return &Limit{
-		PairKey:      l.PairKey.reverse(),
-		IsBuy:        !l.IsBuy,
-		WantBuy:      l.WantSell,
-		WantSell:     l.WantBuy,
-		Owner:        l.Owner,
-		Height:       l.Height,
-		oldSortPrice: l.oldSortPrice,
-		id:           l.id,
-		mu:           l.mu,
-	}
-}
-
-func (l *Limit) sort() *Limit {
-	if l.isSorted() {
-		return l
-	}
-
-	return l.Reverse()
-}
-
-func (l *Limit) isSorted() bool {
-	return l.PairKey.isSorted()
-}
-
-func (l *Limit) clone() *Limit {
-	if l == nil {
-		return nil
-	}
-
-	l.mu.RLock()
-	defer l.mu.RUnlock()
-
-	return &Limit{
-		PairKey:      l.PairKey,
-		IsBuy:        l.IsBuy,
-		WantBuy:      big.NewInt(0).Set(l.WantBuy),
-		WantSell:     big.NewInt(0).Set(l.WantSell),
-		Owner:        l.Owner,
-		Height:       l.Height,
-		oldSortPrice: new(big.Float).SetPrec(Precision).Set(l.oldSortPrice),
-		id:           l.id,
-		mu:           &sync.RWMutex{},
-	}
-}
-
-func (p *Pair) MarkDirtyOrders(order *Limit) {
+func (p *PairV2) MarkDirtyOrders(order *Limit) {
 	p.markDirtyOrders()
 
 	if order.isEmpty() {
@@ -899,14 +573,14 @@ func (p *Pair) MarkDirtyOrders(order *Limit) {
 	return
 }
 
-func (p *Pair) sellOrderIDs() []uint32 {
+func (p *PairV2) sellOrderIDs() []uint32 {
 	if p.isSorted() {
 		return p.sellOrders.ids
 	}
 	return p.buyOrders.ids
 }
 
-func (p *Pair) isUnsortedSellOrder(id uint32) bool {
+func (p *PairV2) isUnsortedSellOrder(id uint32) bool {
 	ds := p.unsortedSellOrderIDs()
 	ds.mu.RLock()
 	defer ds.mu.RUnlock()
@@ -915,18 +589,18 @@ func (p *Pair) isUnsortedSellOrder(id uint32) bool {
 	return ok
 }
 
-func (p *Pair) hasUnsortedSellOrders() bool {
+func (p *PairV2) hasUnsortedSellOrders() bool {
 	return len(p.unsortedSellOrderIDs().list) > 0
 }
 
-func (p *Pair) unsortedSellOrderIDs() *orderDirties {
+func (p *PairV2) unsortedSellOrderIDs() *orderDirties {
 	if p.isSorted() {
 		return p.unsortedDirtySellOrders
 	}
 	return p.unsortedDirtyBuyOrders
 }
 
-func (p *Pair) setUnsortedSellOrder(id uint32) {
+func (p *PairV2) setUnsortedSellOrder(id uint32) {
 	us := p.unsortedSellOrderIDs()
 	us.mu.Lock()
 	defer us.mu.Unlock()
@@ -938,11 +612,11 @@ func (p *Pair) setUnsortedSellOrder(id uint32) {
 	delete(ds.list, id)
 }
 
-func (p *Pair) hasDeletedSellOrders() bool {
+func (p *PairV2) hasDeletedSellOrders() bool {
 	return len(p.deletedSellOrderIDs().list) > 0
 }
 
-func (p *Pair) setDeletedSellOrderIDs(id uint32) {
+func (p *PairV2) setDeletedSellOrderIDs(id uint32) {
 	us := p.unsortedSellOrderIDs()
 	us.mu.Lock()
 	defer us.mu.Unlock()
@@ -953,42 +627,42 @@ func (p *Pair) setDeletedSellOrderIDs(id uint32) {
 	defer ds.mu.Unlock()
 	ds.list[id] = struct{}{}
 }
-func (p *Pair) isDeletedSellOrder(id uint32) bool {
+func (p *PairV2) isDeletedSellOrder(id uint32) bool {
 	ds := p.deletedSellOrderIDs()
 	ds.mu.RLock()
 	defer ds.mu.RUnlock()
 	_, ok := ds.list[id]
 	return ok
 }
-func (p *Pair) isDeletedBuyOrder(id uint32) bool {
+func (p *PairV2) isDeletedBuyOrder(id uint32) bool {
 	ds := p.deletedBuyOrderIDs()
 	ds.mu.RLock()
 	defer ds.mu.RUnlock()
 	_, ok := ds.list[id]
 	return ok
 }
-func (p *Pair) deletedSellOrderIDs() *orderDirties {
+func (p *PairV2) deletedSellOrderIDs() *orderDirties {
 	if p.isSorted() {
 		return p.deletedSellOrders
 	}
 	return p.deletedBuyOrders
 }
-func (p *Pair) deletedBuyOrderIDs() *orderDirties {
+func (p *PairV2) deletedBuyOrderIDs() *orderDirties {
 	if p.isSorted() {
 		return p.deletedBuyOrders
 	}
 	return p.deletedSellOrders
 }
 
-func (p *Pair) loadedSellOrderIDs() []uint32 {
+func (p *PairV2) loadedSellOrderIDs() []uint32 {
 	return p.loadedSellOrders.ids
 }
 
-func (p *Pair) loadedBuyOrderIDs() []uint32 {
+func (p *PairV2) loadedBuyOrderIDs() []uint32 {
 	return p.loadedBuyOrders.ids
 }
 
-func (p *Pair) setSellOrders(orders []uint32) {
+func (p *PairV2) setSellOrders(orders []uint32) {
 	if p.isSorted() {
 		p.sellOrders.ids = orders
 		return
@@ -996,16 +670,16 @@ func (p *Pair) setSellOrders(orders []uint32) {
 	p.buyOrders.ids = orders
 	return
 }
-func (p *Pair) setLoadedSellOrders(orders []uint32) {
+func (p *PairV2) setLoadedSellOrders(orders []uint32) {
 	p.loadedSellOrders.ids = orders
 	return
 }
-func (p *Pair) setLoadedBuyOrders(orders []uint32) {
+func (p *PairV2) setLoadedBuyOrders(orders []uint32) {
 	p.loadedBuyOrders.ids = orders
 	return
 }
 
-func (p *Pair) isDirtyOrder(id uint32) bool {
+func (p *PairV2) isDirtyOrder(id uint32) bool {
 	p.dirtyOrders.mu.RLock()
 	defer p.dirtyOrders.mu.RUnlock()
 
@@ -1013,7 +687,7 @@ func (p *Pair) isDirtyOrder(id uint32) bool {
 	return ok
 }
 
-func (p *Pair) getDirtyOrdersList() []uint32 {
+func (p *PairV2) getDirtyOrdersList() []uint32 {
 	dirtiesOrders := make([]uint32, 0, len(p.dirtyOrders.list))
 
 	p.dirtyOrders.mu.RLock()
@@ -1028,7 +702,7 @@ func (p *Pair) getDirtyOrdersList() []uint32 {
 	return dirtiesOrders
 }
 
-func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, block uint64) (uint32, uint32) {
+func (s *SwapV2) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, block uint64) (uint32, uint32) {
 	pair := s.Pair(coinWantBuy, coinWantSell)
 	order := pair.AddOrder(wantBuyAmount, wantSellAmount, sender, block)
 
@@ -1037,7 +711,7 @@ func (s *Swap) PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmoun
 	return order.id, pair.GetID()
 }
 
-func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
+func (s *SwapV2) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	order := s.loadOrder(id)
 	if order == nil {
 		return 0, big.NewInt(0)
@@ -1046,7 +720,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 	return s.removeLimitOrder(order)
 }
 
-func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
+func (s *SwapV2) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
 	if !order.isSell() {
 		order = order.Reverse()
 	}
@@ -1079,7 +753,7 @@ func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
 	return order.Coin1, returnVolume
 }
 
-func (s *Swap) pairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32, height uint64) (uint32, uint32) {
+func (s *SwapV2) pairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, id uint32, height uint64) (uint32, uint32) {
 	pair := s.Pair(coinWantBuy, coinWantSell)
 	order := pair.addOrderWithID(wantBuyAmount, wantSellAmount, sender, id, height)
 
@@ -1088,10 +762,10 @@ func (s *Swap) pairAddOrderWithID(coinWantBuy, coinWantSell types.CoinID, wantBu
 	return order.id, pair.GetID()
 }
 
-func (p *Pair) GetOrder(id uint32) *Limit {
+func (p *PairV2) GetOrder(id uint32) *Limit {
 	return p.getOrder(id)
 }
-func (p *Pair) IsOrderAlreadyUsed(id uint32) bool {
+func (p *PairV2) IsOrderAlreadyUsed(id uint32) bool {
 	if p.isOrderAlreadyUsed(id) {
 		return true
 	}
@@ -1100,14 +774,14 @@ func (p *Pair) IsOrderAlreadyUsed(id uint32) bool {
 	return order == nil || order.isEmpty()
 }
 
-func (p *Pair) isOrderAlreadyUsed(id uint32) bool {
+func (p *PairV2) isOrderAlreadyUsed(id uint32) bool {
 	if p.isDeletedBuyOrder(id) || p.isDeletedSellOrder(id) {
 		return true
 	}
 	return false
 }
 
-func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, block uint64) (order *Limit) {
+func (p *PairV2) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, block uint64) (order *Limit) {
 	order = &Limit{
 		PairKey:      p.PairKey,
 		IsBuy:        false,
@@ -1131,7 +805,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	return order
 }
 
-func (p *Pair) addOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32, height uint64) (order *Limit) {
+func (p *PairV2) addOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.Address, id uint32, height uint64) (order *Limit) {
 	order = &Limit{
 		PairKey:      p.PairKey,
 		IsBuy:        false,
@@ -1151,7 +825,7 @@ func (p *Pair) addOrderWithID(wantBuyAmount0, wantSellAmount1 *big.Int, sender t
 	return order
 }
 
-func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit) {
+func (p *PairV2) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit) {
 	const countFirstBytes = 10
 
 	startKey := append(append([]byte{mainPrefix}, p.pathOrders()...), byte(0), byte(0))
@@ -1178,7 +852,7 @@ func (p *Pair) loadAllOrders(immutableTree *iavl.ImmutableTree) (orders []*Limit
 	return orders
 }
 
-func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
+func (s *SwapV2) loadBuyOrders(pair *PairV2, fromOrder *Limit, limit int) []uint32 {
 	endKey := append(append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(255)), id2Bytes(math.MaxUint32)...)
 	var startKey = append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(0), byte(0))
 
@@ -1243,7 +917,7 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 	return slice
 }
 
-func (s *Swap) GetOrder(id uint32) *Limit {
+func (s *SwapV2) GetOrder(id uint32) *Limit {
 	order := s.loadOrder(id)
 	if order == nil {
 		return nil
@@ -1269,7 +943,7 @@ func (s *Swap) GetOrder(id uint32) *Limit {
 	return order
 }
 
-func (s *Swap) loadOrder(id uint32) *Limit {
+func (s *SwapV2) loadOrder(id uint32) *Limit {
 	_, value := s.immutableTree().Get(pathOrder(id))
 	if value == nil {
 		return nil
@@ -1290,7 +964,7 @@ func (s *Swap) loadOrder(id uint32) *Limit {
 	return order
 }
 
-func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
+func (s *SwapV2) loadSellOrders(pair *PairV2, fromOrder *Limit, limit int) []uint32 {
 	startKey := append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(1), byte(0))
 	var endKey = append(append(append([]byte{mainPrefix}, pair.pathOrders()...), byte(1), byte(255)), id2Bytes(math.MaxUint32)...)
 
@@ -1354,7 +1028,7 @@ func (s *Swap) loadSellOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 
 	return slice
 }
 
-func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, delCount int) {
+func (p *PairV2) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, delCount int) {
 	var limits []*Limit
 	for _, orderID := range list {
 		if _, ok := p.deletedSellOrderIDs().list[orderID]; ok {
@@ -1419,74 +1093,14 @@ func (p *Pair) updateDirtyOrders(list []uint32, lower bool) (orders []uint32, de
 	return orders, delCount
 }
 
-func addToList(orders []*Limit, dirtyOrder *Limit, cmp int, index int) (list []*Limit, included bool, pos int) {
-
-	var hasZero bool
-
-	var last int
-	if len(orders) != 0 && orders[len(orders)-1] == nil {
-		hasZero = true
-		last = 1
-	}
-
-	skeeped := index
-	var start, end = index, len(orders) - last
-	var slice = orders[start:end]
-	for len(slice) > 0 {
-		cur := len(slice) / 2
-		limit := slice[cur]
-		if limit.id == dirtyOrder.id {
-			log.Println("dirty ID == in list ID", limit.id)
-			return orders, false, 0
-		}
-
-		less := false
-		switch dirtyOrder.sortPrice().Cmp(limit.sortPrice()) {
-		case cmp:
-			less = true
-		case 0:
-			if dirtyOrder.id > limit.id {
-				less = true
-			} else {
-				less = false
-			}
-		default:
-			less = false
-		}
-
-		if less {
-			skeeped += cur + 1
-			index = 0
-			slice = slice[cur+1:]
-		} else {
-			index = cur
-			slice = slice[:cur]
-		}
-	}
-	index += skeeped
-
-	if index == 0 {
-		return append([]*Limit{dirtyOrder}, orders...), true, 0
-	}
-
-	if index == len(orders) {
-		if hasZero {
-			return append(orders[:len(orders)-1:len(orders)-1], dirtyOrder, nil), true, index
-		}
-		return orders, false, -1
-	}
-
-	return append(orders[:index:index], append([]*Limit{dirtyOrder}, orders[index:]...)...), true, index
-}
-
-func (p *Pair) OrderSellByIndex(index int) *Limit {
+func (p *PairV2) OrderSellByIndex(index int) *Limit {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
 	return p.orderSellByIndex(index)
 }
 
-func (p *Pair) orderSellLoadToIndex(index int) *Limit {
+func (p *PairV2) orderSellLoadToIndex(index int) *Limit {
 	p.unsortedSellOrderIDs().mu.Lock()
 	defer p.unsortedSellOrderIDs().mu.Unlock()
 
@@ -1577,14 +1191,14 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 	return order
 }
 
-func (p *Pair) orderSellByIndex(index int) *Limit {
+func (p *PairV2) orderSellByIndex(index int) *Limit {
 	p.orders.mu.Lock()
 	defer p.orders.mu.Unlock()
 
 	return p.orderSellLoadToIndex(index)
 }
 
-func (p *Pair) ordersSellToIndex(index int) []*Limit {
+func (p *PairV2) ordersSellToIndex(index int) []*Limit {
 	p.orders.mu.Lock()
 	defer p.orders.mu.Unlock()
 
@@ -1598,14 +1212,14 @@ func (p *Pair) ordersSellToIndex(index int) []*Limit {
 	return p.getOrders(orderIDs)
 }
 
-func (p *Pair) OrdersSell(limit uint32) []*Limit {
+func (p *PairV2) OrdersSell(limit uint32) []*Limit {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
 	return p.ordersSell(limit)
 }
 
-func (p *Pair) ordersSell(limit uint32) []*Limit {
+func (p *PairV2) ordersSell(limit uint32) []*Limit {
 	index := int(limit - 1)
 
 	return p.ordersSellToIndex(index)
@@ -1613,7 +1227,7 @@ func (p *Pair) ordersSell(limit uint32) []*Limit {
 }
 
 // Deprecated
-func (p *Pair) OrderSellLast() (limit *Limit, index int) {
+func (p *PairV2) OrderSellLast() (limit *Limit, index int) {
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
@@ -1621,7 +1235,7 @@ func (p *Pair) OrderSellLast() (limit *Limit, index int) {
 }
 
 // Deprecated
-func (p *Pair) orderSellLast() (limit *Limit, index int) {
+func (p *PairV2) orderSellLast() (limit *Limit, index int) {
 	for order := p.orderSellByIndex(index); order != nil; order = p.orderSellByIndex(index) {
 		limit = order
 		index++
@@ -1629,7 +1243,7 @@ func (p *Pair) orderSellLast() (limit *Limit, index int) {
 	return limit, index - 1
 }
 
-func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy bool) EditableChecker {
+func (p *PairV2) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy bool) EditableChecker {
 	if amount0In.Sign() == -1 || amount1Out.Sign() == -1 {
 		return p.reverse().AddLastSwapStepWithOrders(big.NewInt(0).Neg(amount1Out), big.NewInt(0).Neg(amount0In), !buy).Reverse()
 	}
@@ -1640,7 +1254,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 	if buy {
 		amount0InCalc, ordrs := p.calculateSellForBuyWithOrders(amount1Out)
 		if amount0InCalc != nil && amount0InCalc.Sign() == 1 {
-			amount0InCalc = big.NewInt(0).Add(amount0InCalc, calcCommission1000(amount0InCalc))
+			amount0InCalc = big.NewInt(0).Add(amount0InCalc, calcCommission0999(amount0InCalc))
 		}
 		if amount0InCalc.Cmp(amount0In) != 0 {
 			log.Println("AddLastSwapStepWithOrders calculateSellForBuyWithOrders error", amount0InCalc, amount0In)
@@ -1700,7 +1314,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 	}
 	p.deletedBuyOrders.mu.Unlock()
 
-	pair := &Pair{
+	pair := &PairV2{
 		lockOrders: &sync.Mutex{},
 		PairKey:    p.PairKey,
 		pairData: &pairData{

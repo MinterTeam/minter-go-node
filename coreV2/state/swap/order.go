@@ -645,6 +645,26 @@ type Limit struct {
 	mu *sync.RWMutex
 }
 
+func (l *Limit) GetWantBuy() *big.Int {
+	return l.WantBuy
+}
+
+func (l *Limit) GetWantSell() *big.Int {
+	return l.WantSell
+}
+
+func (l *Limit) GetOwner() types.Address {
+	return l.Owner
+}
+
+func (l *Limit) GetIsBuy() bool {
+	return l.IsBuy
+}
+
+func (l *Limit) GetHeight() uint64 {
+	return l.Height
+}
+
 func (l *Limit) ID() uint32 {
 	if l == nil {
 		return 0
@@ -724,6 +744,13 @@ func (p *Pair) getOrder(id uint32) *Limit {
 	return p.order(id)
 }
 
+func (p *Pair) getOrderInterface(id uint32) Limiter {
+	p.orders.mu.Lock()
+	defer p.orders.mu.Unlock()
+
+	return p.order(id)
+}
+
 func (p *Pair) order(id uint32) *Limit {
 	l, ok := p.orders.list[id]
 	if ok {
@@ -735,7 +762,7 @@ func (p *Pair) order(id uint32) *Limit {
 			return l
 		}
 
-		return l.Reverse()
+		return l.reverse()
 	}
 
 	l = p.loadOrder(id)
@@ -749,7 +776,7 @@ func (p *Pair) order(id uint32) *Limit {
 		return l
 	}
 
-	return l.Reverse()
+	return l.reverse()
 }
 
 func (p *Pair) GetOrders(ids []uint32) []*Limit {
@@ -788,14 +815,14 @@ func (l *Limit) sortPrice() *big.Float {
 	if l.isSorted() {
 		return l.Price()
 	}
-	return l.Reverse().Price()
+	return l.reverse().Price()
 }
 
 func (l *Limit) sortPriceRat() *big.Rat {
 	if l.isSorted() {
 		return l.PriceRat()
 	}
-	return l.Reverse().PriceRat()
+	return l.reverse().PriceRat()
 }
 
 func (l *Limit) OldSortPrice() *big.Float {
@@ -816,6 +843,26 @@ func (l *Limit) reCalcOldSortPrice() *big.Float {
 	return l.OldSortPrice()
 }
 
+func (l *Limit) reverse() *Limit {
+	if l == nil {
+		return nil
+	}
+
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	return &Limit{
+		PairKey:      l.PairKey.reverse(),
+		IsBuy:        !l.IsBuy,
+		WantBuy:      l.WantSell,
+		WantSell:     l.WantBuy,
+		Owner:        l.Owner,
+		Height:       l.Height,
+		oldSortPrice: l.oldSortPrice,
+		id:           l.id,
+		mu:           l.mu,
+	}
+}
 func (l *Limit) Reverse() *Limit {
 	if l == nil {
 		return nil
@@ -842,7 +889,7 @@ func (l *Limit) sort() *Limit {
 		return l
 	}
 
-	return l.Reverse()
+	return l.reverse()
 }
 
 func (l *Limit) isSorted() bool {
@@ -1034,7 +1081,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 
 func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
 	if !order.isSell() {
-		order = order.Reverse()
+		order = order.reverse()
 	}
 
 	pair := s.Pair(order.Coin0, order.Coin1)
@@ -1760,4 +1807,18 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 	pair.orderSellByIndex(0)
 
 	return pair
+}
+
+type Limiter interface {
+	CmpOldRate() int
+	GetWantBuy() *big.Int
+	GetWantSell() *big.Int
+	GetOwner() types.Address
+	GetIsBuy() bool
+	GetHeight() uint64
+	ID() uint32
+	MarshalJSON() ([]byte, error)
+	Price() *big.Float
+	PriceRat() *big.Rat
+	Reverse() *Limit
 }

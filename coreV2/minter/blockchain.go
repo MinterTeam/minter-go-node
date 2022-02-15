@@ -2,6 +2,7 @@ package minter
 
 import (
 	"context"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	tmlog "github.com/tendermint/tendermint/libs/log"
@@ -190,12 +191,24 @@ const ( // known update versions
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()
-	stateDeliver, err := state.NewState(currentHeight,
-		blockchain.storages.StateDB(),
-		blockchain.eventsDB,
-		blockchain.cfg.StateCacheSize,
-		blockchain.cfg.KeepLastStates,
-		initialHeight)
+
+	var stateDeliver *state.State
+	var err error
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
+		stateDeliver, err = state.NewStateV3(currentHeight,
+			blockchain.storages.StateDB(),
+			blockchain.eventsDB,
+			blockchain.cfg.StateCacheSize,
+			blockchain.cfg.KeepLastStates,
+			initialHeight)
+	} else {
+		stateDeliver, err = state.NewState(currentHeight,
+			blockchain.storages.StateDB(),
+			blockchain.eventsDB,
+			blockchain.cfg.StateCacheSize,
+			blockchain.cfg.KeepLastStates,
+			initialHeight)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -546,6 +559,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 			blockchain.executor = GetExecutor(v)
+			if v == V3 {
+				blockchain.stateDeliver.SwapV2 = swap.NewV2(blockchain.stateDeliver.Bus(), blockchain.stateDeliver.Tree().GetLastImmutable())
+			}
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}

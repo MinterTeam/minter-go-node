@@ -72,7 +72,7 @@ func export(cmd *cobra.Command, args []string) error {
 
 	db := appdb.NewAppDB(storages.GetMinterHome(), cfg)
 
-	currentState, err := state.NewCheckStateAtHeight(height, ldb)
+	currentState, err := state.NewCheckStateAtHeightV3(height, ldb)
 	if err != nil {
 		log.Panicf("Cannot new state at given height: %s, last available height %d", err, db.GetLastHeight())
 	}
