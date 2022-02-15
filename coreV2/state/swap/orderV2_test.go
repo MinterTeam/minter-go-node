@@ -1,4 +1,4 @@
-package swap2
+package swap
 
 import (
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
@@ -26,7 +26,7 @@ func TestSwap_PairSellSimple(t *testing.T) {
 	events := &eventsdb.MockEvents{}
 	newBus.SetEvents(events)
 
-	swap := New(newBus, immutableTree.GetLastImmutable())
+	swap := NewV2(newBus, immutableTree.GetLastImmutable())
 	_, _, _, _ = swap.PairCreate(0, 1, helpers.BipToPip(big.NewInt(1)), helpers.BipToPip(big.NewInt(1)))
 	pair := swap.Pair(0, 1)
 	pair.AddOrder(helpers.BipToPip(big.NewInt(1001)), helpers.BipToPip(big.NewInt(999)), types.Address{1}, 1)
@@ -35,7 +35,7 @@ func TestSwap_PairSellSimple(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	swap = New(newBus, immutableTree.GetLastImmutable())
+	swap = NewV2(newBus, immutableTree.GetLastImmutable())
 	pair = swap.Pair(0, 1)
 	t.Log(pair.BuyWithOrders(big.NewInt(0).Add(helpers.BipToPip(big.NewInt(998)), big.NewInt(2e15))))
 

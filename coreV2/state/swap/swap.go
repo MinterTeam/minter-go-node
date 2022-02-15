@@ -74,6 +74,7 @@ type RSwap interface {
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error)
 }
 
+// Deprecated
 type Swap struct {
 	muPairs       sync.RWMutex
 	pairs         map[PairKey]*Pair
