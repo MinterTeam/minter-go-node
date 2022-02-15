@@ -277,7 +277,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 
-	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
 		t, _, _ := blockchain.appDB.GetPrice()
 		if req.Header.Time.Sub(t) > time.Hour*24*3 && req.Header.Time.Hour() > 12 {
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
@@ -421,7 +421,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	var reward = big.NewInt(0)
 	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 
-	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
 		emission := blockchain.appDB.Emission()
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			reward = blockchain.stateDeliver.App.Reward()
@@ -468,7 +468,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	// pay rewards
 	var x2rewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
-		if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
+		if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
 			x2rewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
 		} else {
 			blockchain.stateDeliver.Validators.PayRewards()
