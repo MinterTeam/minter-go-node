@@ -888,7 +888,7 @@ func TestOrder_sell_part(t *testing.T) {
 	tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV230{
 		Coins:             []types.CoinID{1, 2},
 		ValueToSell:       helpers.StringToBigInt("10000000000000000000000"),
-		MinimumValueToBuy: helpers.StringToBigInt("1"),
+		MinimumValueToBuy: helpers.StringToBigInt("1"), // 5112995362466427928808
 	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
@@ -897,7 +897,11 @@ func TestOrder_sell_part(t *testing.T) {
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
 	}
-
+	for _, event := range response.Events {
+		for _, tag := range event.Attributes {
+			t.Log(tag.String())
+		}
+	}
 	SendEndBlock(app, 1) // send EndBlock
 	SendCommit(app)      // send Commit
 
