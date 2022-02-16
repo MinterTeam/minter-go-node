@@ -182,6 +182,10 @@ func (a *App) Export(state *types.AppState) {
 	state.TotalSlashed = a.GetTotalSlashed().String()
 }
 
+func (a *App) SetReward(newRewards *big.Int) {
+	model := a.getOrNew()
+	model.setReward(newRewards)
+}
 func (a *App) IncrementReward(diff *big.Int) {
 	if diff.Sign() == 0 {
 		return

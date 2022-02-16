@@ -1253,18 +1253,11 @@ func (p *PairV2) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy b
 	var orders []*Limit
 	if buy {
 		amount0InCalc, ordrs := p.calculateSellForBuyWithOrders(amount1Out)
-		if amount0InCalc != nil && amount0InCalc.Sign() == 1 {
-			amount0InCalc = big.NewInt(0).Add(amount0InCalc, calcCommission0999(amount0InCalc))
-		}
 		if amount0InCalc.Cmp(amount0In) != 0 {
 			log.Println("AddLastSwapStepWithOrders calculateSellForBuyWithOrders error", amount0InCalc, amount0In)
 		}
 		orders = ordrs
 	} else {
-		amount0In = big.NewInt(0).Sub(amount0In, calcCommission1000(amount0In))
-		if amount0In.Sign() != 1 {
-			panic("ALSSS")
-		}
 		amount1OutCalc, ordrs := p.calculateBuyForSellWithOrders(amount0In)
 		if amount1OutCalc.Cmp(amount1Out) != 0 {
 			log.Println("AddLastSwapStepWithOrders calculateBuyForSellWithOrders error", amount1OutCalc, amount1Out)
