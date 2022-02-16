@@ -186,10 +186,9 @@ func (p *PairV2) updateSellOrder(id uint32, amount0, amount1 *big.Int) *Limit {
 }
 
 func (p *PairV2) CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit) {
-	if amount0In != nil && amount0In.Sign() != 1 {
+	if amount0In != nil && amount0In.Sign() == 1 {
 		amount0In = big.NewInt(0).Sub(amount0In, calcCommission1000(amount0In))
 	}
-
 	p.lockOrders.Lock()
 	defer p.lockOrders.Unlock()
 
