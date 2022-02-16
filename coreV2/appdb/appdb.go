@@ -442,29 +442,48 @@ func (appDB *AppDB) Emission() (emission *big.Int) {
 type TimePrice struct {
 	T      uint64
 	R0, R1 *big.Int
+	Off    bool
+	Last   *big.Int
 }
 
 func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) *big.Int {
-	_, reserve0, reserve1 := appDB.GetPrice()
-	defer appDB.SetPrice(t, r0, r1)
-
+	_, reserve0, reserve1, last, off := appDB.GetPrice()
+	defer func() { appDB.SetPrice(t, r0, r1, last, off) }()
 	fOld := big.NewRat(1, 1).SetFrac(reserve1, reserve0)
 	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
 
 	rat := new(big.Rat).Mul(new(big.Rat).Quo(new(big.Rat).Sub(fNew, fOld), fOld), new(big.Rat).SetInt64(100))
 	diff := big.NewInt(0).Div(new(big.Int).Mul(rat.Num(), big.NewInt(1e18)), rat.Denom())
 
-	return diff
+	priceCount := big.NewInt(2e18)      // todo: calculate Price ^ (1/4) * 350 * 3
+	if diff.Cmp(big.NewInt(-10)) != 1 { // 100 - Price_new / Price_old * 100
+		last.SetInt64(0)
+		off = true
+		return last
+	}
+
+	if off && last.Cmp(priceCount) == -1 {
+		last.Add(last, big.NewInt(10))
+		return last
+	}
+
+	off = false
+	last.Set(priceCount)
+	//new(big.Float).SetRat(fNew).
+
+	return last
 }
 
-func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int) {
+func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int, lastReward *big.Int, off bool) {
 	appDB.mu.Lock()
 	defer appDB.mu.Unlock()
 
 	appDB.price = &TimePrice{
-		T:  uint64(t.Nanosecond()),
-		R0: big.NewInt(0).Set(r0), // BIP
-		R1: big.NewInt(0).Set(r1), // USDTE
+		T:    uint64(t.Nanosecond()),
+		R0:   big.NewInt(0).Set(r0), // BIP
+		R1:   big.NewInt(0).Set(r1), // USDTE
+		Off:  off,
+		Last: new(big.Int).Set(lastReward),
 	}
 	appDB.isDirtyPrice = true
 }
@@ -489,7 +508,7 @@ func (appDB *AppDB) SavePrice() {
 	}
 }
 
-func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
+func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int, lastReward *big.Int, off bool) {
 	appDB.mu.Lock()
 	defer appDB.mu.Unlock()
 
@@ -499,7 +518,7 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
 			panic(err)
 		}
 		if len(result) == 0 {
-			return time.Unix(0, 0), nil, nil
+			return time.Unix(0, 0), nil, nil, nil, false
 		}
 
 		appDB.price = &TimePrice{}
@@ -509,5 +528,5 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
 			panic(err)
 		}
 	}
-	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1
+	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1, new(big.Int).Set(appDB.price.Last), appDB.price.Off
 }

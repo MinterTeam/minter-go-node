@@ -10,7 +10,7 @@ import (
 	"github.com/MinterTeam/minter-go-node/helpers"
 )
 
-func TestOrder_checkBalance(t *testing.T) {
+func TestOrder_checkBalanceGas0(t *testing.T) {
 	address, pk := CreateAddress() // create account for test
 
 	state := DefaultAppState() // generate default state
@@ -67,7 +67,81 @@ func TestOrder_checkBalance(t *testing.T) {
 	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV260{
 		Coins:              []types.CoinID{1, 0},
 		ValueToBuy:         helpers.StringToBigInt("39919492393318821938180"),
-		MaximumValueToSell: helpers.StringToBigInt("4000000000000000000"),
+		MaximumValueToSell: helpers.StringToBigInt("4000000000000000000"), // 3999999999999999999
+	}, 0)
+
+	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+
+	// check that result is OK
+	if response.Code != code.OK {
+		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+	}
+	for _, event := range response.Events {
+		for _, tag := range event.Attributes {
+			t.Log(tag.String())
+		}
+	}
+	SendEndBlock(app, 1) // send EndBlock
+	SendCommit(app)      // send Commit
+}
+func TestOrder_checkBalanceGas1(t *testing.T) {
+	address, pk := CreateAddress() // create account for test
+
+	state := DefaultAppState() // generate default state
+
+	state.Coins = append(state.Coins, types.Coin{
+		ID:           1,
+		Name:         "Test 1",
+		Symbol:       types.StrToCoinBaseSymbol("TEST1"),
+		Volume:       "100004099999999999999999",
+		Crr:          0,
+		Reserve:      "0",
+		MaxSupply:    "90000000000000000000000000000",
+		Version:      0,
+		OwnerAddress: &address,
+		Mintable:     false,
+		Burnable:     false,
+	})
+
+	state.NextOrderID = 2
+	state.Pools = append(state.Pools, types.Pool{
+		Coin0:    1,
+		Coin1:    0,
+		Reserve0: "100000000000000000000000",
+		Reserve1: "10000000000000000000000000",
+		ID:       1,
+		Orders: []types.Order{{
+			IsSale:  true,
+			Volume0: "10000000000000000000",    // want to buy
+			Volume1: "99998528242522874800000", // want to sell
+			ID:      1,
+			Owner:   types.Address{},
+		}},
+	})
+	state.Commission.Coin = 0
+	state.Accounts = append(state.Accounts, types.Account{
+		Address: address,
+		Balance: []types.Balance{
+			{
+				Coin:  uint64(types.GetBaseCoinID()),
+				Value: helpers.StringToBigInt("997987309832970547704").String(),
+			},
+			{
+				Coin:  1,
+				Value: helpers.StringToBigInt("4099999999999999999").String(),
+			},
+		},
+		Nonce:        0,
+		MultisigData: nil,
+	})
+
+	app := CreateApp(state) // create application
+	SendBeginBlock(app, 1)  // send BeginBlock
+
+	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV260{
+		Coins:              []types.CoinID{1, 0},
+		ValueToBuy:         helpers.StringToBigInt("39919492393318821938180"),
+		MaximumValueToSell: helpers.StringToBigInt("4000000000000000000"), // 3999999999999999999
 	}, 1)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
@@ -527,6 +601,7 @@ func TestOrder_Expire_sell_with_expiredOrdersPeriod_5_block(t *testing.T) {
 	if response.Code != code.OK {
 		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
 	}
+
 	SendEndBlock(app, 16) // send EndBlock
 	SendCommit(app)       // send Commit
 
