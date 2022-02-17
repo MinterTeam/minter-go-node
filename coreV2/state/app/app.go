@@ -181,9 +181,9 @@ func (a *App) Export(state *types.AppState) {
 	state.TotalSlashed = a.GetTotalSlashed().String()
 }
 
-func (a *App) SetReward(newRewards *big.Int, rewardsX3 *big.Int) {
+func (a *App) SetReward(newRewards *big.Int, safeReward *big.Int) {
 	model := a.getOrNew()
-	model.setReward(newRewards, rewardsX3)
+	model.setReward(newRewards, safeReward)
 }
 
 func (a *App) Reward() (*big.Int, *big.Int) {

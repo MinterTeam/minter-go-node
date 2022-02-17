@@ -447,7 +447,7 @@ type TimePrice struct {
 	Last   *big.Int
 }
 
-func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, x3rewards, burn *big.Int) {
+func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeReward *big.Int) {
 	time, reserve0, reserve1, last, off := appDB.GetPrice()
 
 	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
@@ -455,7 +455,7 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, x3rewards
 	priceCount, _ := new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)).Int(nil)
 	if time.IsZero() {
 		appDB.SetPrice(t, r0, r1, priceCount, false)
-		return priceCount, new(big.Int).Mul(priceCount, big.NewInt(3)), new(big.Int)
+		return priceCount, priceCount
 	}
 
 	defer func() { appDB.SetPrice(t, r0, r1, last, off) }()
@@ -468,24 +468,24 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, x3rewards
 	if diff.Cmp(big.NewInt(-10)) != 1 {
 		last.SetInt64(0)
 		off = true
-		return new(big.Int), new(big.Int).Mul(priceCount, big.NewInt(3)), priceCount
+		return new(big.Int), priceCount
 	}
 
 	if off && diff.Sign() != -1 {
 		last.Add(last, big.NewInt(10))
-		burn = big.NewInt(0).Sub(priceCount, last)
+		burn := big.NewInt(0).Sub(priceCount, last)
 		if burn.Sign() != 1 {
 			last.Set(priceCount)
 			off = false
-			return last, new(big.Int).Mul(priceCount, big.NewInt(3)), new(big.Int)
+			return last, priceCount
 		}
-		return last, new(big.Int).Mul(priceCount, big.NewInt(3)), burn
+		return last, priceCount
 	}
 
 	off = false
 	last.Set(priceCount)
 
-	return last, new(big.Int).Mul(priceCount, big.NewInt(3)), new(big.Int)
+	return last, priceCount
 }
 
 func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int, lastReward *big.Int, off bool) {

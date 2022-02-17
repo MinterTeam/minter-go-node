@@ -45,11 +45,11 @@ func (model *Model) reward() (*big.Int, *big.Int) {
 	return model.Reward[0], model.Reward[1]
 }
 
-func (model *Model) setReward(reward *big.Int, rewardX3 *big.Int) {
+func (model *Model) setReward(reward *big.Int, safeReward *big.Int) {
 	model.mx.Lock()
 	defer model.mx.Unlock()
 
-	model.Reward = []*big.Int{reward, rewardX3}
+	model.Reward = []*big.Int{reward, safeReward}
 
 	model.markDirty()
 }
