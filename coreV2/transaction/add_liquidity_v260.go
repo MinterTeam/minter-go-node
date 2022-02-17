@@ -186,7 +186,7 @@ func (data AddLiquidityDataV260) Run(tx *Transaction, context state.Interface, r
 				detailsCom *swap.ChangeDetailsWithOrders
 				ownersCom  []*swap.OrderDetail
 			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
 				CoinIn:   tx.CommissionCoin(),
@@ -206,7 +206,7 @@ func (data AddLiquidityDataV260) Run(tx *Transaction, context state.Interface, r
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 
-		amount0, amount1, liquidity := deliverState.Swap.PairMint(data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1, coinLiquidity.Volume())
+		amount0, amount1, liquidity := deliverState.Swapper().PairMint(data.Coin0, data.Coin1, data.Volume0, data.MaximumVolume1, coinLiquidity.Volume())
 		deliverState.Accounts.SubBalance(sender, data.Coin0, amount0)
 		deliverState.Accounts.SubBalance(sender, data.Coin1, amount1)
 

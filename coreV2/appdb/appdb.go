@@ -448,12 +448,13 @@ type TimePrice struct {
 }
 
 func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeReward *big.Int) {
-	time, reserve0, reserve1, last, off := appDB.GetPrice()
+	tOld, reserve0, reserve1, last, off := appDB.GetPrice()
 
 	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
 	// Price ^ (1/4) * 350
 	priceCount, _ := new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)).Int(nil)
-	if time.IsZero() {
+	priceCount.Mul(priceCount, big.NewInt(1e18)) // todo
+	if tOld.IsZero() {
 		appDB.SetPrice(t, r0, r1, priceCount, false)
 		return priceCount, priceCount
 	}
@@ -463,7 +464,7 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 	fOld := big.NewRat(1, 1).SetFrac(reserve1, reserve0)
 
 	rat := new(big.Rat).Mul(new(big.Rat).Quo(new(big.Rat).Sub(fNew, fOld), fOld), new(big.Rat).SetInt64(100))
-	diff := big.NewInt(0).Div(new(big.Int).Mul(rat.Num(), big.NewInt(1e18)), rat.Denom())
+	diff := big.NewInt(0).Div(rat.Num(), rat.Denom())
 
 	if diff.Cmp(big.NewInt(-10)) != 1 {
 		last.SetInt64(0)

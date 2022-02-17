@@ -27,7 +27,7 @@ type RAccounts interface {
 	Export(state *types.AppState)
 	GetAccount(address types.Address) *Model
 	GetNonce(address types.Address) uint64
-	GetIncreasedRewardsUpToBlock(address types.Address) uint64
+	GetLockStakeUntilBlock(address types.Address) uint64
 	GetBalance(address types.Address, coin types.CoinID) *big.Int
 	GetBalances(address types.Address) []Balance
 	ExistsMultisig(msigAddress types.Address) bool
@@ -186,7 +186,7 @@ func (a *Accounts) AddBalance(address types.Address, coin types.CoinID, amount *
 }
 
 func (a *Accounts) IsX3Mining(address types.Address, height uint64) bool {
-	return height < a.GetIncreasedRewardsUpToBlock(address)
+	return height < a.GetLockStakeUntilBlock(address)
 }
 
 func (a *Accounts) GetBalance(address types.Address, coin types.CoinID) *big.Int {
@@ -366,18 +366,17 @@ func (a *Accounts) GetNonce(address types.Address) uint64 {
 	return account.Nonce
 }
 
-func (a *Accounts) SetGetIncreasedRewardsUpToBlock(address types.Address, h uint64) {
+func (a *Accounts) SetLockStakeUntilBlock(address types.Address, h uint64) {
 	account := a.getOrNew(address)
-	account.setIncreasedRewardsUpToBlock(h)
+	account.setLockStakeUntilBlock(h)
 }
 
-func (a *Accounts) GetIncreasedRewardsUpToBlock(address types.Address) uint64 {
+func (a *Accounts) GetLockStakeUntilBlock(address types.Address) uint64 {
 	account := a.getOrNew(address)
-
 	account.lock.RLock()
 	defer account.lock.RUnlock()
 
-	return account.getIncreasedRewardsUpToBlock()
+	return account.getLockStakeUntilBlock()
 }
 
 func (a *Accounts) GetBalances(address types.Address) []Balance {
@@ -430,10 +429,15 @@ func (a *Accounts) Export(state *types.AppState) {
 			return balance[i].Coin < balance[j].Coin
 		})
 
+		var lockStakeUntilBlock uint64
+		if len(account.LockStakeUntilBlock) > 0 {
+			lockStakeUntilBlock = account.LockStakeUntilBlock[0]
+		}
 		acc := types.Account{
-			Address: account.address,
-			Balance: balance,
-			Nonce:   account.Nonce,
+			Address:             account.address,
+			Balance:             balance,
+			Nonce:               account.Nonce,
+			LockStakeUntilBlock: lockStakeUntilBlock,
 		}
 
 		if account.IsMultisig() {

@@ -121,7 +121,7 @@ func (data BurnTokenDataV1) Run(tx *Transaction, context state.Interface, reward
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _, _, _ = deliverState.Swap.PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _, _, _ = deliverState.Swapper().PairSellWithOrders(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
 			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)

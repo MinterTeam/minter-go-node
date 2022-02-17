@@ -161,7 +161,7 @@ func (data SellSwapPoolDataV1) Run(tx *Transaction, context state.Interface, rew
 	var tags []abcTypes.EventAttribute
 	if deliverState, ok := context.(*state.State); ok {
 		if isGasCommissionFromPoolSwap {
-			commission, commissionInBaseCoin, _ = deliverState.Swap.PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
+			commission, commissionInBaseCoin, _ = deliverState.Swapper().PairSell(tx.GasCoin, types.GetBaseCoinID(), commission, commissionInBaseCoin)
 		} else if !tx.GasCoin.IsBaseCoin() {
 			deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
 			deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
@@ -175,7 +175,7 @@ func (data SellSwapPoolDataV1) Run(tx *Transaction, context state.Interface, rew
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID := deliverState.Swap.PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			amountIn, amountOut, poolID := deliverState.Swapper().PairSell(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
 			poolIDs = append(poolIDs, &tagPoolChange{
 				PoolID:   poolID,

@@ -63,7 +63,7 @@ func SendBeginBlock(app *minter.Blockchain, height int64, times ...time.Time) tm
 		voteInfos = append(voteInfos, tmTypes.VoteInfo{
 			Validator: tmTypes.Validator{
 				Address: address[:],
-				//Power:   int64(100 / len(validators)),
+				Power:   int64(100 / len(validators)),
 			},
 			SignedLastBlock: true,
 		})

@@ -14,7 +14,7 @@ type Model struct {
 	MultisigData Multisig
 
 	// forward compatible
-	IncreasedRewardsUpToBlock []uint64 `rlp:"tail"`
+	LockStakeUntilBlock []uint64 `rlp:"tail"`
 
 	address  types.Address
 	coins    []types.CoinID
@@ -183,22 +183,22 @@ func (model *Model) Multisig() Multisig {
 	return model.MultisigData
 }
 
-func (model *Model) getIncreasedRewardsUpToBlock() uint64 {
+func (model *Model) getLockStakeUntilBlock() uint64 {
 	model.lock.RLock()
 	defer model.lock.RUnlock()
 
-	if len(model.IncreasedRewardsUpToBlock) == 0 {
+	if len(model.LockStakeUntilBlock) == 0 {
 		return 0
 	}
 
-	return model.IncreasedRewardsUpToBlock[0]
+	return model.LockStakeUntilBlock[0]
 }
 
-func (model *Model) setIncreasedRewardsUpToBlock(h uint64) {
+func (model *Model) setLockStakeUntilBlock(h uint64) {
 	model.lock.Lock()
 	defer model.lock.Unlock()
 
-	model.IncreasedRewardsUpToBlock = []uint64{h}
+	model.LockStakeUntilBlock = []uint64{h}
 
 	model.isDirty = true
 	model.markDirty(model.address)

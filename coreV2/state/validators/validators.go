@@ -468,11 +468,9 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
 					safeRewards.Mul(safeRewards, big.NewInt(3))
-
 					moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewards, reward))
 					safeRewardVariable.Set(safeRewards)
 				}
-
 				candidate.AddUpdate(types.GetBaseCoinID(), safeRewardVariable, safeRewardVariable, stake.Owner)
 				v.bus.Checker().AddCoin(types.GetBaseCoinID(), safeRewardVariable)
 
