@@ -19,7 +19,7 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 
 	cState := s.blockchain.CurrentState()
 
-	reward := cState.App().Reward()
+	reward, _ := cState.App().Reward()
 	if reward == nil {
 		reward = s.blockchain.RewardCounter().GetRewardForBlock(uint64(result.SyncInfo.LatestBlockHeight))
 	}

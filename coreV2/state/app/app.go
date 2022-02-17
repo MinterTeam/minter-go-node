@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
 	"sync"
 	"sync/atomic"
@@ -22,7 +21,7 @@ type RApp interface {
 	GetTotalSlashed() *big.Int
 	GetCoinsCount() uint32
 	GetNextCoinID() types.CoinID
-	Reward() *big.Int
+	Reward() (*big.Int, *big.Int)
 }
 
 type App struct {
@@ -182,37 +181,11 @@ func (a *App) Export(state *types.AppState) {
 	state.TotalSlashed = a.GetTotalSlashed().String()
 }
 
-func (a *App) SetReward(newRewards *big.Int) {
+func (a *App) SetReward(newRewards *big.Int, rewardsX3 *big.Int) {
 	model := a.getOrNew()
-	model.setReward(newRewards)
-}
-func (a *App) IncrementReward(diff *big.Int) {
-	if diff.Sign() == 0 {
-		return
-	}
-	b1000 := helpers.BipToPip(big.NewInt(1000))
-	model := a.getOrNew()
-	curRew := model.reward()
-
-	if curRew == nil {
-		curRew = big.NewInt(0)
-	} else {
-		if diff.Sign() == 1 && curRew.Cmp(b1000) == 1 {
-			return
-		}
-		if diff.Sign() == -1 && curRew.Sign() == 0 {
-			return
-		}
-	}
-	reward := big.NewInt(0).Add(curRew, diff)
-	if reward.Cmp(b1000) == 1 {
-		reward.Set(b1000)
-	} else if reward.Sign() == -1 {
-		reward.SetInt64(0)
-	}
-	model.setReward(reward)
+	model.setReward(newRewards, rewardsX3)
 }
 
-func (a *App) Reward() *big.Int {
+func (a *App) Reward() (*big.Int, *big.Int) {
 	return a.getOrNew().reward()
 }

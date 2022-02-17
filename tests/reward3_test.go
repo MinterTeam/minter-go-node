@@ -98,6 +98,7 @@ func TestReward_Simple(t *testing.T) {
 
 	t.Log(app.UpdateVersions()[1])
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	t.Log(app.CurrentState().App().Reward())
 }
 
 func TestReward_Update_Up(t *testing.T) {

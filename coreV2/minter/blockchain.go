@@ -275,19 +275,16 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 	height := uint64(req.Header.Height)
 
-	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && h < height {
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
 		t, _, _, _, _ := blockchain.appDB.GetPrice()
-		if req.Header.Time.Sub(t) > time.Hour*24 && req.Header.Time.Hour() > 12 {
+		if t.IsZero() || req.Header.Time.Sub(t) > time.Hour*24 && req.Header.Time.Hour() > 12 {
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-			newRewards := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
-			blockchain.stateDeliver.App.SetReward(newRewards)
+			newRewards, newX3Rewards, burn := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
+			blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), burn)
+			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, burn) // todo: mb slash?
+			blockchain.stateDeliver.App.SetReward(newRewards, newX3Rewards)
 			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String()})
 		}
-	} else if h == height {
-		reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-		blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1, blockchain.rewardsCounter.GetRewardForBlock(height), false) // todo
-		blockchain.stateDeliver.App.SetReward(big.NewInt(9e18))                                                                    // todo
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: blockchain.stateDeliver.App.Reward().String()})
 	}
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
@@ -422,7 +419,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height < h {
 		emission := blockchain.appDB.Emission()
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
-			reward = blockchain.stateDeliver.App.Reward()
+			reward, _ = blockchain.stateDeliver.App.Reward()
 			heightIsMaxIfIssueIsOverOrNotDynamic = height
 		}
 	} else if h == height {
