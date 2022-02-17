@@ -15,7 +15,7 @@ import (
 	"github.com/cosmos/iavl"
 )
 
-var burnAddress = types.StringToAddress("MxTODO")
+var burnAddress = types.StringToAddress("Mxffffffffffffffffffffffffffffffffffffffff") // TODO
 
 func (s *SwapV2) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *ChangeDetailsWithOrders, []*OrderDetail) {
 	pair := s.Pair(coin0, coin1)
