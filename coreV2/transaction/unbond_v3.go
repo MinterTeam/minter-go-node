@@ -103,7 +103,7 @@ func (data UnbondDataV3) Run(tx *Transaction, context state.Interface, rewardPoo
 		checkState = state.NewCheckState(context.(*state.State))
 	}
 
-	if h := checkState.Accounts().GetIncreasedRewardsUpToBlock(sender); h > currentBlock {
+	if h := checkState.Accounts().GetLockStakeUntilBlock(sender); h > currentBlock {
 		return Response{
 			Code: code.UnbondBlocked,
 			Log:  fmt.Sprintf("Unbond blocked for %s address until block %d. Use StakeMove to change candidate", sender.String(), h),
@@ -144,7 +144,7 @@ func (data UnbondDataV3) Run(tx *Transaction, context state.Interface, rewardPoo
 				detailsCom *swap.ChangeDetailsWithOrders
 				ownersCom  []*swap.OrderDetail
 			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
 				CoinIn:   tx.CommissionCoin(),

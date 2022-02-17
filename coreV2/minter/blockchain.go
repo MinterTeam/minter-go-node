@@ -2,9 +2,11 @@ package minter
 
 import (
 	"context"
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"log"
 	"math"
@@ -414,9 +416,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// accumulate rewards
 	var reward = big.NewInt(0)
-	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 
-	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height < h {
+	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			reward, _ = blockchain.stateDeliver.App.Reward()
@@ -427,7 +429,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	} else {
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
 	}
-
 	{
 		rewardWithTxs := big.NewInt(0).Add(reward, blockchain.rewards)
 
@@ -454,7 +455,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// expire orders
 	if height > blockchain.expiredOrdersPeriod && height%blockchain.updateStakesAndPayRewardsPeriod == blockchain.updateStakesAndPayRewardsPeriod/2 {
-		blockchain.stateDeliver.Swap.ExpireOrders(height - blockchain.expiredOrdersPeriod)
+		blockchain.stateDeliver.Swapper().ExpireOrders(height - blockchain.expiredOrdersPeriod)
 	}
 
 	// pay rewards
@@ -470,9 +471,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	}
 
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
-		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), reward))
-
 		_, rewardForBlock := blockchain.CurrentState().App().Reward()
+		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), rewardForBlock))
 		if diff := big.NewInt(0).Sub(rewardForBlock, reward); diff.Sign() == 1 {
 			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
 			reward.Add(reward, diff)
@@ -652,11 +652,11 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 			os.Exit(0)
 		}
 	}
-	if err := blockchain.stateDeliver.Check(); err != nil {
-		panic(err)
-	}
-
 	height := blockchain.Height()
+
+	if err := blockchain.stateDeliver.Check(); err != nil {
+		panic(errors.Wrap(err, fmt.Sprintf("height %d", height)))
+	}
 
 	// Flush events db
 	err := blockchain.eventsDB.CommitEvents(uint32(height))

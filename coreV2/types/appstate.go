@@ -378,10 +378,11 @@ type FrozenFund struct {
 type UsedCheck string
 
 type Account struct {
-	Address      Address   `json:"address"`
-	Balance      []Balance `json:"balance,omitempty"`
-	Nonce        uint64    `json:"nonce"`
-	MultisigData *Multisig `json:"multisig_data,omitempty"`
+	Address             Address   `json:"address"`
+	Balance             []Balance `json:"balance,omitempty"`
+	Nonce               uint64    `json:"nonce"`
+	MultisigData        *Multisig `json:"multisig_data,omitempty"`
+	LockStakeUntilBlock uint64    `json:"lock_stake_until_block"`
 }
 
 type Balance struct {

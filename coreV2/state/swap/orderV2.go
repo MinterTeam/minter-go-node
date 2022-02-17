@@ -33,7 +33,9 @@ func (s *SwapV2) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmo
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
 
-	s.bus.Accounts().AddBalance(burnAddress, coin0, calcCommission1000(amount0In))
+	commission1000 := calcCommission1000(amount0In)
+	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(commission1000))
+	s.bus.Accounts().AddBalance(burnAddress, coin0, commission1000)
 
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
@@ -53,7 +55,10 @@ func (s *SwapV2) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amou
 	}
 	s.bus.Checker().AddCoin(coin0, amount0In)
 	s.bus.Checker().AddCoin(coin1, big.NewInt(0).Neg(amount1Out))
-	s.bus.Accounts().AddBalance(burnAddress, coin0, calcCommission1000(amount0In))
+
+	commission1000 := calcCommission1000(amount0In)
+	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(commission1000))
+	s.bus.Accounts().AddBalance(burnAddress, coin0, commission1000)
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 

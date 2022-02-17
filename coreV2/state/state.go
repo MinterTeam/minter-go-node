@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/hex"
 	"log"
+	"math/big"
 	"sync"
 
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
@@ -213,6 +214,27 @@ func (s *State) GetSwap() interface {
 	return s.Swap
 }
 
+func (s *State) Swapper() interface {
+	PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *swap.ChangeDetailsWithOrders, []*swap.OrderDetail)
+	PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *swap.ChangeDetailsWithOrders, []*swap.OrderDetail)
+	PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, block uint64) (uint32, uint32)
+	PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32)
+	PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32)
+	PairMint(coin0, coin1 types.CoinID, amount0, maxAmount1, totalSupply *big.Int) (*big.Int, *big.Int, *big.Int)
+	PairCreate(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) (*big.Int, *big.Int, *big.Int, uint32)
+	PairBurn(coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1, totalSupply *big.Int) (*big.Int, *big.Int)
+	PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int)
+	ExpireOrders(beforeHeight uint64)
+	Import(state *types.AppState)
+	GetSwapper(coinA, coinB types.CoinID) swap.EditableChecker
+	SwapPool(coinA, coinB types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
+} {
+	if s.SwapV2 != nil {
+		return s.SwapV2
+	}
+	return s.Swap
+}
+
 func (s *State) Unlock() {
 	s.lock.Unlock()
 }
@@ -282,7 +304,9 @@ func (s *State) Import(state types.AppState, version string) error {
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
-
+		if a.LockStakeUntilBlock > 0 {
+			s.Accounts.SetLockStakeUntilBlock(a.Address, a.LockStakeUntilBlock)
+		}
 		for _, b := range a.Balance {
 			balance := helpers.StringToBigInt(b.Value)
 			coinID := types.CoinID(b.Coin)
@@ -359,7 +383,7 @@ func (s *State) Import(state types.AppState, version string) error {
 		s.FrozenFunds.AddFund(ff.Height, ff.Address, ff.CandidateKey, uint32(ff.CandidateID), coinID, value, uint32(ff.MoveToCandidateID))
 	}
 
-	s.Swap.Import(&state)
+	s.Swapper().Import(&state)
 
 	c := state.Commission
 	com := &commission.Price{

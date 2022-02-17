@@ -101,7 +101,7 @@ func TestReward_Simple(t *testing.T) {
 	t.Log(app.CurrentState().App().Reward())
 }
 
-func TestReward_Update_Up(t *testing.T) {
+func TestReward_Update_Down(t *testing.T) {
 	state := DefaultAppState() // generate default state
 
 	address, pk := CreateAddress() // create account for test
@@ -118,12 +118,19 @@ func TestReward_Update_Up(t *testing.T) {
 			Nonce:        0,
 			MultisigData: nil,
 		},
+		{
+			Address:             types.Address{11},
+			Balance:             nil,
+			Nonce:               0,
+			MultisigData:        nil,
+			LockStakeUntilBlock: 99999999,
+		},
 	}
-	stake := helpers.BipToPip(big.NewInt(10_000)).String()
-
+	stake := helpers.BipToPip(big.NewInt(10_000))
+	totalBipStake := big.NewInt(0).Add(stake, stake)
 	state.Validators = []types.Validator{
 		{
-			TotalBipStake: stake,
+			TotalBipStake: totalBipStake.String(),
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
 			AbsentTimes:   nil,
@@ -136,15 +143,21 @@ func TestReward_Update_Up(t *testing.T) {
 			RewardAddress:  types.Address{1},
 			OwnerAddress:   types.Address{1},
 			ControlAddress: types.Address{1},
-			TotalBipStake:  stake,
+			TotalBipStake:  totalBipStake.String(),
 			PubKey:         types.Pubkey{1},
 			Commission:     5,
 			Stakes: []types.Stake{
 				{
 					Owner:    types.Address{5},
 					Coin:     0,
-					Value:    stake,
-					BipValue: stake,
+					Value:    stake.String(),
+					BipValue: stake.String(),
+				},
+				{
+					Owner:    types.Address{11},
+					Coin:     0,
+					Value:    stake.String(),
+					BipValue: stake.String(),
 				},
 			},
 			Updates:                  nil,
@@ -198,10 +211,13 @@ func TestReward_Update_Up(t *testing.T) {
 	SendEndBlock(app, 10)   // send EndBlock
 	SendCommit(app)         // send Commit
 
+	SendBeginBlock(app, 11) // send BeginBlock
+	SendEndBlock(app, 11)   // send EndBlock
+	SendCommit(app)         // send Commit
 	{
-		SendBeginBlock(app, 11) // send BeginBlock
+		SendBeginBlock(app, 12) // send BeginBlock
 
-		tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV230{
+		tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV260{
 			Coins:             []types.CoinID{0, types.USDTID},
 			ValueToSell:       helpers.StringToBigInt("1000000000000000000000000000"),
 			MinimumValueToBuy: helpers.StringToBigInt("1"),
@@ -214,13 +230,9 @@ func TestReward_Update_Up(t *testing.T) {
 			t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
 		}
 
-		SendEndBlock(app, 11) // send EndBlock
+		SendEndBlock(app, 12) // send EndBlock
 		SendCommit(app)       // send Commit
 	}
-
-	SendBeginBlock(app, 12) // send BeginBlock
-	SendEndBlock(app, 12)   // send EndBlock
-	SendCommit(app)         // send Commit
 
 	SendBeginBlock(app, 13, time.Unix(1643208154, 0)) // send BeginBlock
 	SendEndBlock(app, 13)                             // send EndBlock
@@ -229,7 +241,7 @@ func TestReward_Update_Up(t *testing.T) {
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.GetEventsDB().LoadEvents(13)[0])
 }
-func TestReward_Update_Down(t *testing.T) {
+func TestReward_Update_Up(t *testing.T) {
 	state := DefaultAppState() // generate default state
 
 	address, pk := CreateAddress() // create account for test
@@ -250,12 +262,19 @@ func TestReward_Update_Down(t *testing.T) {
 			Nonce:        0,
 			MultisigData: nil,
 		},
+		{
+			Address:             types.Address{11},
+			Balance:             nil,
+			Nonce:               0,
+			MultisigData:        nil,
+			LockStakeUntilBlock: 99999999,
+		},
 	}
-	stake := helpers.BipToPip(big.NewInt(10_000)).String()
-
+	stake := helpers.BipToPip(big.NewInt(10_000))
+	totalBipStake := big.NewInt(0).Add(stake, stake)
 	state.Validators = []types.Validator{
 		{
-			TotalBipStake: stake,
+			TotalBipStake: totalBipStake.String(),
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
 			AbsentTimes:   nil,
@@ -268,15 +287,21 @@ func TestReward_Update_Down(t *testing.T) {
 			RewardAddress:  types.Address{1},
 			OwnerAddress:   types.Address{1},
 			ControlAddress: types.Address{1},
-			TotalBipStake:  stake,
+			TotalBipStake:  totalBipStake.String(),
 			PubKey:         types.Pubkey{1},
 			Commission:     5,
 			Stakes: []types.Stake{
 				{
 					Owner:    types.Address{5},
 					Coin:     0,
-					Value:    stake,
-					BipValue: stake,
+					Value:    stake.String(),
+					BipValue: stake.String(),
+				},
+				{
+					Owner:    types.Address{11},
+					Coin:     0,
+					Value:    stake.String(),
+					BipValue: stake.String(),
 				},
 			},
 			Updates:                  nil,
@@ -330,8 +355,11 @@ func TestReward_Update_Down(t *testing.T) {
 	SendEndBlock(app, 10)   // send EndBlock
 	SendCommit(app)         // send Commit
 
+	SendBeginBlock(app, 11) // send BeginBlock
+	SendEndBlock(app, 11)   // send EndBlock
+	SendCommit(app)         // send Commit
 	{
-		SendBeginBlock(app, 11) // send BeginBlock
+		SendBeginBlock(app, 12) // send BeginBlock
 
 		tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV230{
 			Coins:             []types.CoinID{types.USDTID, 0},
@@ -346,13 +374,9 @@ func TestReward_Update_Down(t *testing.T) {
 			t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
 		}
 
-		SendEndBlock(app, 11) // send EndBlock
+		SendEndBlock(app, 12) // send EndBlock
 		SendCommit(app)       // send Commit
 	}
-
-	SendBeginBlock(app, 12) // send BeginBlock
-	SendEndBlock(app, 12)   // send EndBlock
-	SendCommit(app)         // send Commit
 
 	SendBeginBlock(app, 13, time.Unix(1643208154, 0)) // send BeginBlock
 	SendEndBlock(app, 13)                             // send EndBlock
