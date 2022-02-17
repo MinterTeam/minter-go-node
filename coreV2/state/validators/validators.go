@@ -461,16 +461,15 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 				remainder.Sub(remainder, reward)
 
-				rewardForBlock := v.bus.App().Reward()
+				_, rewardX3ForBlock := v.bus.App().Reward()
 				safeRewardVariable := big.NewInt(0).Set(reward)
 				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
-					x2reward := big.NewInt(0).Mul(rewardForBlock, big.NewInt(period))
-					x2reward.Mul(x2reward, stake.BipValue)
-					x2reward.Div(x2reward, validator.GetTotalBipStake())
-					x2reward.Mul(x2reward, big.NewInt(2))
+					x3reward := big.NewInt(0).Mul(rewardX3ForBlock, big.NewInt(period))
+					x3reward.Mul(x3reward, stake.BipValue)
+					x3reward.Div(x3reward, validator.GetTotalBipStake())
 
-					moreRewards.Add(moreRewards, x2reward)
-					safeRewardVariable.Add(reward, x2reward)
+					moreRewards.Add(moreRewards, new(big.Int).Sub(x3reward, reward))
+					safeRewardVariable.Set(x3reward)
 				}
 
 				candidate.AddUpdate(types.GetBaseCoinID(), safeRewardVariable, safeRewardVariable, stake.Owner)

@@ -34,22 +34,22 @@ func (model *Model) setMaxGas(maxGas uint64) {
 	model.MaxGas = maxGas
 }
 
-func (model *Model) reward() *big.Int {
+func (model *Model) reward() (*big.Int, *big.Int) {
 	model.mx.RLock()
 	defer model.mx.RUnlock()
 
 	if len(model.Reward) == 0 {
-		return nil
+		return nil, nil
 	}
 
-	return model.Reward[0]
+	return model.Reward[0], model.Reward[1]
 }
 
-func (model *Model) setReward(reward *big.Int) {
+func (model *Model) setReward(reward *big.Int, rewardX3 *big.Int) {
 	model.mx.Lock()
 	defer model.mx.Unlock()
 
-	model.Reward = []*big.Int{reward}
+	model.Reward = []*big.Int{reward, rewardX3}
 
 	model.markDirty()
 }
