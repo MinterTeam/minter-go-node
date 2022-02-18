@@ -42,8 +42,8 @@ func DefaultConfig() *Config {
 		"c578fba1bdb5265be75dd412f8cf1bbeb7399620@seed.minter.stakeholder.space:26656," +
 		"bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
 
-	cfg.P2P.PersistentPeers = "bac66d7240caca750dfb78a1ebb0a82a7a5ba898@state-test.minter.network:26656," +
-		"5b877dcc33c780bf9ae9dfde9070c055832b72b5@sync-test.minter.network:26656"
+	cfg.P2P.PersistentPeers = "ddda6ce2626e6da6055bb32ebece2907c7997d3f@sync104.minter.su:26656,bac66d7240caca750dfb78a1ebb0a82a7a5ba898@state-test.minter.network:26656," +
+		"5b877dcc33c780bf9ae9dfde9070c055832b72b5@sync-test.minter.network:26656,7e1c0be4cfbc99a7b81cb5566a3eb9832fff542f@sync101.minter.su:26656"
 
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer: "kv",
@@ -72,7 +72,7 @@ func DefaultConfig() *Config {
 	cfg.PrivValidatorState = "config/priv_validator_state.json"
 	cfg.NodeKey = "config/node_key.json"
 
-	cfg.StateSync.RPCServers = []string{"state-test.minter.network:26657", "sync-test.minter.network:26657"}
+	cfg.StateSync.RPCServers = []string{"state-test.minter.network:26657", "sync-test.minter.network:26657", "sync104.minter.su:26657"}
 	cfg.StateSync.TrustHeight = 8043210
 	cfg.StateSync.TrustHash = "F8A11602BE2C7770FC118BB7EFC4FC99146A3666423FB42E29A94AF87CFF7EC6"
 	cfg.StateSync.TrustPeriod = time.Hour * 8760
