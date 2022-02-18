@@ -2,8 +2,11 @@ package minter
 
 import (
 	"context"
+	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
 	tmlog "github.com/tendermint/tendermint/libs/log"
 	"log"
 	"math"
@@ -190,12 +193,24 @@ const ( // known update versions
 func (blockchain *Blockchain) initState() {
 	initialHeight := blockchain.appDB.GetStartHeight()
 	currentHeight := blockchain.appDB.GetLastHeight()
-	stateDeliver, err := state.NewState(currentHeight,
-		blockchain.storages.StateDB(),
-		blockchain.eventsDB,
-		blockchain.cfg.StateCacheSize,
-		blockchain.cfg.KeepLastStates,
-		initialHeight)
+
+	var stateDeliver *state.State
+	var err error
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
+		stateDeliver, err = state.NewStateV3(currentHeight,
+			blockchain.storages.StateDB(),
+			blockchain.eventsDB,
+			blockchain.cfg.StateCacheSize,
+			blockchain.cfg.KeepLastStates,
+			initialHeight)
+	} else {
+		stateDeliver, err = state.NewState(currentHeight,
+			blockchain.storages.StateDB(),
+			blockchain.eventsDB,
+			blockchain.cfg.StateCacheSize,
+			blockchain.cfg.KeepLastStates,
+			initialHeight)
+	}
 	if err != nil {
 		panic(err)
 	}
@@ -261,20 +276,14 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.initState()
 	}
 	height := uint64(req.Header.Height)
-
-	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
-		t, _, _ := blockchain.appDB.GetPrice()
-		if req.Header.Time.Sub(t) > time.Hour*24*3 && req.Header.Time.Hour() > 12 {
+	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
+		t, _, _, _, _ := blockchain.appDB.GetPrice()
+		if t.IsZero() || req.Header.Time.Sub(t) > time.Hour*24 && req.Header.Time.Hour() > 12 {
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-			diff := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
-			blockchain.stateDeliver.App.IncrementReward(diff)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: blockchain.stateDeliver.App.Reward().String()})
+			newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
+			blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueForLockedStake: new(big.Int).Mul(safeReward, big.NewInt(3)).String()})
 		}
-	} else if h == height {
-		reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-		blockchain.appDB.SetPrice(req.Header.Time, reserve0, reserve1)
-		blockchain.stateDeliver.App.IncrementReward(blockchain.rewardsCounter.GetRewardForBlock(height))
-		blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: blockchain.stateDeliver.App.Reward().String()})
 	}
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
@@ -404,23 +413,19 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// accumulate rewards
 	var reward = big.NewInt(0)
-	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 
+	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
-			reward = blockchain.stateDeliver.App.Reward()
+			reward, _ = blockchain.stateDeliver.App.Reward()
 			heightIsMaxIfIssueIsOverOrNotDynamic = height
 		}
 	} else if h == height {
-		reward = blockchain.rewardsCounter.GetRewardForBlock(height) // or reward = blockchain.stateDeliver.App.Reward()
-		emission := blockchain.rewardsCounter.GetBeforeBlock(height)
-		emission.Add(emission, reward)
-		blockchain.appDB.SetEmission(emission)
+		blockchain.appDB.SetEmission(blockchain.rewardsCounter.GetBeforeBlock(height))
 	} else {
 		reward = blockchain.rewardsCounter.GetRewardForBlock(height)
 	}
-
 	{
 		rewardWithTxs := big.NewInt(0).Add(reward, blockchain.rewards)
 
@@ -447,31 +452,31 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 
 	// expire orders
 	if height > blockchain.expiredOrdersPeriod && height%blockchain.updateStakesAndPayRewardsPeriod == blockchain.updateStakesAndPayRewardsPeriod/2 {
-		blockchain.stateDeliver.Swap.ExpireOrders(height - blockchain.expiredOrdersPeriod)
+		blockchain.stateDeliver.Swapper().ExpireOrders(height - blockchain.expiredOrdersPeriod)
 	}
 
 	// pay rewards
-	var x2rewards = big.NewInt(0)
+	var moreRewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
-		if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
-			x2rewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
+		if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
+			moreRewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
+			blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
+			blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
 		} else {
 			blockchain.stateDeliver.Validators.PayRewards()
 		}
 	}
 
-	fullRewards := big.NewInt(0).Add(reward, x2rewards)
-
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
-		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), fullRewards))
-
-		if diff := big.NewInt(0).Sub(blockchain.rewardsCounter.GetRewardForBlock(height), fullRewards); diff.Sign() == 1 {
+		_, rewardForBlock := blockchain.CurrentState().App().Reward()
+		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), rewardForBlock))
+		if diff := big.NewInt(0).Sub(rewardForBlock, reward); diff.Sign() == 1 {
 			blockchain.stateDeliver.Accounts.AddBalance([20]byte{}, 0, diff)
-			fullRewards.Add(fullRewards, diff)
+			reward.Add(reward, diff)
 		}
 	}
 
-	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), fullRewards)
+	blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), reward)
 
 	{
 		var updateCommissionsBlockPrices []byte
@@ -546,6 +551,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 			blockchain.executor = GetExecutor(v)
+			if v == V3 {
+				blockchain.stateDeliver.SwapV2 = swap.NewV2(blockchain.stateDeliver.Bus(), blockchain.stateDeliver.Tree().GetLastImmutable())
+			}
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}
@@ -641,11 +649,11 @@ func (blockchain *Blockchain) Commit() abciTypes.ResponseCommit {
 			os.Exit(0)
 		}
 	}
-	if err := blockchain.stateDeliver.Check(); err != nil {
-		panic(err)
-	}
-
 	height := blockchain.Height()
+
+	if err := blockchain.stateDeliver.Check(); err != nil {
+		panic(errors.Wrap(err, fmt.Sprintf("height %d", height)))
+	}
 
 	// Flush events db
 	err := blockchain.eventsDB.CommitEvents(uint32(height))

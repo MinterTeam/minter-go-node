@@ -116,7 +116,7 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 				detailsCom *swap.ChangeDetailsWithOrders
 				ownersCom  []*swap.OrderDetail
 			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
 				CoinIn:   tx.CommissionCoin(),
@@ -136,7 +136,7 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 		rewardPool.Add(rewardPool, commissionInBaseCoin)
 		deliverState.Accounts.SubBalance(sender, tx.GasCoin, commission)
 
-		coin, volume := deliverState.Swap.PairRemoveLimitOrder(data.ID)
+		coin, volume := deliverState.Swapper().PairRemoveLimitOrder(data.ID)
 		if volume.Sign() == 0 {
 			panic("order already used")
 		}

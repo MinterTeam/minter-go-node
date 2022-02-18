@@ -3,6 +3,7 @@ package appdb
 import (
 	"encoding/binary"
 	"github.com/MinterTeam/minter-go-node/config"
+	"github.com/MinterTeam/minter-go-node/math"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/MinterTeam/minter-go-node/tree"
 	db "github.com/tendermint/tm-db"
@@ -442,29 +443,61 @@ func (appDB *AppDB) Emission() (emission *big.Int) {
 type TimePrice struct {
 	T      uint64
 	R0, R1 *big.Int
+	Off    bool
+	Last   *big.Int
 }
 
-func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) *big.Int {
-	_, reserve0, reserve1 := appDB.GetPrice()
-	defer appDB.SetPrice(t, r0, r1)
+func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeReward *big.Int) {
+	tOld, reserve0, reserve1, last, off := appDB.GetPrice()
+
+	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
+	// Price ^ (1/4) * 350
+	priceCount, _ := new(big.Float).Mul(new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)), big.NewFloat(1e18)).Int(nil)
+	if tOld.IsZero() {
+		appDB.SetPrice(t, r0, r1, priceCount, false)
+		return priceCount, priceCount
+	}
+
+	defer func() { appDB.SetPrice(t, r0, r1, last, off) }()
 
 	fOld := big.NewRat(1, 1).SetFrac(reserve1, reserve0)
-	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
 
 	rat := new(big.Rat).Mul(new(big.Rat).Quo(new(big.Rat).Sub(fNew, fOld), fOld), new(big.Rat).SetInt64(100))
-	diff := big.NewInt(0).Div(new(big.Int).Mul(rat.Num(), big.NewInt(1e18)), rat.Denom())
+	diff := big.NewInt(0).Div(rat.Num(), rat.Denom())
 
-	return diff
+	if diff.Cmp(big.NewInt(-10)) != 1 {
+		last.SetInt64(0)
+		off = true
+		return new(big.Int), priceCount
+	}
+
+	if off && diff.Sign() != -1 {
+		last.Add(last, big.NewInt(10))
+		burn := big.NewInt(0).Sub(priceCount, last)
+		if burn.Sign() != 1 {
+			last.Set(priceCount)
+			off = false
+			return last, priceCount
+		}
+		return last, priceCount
+	}
+
+	off = false
+	last.Set(priceCount)
+
+	return last, priceCount
 }
 
-func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int) {
+func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int, lastReward *big.Int, off bool) {
 	appDB.mu.Lock()
 	defer appDB.mu.Unlock()
 
 	appDB.price = &TimePrice{
-		T:  uint64(t.Nanosecond()),
-		R0: big.NewInt(0).Set(r0), // BIP
-		R1: big.NewInt(0).Set(r1), // USDTE
+		T:    uint64(t.Nanosecond()),
+		R0:   big.NewInt(0).Set(r0), // BIP
+		R1:   big.NewInt(0).Set(r1), // USDTE
+		Off:  off,
+		Last: new(big.Int).Set(lastReward),
 	}
 	appDB.isDirtyPrice = true
 }
@@ -489,7 +522,7 @@ func (appDB *AppDB) SavePrice() {
 	}
 }
 
-func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
+func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int, lastReward *big.Int, off bool) {
 	appDB.mu.Lock()
 	defer appDB.mu.Unlock()
 
@@ -499,7 +532,7 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
 			panic(err)
 		}
 		if len(result) == 0 {
-			return time.Unix(0, 0), nil, nil
+			return time.Time{}, nil, nil, nil, false
 		}
 
 		appDB.price = &TimePrice{}
@@ -509,5 +542,5 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int) {
 			panic(err)
 		}
 	}
-	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1
+	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1, new(big.Int).Set(appDB.price.Last), appDB.price.Off
 }

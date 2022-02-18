@@ -195,7 +195,7 @@ func (data BuySwapPoolDataV260) Run(tx *Transaction, context state.Interface, re
 				detailsCom *swap.ChangeDetailsWithOrders
 				ownersCom  []*swap.OrderDetail
 			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
 				CoinIn:   tx.CommissionCoin(),
@@ -221,7 +221,7 @@ func (data BuySwapPoolDataV260) Run(tx *Transaction, context state.Interface, re
 		var poolIDs tagPoolsChange
 
 		for i, coinToSell := range data.Coins[1:] {
-			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairBuyWithOrders(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
+			amountIn, amountOut, poolID, details, owners := deliverState.Swapper().PairBuyWithOrders(coinToSell, coinToBuy, maxCoinSupply, valueToBuy)
 
 			tags := &tagPoolChange{
 				PoolID:   poolID,

@@ -8,6 +8,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 // TestBlock returns test block.
@@ -729,7 +730,7 @@ func (s *Service) TestBlock(context.Context, *empty.Empty) (*pb.BlockResponse, e
 		Time:             "2020-10-21T20:37:22.195700943Z",
 		TransactionCount: uint64(len(transactions)),
 		Transactions:     transactions,
-		BlockReward:      "333000000000000000000",
+		BlockReward:      wrapperspb.String("333000000000000000000"),
 		Size:             916,
 		Proposer:         "Mpd83e627510eea6aefa46d9914b0715dabf4a561ced78d34267b31d41d5f700b5",
 		Validators: []*pb.BlockResponse_Validator{
