@@ -65,7 +65,7 @@ func DefaultConfig() *Config {
 	cfg.Consensus.TimeoutPrevoteDelta = 500 * time.Millisecond   // timeout_prevote_delta = how much the timeout_prevote increases with each round
 	cfg.Consensus.TimeoutPrecommit = 1 * time.Second             // timeout_precommit = how long we wait after receiving +2/3 precommits for "anything" (ie. not a single block or nil)
 	cfg.Consensus.TimeoutPrecommitDelta = 500 * time.Millisecond // timeout_precommit_delta = how much the timeout_precommit increases with each round
-	cfg.Consensus.TimeoutCommit = 4200 * time.Millisecond        // TIMEOUT_COMMIT = HOW LONG WE WAIT AFTER COMMITTING A BLOCK, BEFORE STARTING ON THE NEW HEIGHT (THIS GIVES US A CHANCE TO RECEIVE SOME MORE PRECOMMITS, EVEN THOUGH WE ALREADY HAVE +2/3)
+	cfg.Consensus.TimeoutCommit = 4200 * time.Millisecond        // timeout_commit = how long we wait after committing a block, before starting on the new height (this gives us a chance to receive some more precommits, even though we already have +2/3)
 
 	cfg.P2P.RecvRate = 15360000 // 15 mB/s
 	cfg.P2P.SendRate = 15360000 // 15 mB/s
