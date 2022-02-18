@@ -452,8 +452,7 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 
 	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
 	// Price ^ (1/4) * 350
-	priceCount, _ := new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)).Int(nil)
-	priceCount.Mul(priceCount, big.NewInt(1e18)) // todo
+	priceCount, _ := new(big.Float).Mul(new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)), big.NewFloat(1e18)).Int(nil)
 	if tOld.IsZero() {
 		appDB.SetPrice(t, r0, r1, priceCount, false)
 		return priceCount, priceCount

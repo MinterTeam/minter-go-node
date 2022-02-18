@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/minter"
 	"google.golang.org/protobuf/types/known/wrapperspb"
+	"math/big"
 	"strings"
 	"time"
 
@@ -233,7 +234,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 			reward, rewardWithLock := state.App().Reward()
 			response.BlockReward = wrapperspb.String(reward.String())
-			response.BlockRewardWithLock = wrapperspb.String(rewardWithLock.String())
+			response.BlockRewardWithLock = wrapperspb.String(new(big.Int).Mul(rewardWithLock, big.NewInt(3)).String())
 		case pb.BlockField_transactions:
 			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
 			if err != nil {
