@@ -282,7 +282,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
 			newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueForLockedStake: safeReward.String()})
+			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueForLockedStake: new(big.Int).Mul(safeReward, big.NewInt(3)).String()})
 		}
 	}
 
