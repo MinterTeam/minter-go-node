@@ -383,6 +383,7 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 	vals := v.GetValidators()
 
+	_, safeReward := v.bus.App().Reward()
 	for _, validator := range vals {
 		if validator.GetAccumReward().Sign() == 1 {
 			candidate := v.bus.Candidates().GetCandidate(validator.PubKey)
@@ -461,7 +462,6 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 				remainder.Sub(remainder, reward)
 
-				_, safeReward := v.bus.App().Reward()
 				safeRewardVariable := big.NewInt(0).Set(reward)
 				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
