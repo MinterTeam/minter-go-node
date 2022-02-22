@@ -149,8 +149,8 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 				}
 			case *events.UpdatedBlockRewardEvent:
 				m = &pb.UpdatedBlockRewardEvent{
-					Value:               e.Value,
-					ValueForLockedStake: e.ValueForLockedStake,
+					Value:                   e.Value,
+					ValueLockedStakeRewards: e.ValueLockedStakeRewards,
 				}
 			case *events.UpdateCommissionsEvent:
 				m = &pb.UpdateCommissionsEvent{
@@ -234,7 +234,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 
 			reward, rewardWithLock := state.App().Reward()
 			response.BlockReward = wrapperspb.String(reward.String())
-			response.BlockRewardWithLock = wrapperspb.String(new(big.Int).Mul(rewardWithLock, big.NewInt(3)).String())
+			response.LockedStakeRewards = wrapperspb.String(new(big.Int).Mul(rewardWithLock, big.NewInt(3)).String())
 		case pb.BlockField_transactions:
 			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
 			if err != nil {
