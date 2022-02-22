@@ -660,8 +660,8 @@ func (ue *RemoveCandidateEvent) convert(pubKeyID uint16) compact {
 }
 
 type UpdatedBlockRewardEvent struct {
-	Value               string `json:"value"`
-	ValueForLockedStake string `json:"value_for_locked_stake"`
+	Value                   string `json:"value"`
+	ValueLockedStakeRewards string `json:"value_locked_stake_rewards"`
 }
 
 func (pe *UpdatedBlockRewardEvent) Type() string {
