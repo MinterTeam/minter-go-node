@@ -252,10 +252,11 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
-	if blockchain.stateDeliver == nil {
+	height := uint64(req.Header.Height)
+	if h := blockchain.appDB.GetVersionHeight(v262); (h > 0 && height == h) || blockchain.stateDeliver == nil { // todo
 		blockchain.initState()
 	}
-	height := uint64(req.Header.Height)
+
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	// compute max gas

@@ -28,6 +28,99 @@ import (
 
 func init() {
 	minimumOrderVolume = 100 // todo
+	v262 = -1
+}
+
+func TestPair_LoadOrders_bagSkeep(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("31370593307539213096153157"), helpers.StringToBigInt("57461516319002531561548"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair := swap.Pair(0, 1)
+
+	t.Log(pair.Price().Text('f', 18))
+
+	pair.AddOrder(helpers.StringToBigInt("20600000000000000000000"), helpers.StringToBigInt("36989101097630229235"), types.Address{1}, 9294610)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	removedOrder := pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5496234812874385476"), types.Address{1}, 9294658)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap.PairRemoveLimitOrder(removedOrder.ID())
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5484634354072161230"), types.Address{1}, 9295804)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	pair.SellWithOrders(helpers.StringToBigInt("4000000000000000000000000"))
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(6, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+	t.Log(pair.Price().Text('f', 18))
 }
 
 func TestCmpPrice(t *testing.T) {
