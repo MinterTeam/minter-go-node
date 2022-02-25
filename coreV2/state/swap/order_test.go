@@ -1829,6 +1829,63 @@ func TestSwap_loadSellOrders_dirty(t *testing.T) {
 
 }
 
+func TestPair_LoadOrders_bagSort01(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(1, 0, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	pair := swap.Pair(1, 0)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(1, 0)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
+
+	//t.Log(pair.orderSellByIndex(3))
+	t.Log(pair.orderSellByIndex(7))
+
+	if !reflect.DeepEqual(pair.sellOrderIDs(), []uint32{1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 0}) {
+		t.Error("unsorted", pair.sellOrderIDs(), []uint32{1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 0})
+	}
+
+	//t.SkipNow()
+	last, index := pair.OrderSellLast()
+	if last.id != 10 || index != 9 {
+		t.Fatal(last, index)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	last, index = swap.Pair(1, 0).OrderSellLast()
+	if last.id != 10 || index != 9 {
+		t.Fatal(last, index)
+	}
+}
 func TestPair_LoadOrders_bagSort1(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
