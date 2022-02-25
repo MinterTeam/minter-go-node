@@ -456,6 +456,7 @@ func priceCommissionData(d *transaction.VoteCommissionDataV3, coin *coins.Model)
 		RemoveLimitOrder:        d.RemoveLimitOrderPrice().String(),
 		MoveStake:               d.MoveStakePrice().String(),
 		LockStake:               d.LockStakePrice().String(),
+		Lock:                    d.LockPrice().String(),
 	}
 }
 
