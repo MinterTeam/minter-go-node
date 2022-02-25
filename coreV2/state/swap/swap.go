@@ -544,23 +544,25 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			db.Set(pathOrderID, pairOrderBytes)
 		}
 
-		lenB := len(pair.buyOrders.ids)
-		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
 		if version < v262 {
+			lenB := len(pair.buyOrders.ids)
+			pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
 			if lenB > 10 {
 				pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
 			}
 		} else {
+			pair.loadedBuyOrders.ids = nil
 			pair.buyOrders.ids = nil
 		}
 
-		lenS := len(pair.sellOrders.ids)
-		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
 		if version < v262 {
+			lenS := len(pair.sellOrders.ids)
+			pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
 			if lenS > 10 {
 				pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
 			}
 		} else {
+			pair.loadedSellOrders.ids = nil
 			pair.sellOrders.ids = nil
 		}
 
