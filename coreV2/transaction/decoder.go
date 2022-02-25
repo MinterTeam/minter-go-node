@@ -113,9 +113,9 @@ func GetDataV3(txType TxType) (Data, bool) {
 	case TypeUnbond:
 		return &UnbondDataV3{}, true
 	case TypeLockStake:
-		return LockStakeData{}, true
+		return &LockStakeData{}, true
 	case TypeMoveStake:
-		return MoveStakeData{}, true
+		return &MoveStakeData{}, true
 	case TypeVoteCommission:
 		return &VoteCommissionDataV3{}, true
 	case TypeLock:
