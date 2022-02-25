@@ -28,12 +28,12 @@ import (
 
 func init() {
 	minimumOrderVolume = 100 // todo
-	v262 = -1
+	v262 = math.MaxInt64
 }
 
 func TestPair_LoadOrders_bagSkip0(t *testing.T) {
-	v262 = 9999999999
-	defer func() { v262 = -1 }()
+	v262 = -1
+	defer func() { v262 = math.MaxInt64 }()
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {

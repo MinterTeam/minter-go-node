@@ -1221,7 +1221,7 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 		return false
 	})
 
-	if !has {
+	if !has || len(slice) < limit {
 		slice = append(slice, 0)
 	}
 
