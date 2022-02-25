@@ -1221,6 +1221,9 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 		return false
 	})
 
+	if has && len(slice) < limit {
+		log.Println("LBO", pair.Coin0, pair.Coin1, slice)
+	}
 	if !has || len(slice) < limit {
 		slice = append(slice, 0)
 	}
