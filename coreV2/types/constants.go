@@ -42,19 +42,19 @@ func GetExpireOrdersPeriodWithChain(chain ChainID) uint64 {
 
 func GetIncreasedRewardsPeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
-		return m15 * 4
+		return day * 2
 	}
 	return yearX3
 }
 func GetUnbondPeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
-		return m15
+		return m15 * 3
 	}
 	return 518400
 }
 func GetMovePeriodWithChain(chain ChainID) uint64 {
 	if chain == ChainTestnet {
-		return m15 / 3
+		return m15
 	}
 	return weekCorrect
 }
