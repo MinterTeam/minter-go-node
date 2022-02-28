@@ -3,6 +3,7 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/version"
 	"io"
 	"log"
 	"os"
@@ -118,6 +119,9 @@ func export(cmd *cobra.Command, args []string) error {
 				PubKeyTypes: []string{
 					types.ABCIPubKeyTypeEd25519,
 				},
+			},
+			Version: tmproto.VersionParams{
+				AppVersion: version.AppVer,
 			},
 		},
 		AppHash:  nil,
