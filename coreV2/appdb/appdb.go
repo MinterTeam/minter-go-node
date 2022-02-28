@@ -441,7 +441,7 @@ func (appDB *AppDB) Emission() (emission *big.Int) {
 }
 
 type TimePrice struct {
-	T      uint64
+	T      int64
 	R0, R1 *big.Int
 	Off    bool
 	Last   *big.Int
@@ -455,7 +455,7 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 	priceCount, _ := new(big.Float).Mul(new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)), big.NewFloat(1e18)).Int(nil)
 	if tOld.IsZero() {
 		appDB.SetPrice(t, r0, r1, priceCount, false)
-		return priceCount, priceCount
+		return new(big.Int).Set(priceCount), new(big.Int).Set(priceCount)
 	}
 
 	defer func() { appDB.SetPrice(t, r0, r1, last, off) }()
@@ -468,7 +468,7 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 	if diff.Cmp(big.NewInt(-10)) != 1 {
 		last.SetInt64(0)
 		off = true
-		return new(big.Int), priceCount
+		return new(big.Int), new(big.Int).Set(priceCount)
 	}
 
 	if off && diff.Sign() != -1 {
@@ -477,15 +477,15 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 		if burn.Sign() != 1 {
 			last.Set(priceCount)
 			off = false
-			return last, priceCount
+			return new(big.Int).Set(last), new(big.Int).Set(priceCount)
 		}
-		return last, priceCount
+		return new(big.Int).Set(last), new(big.Int).Set(priceCount)
 	}
 
 	off = false
 	last.Set(priceCount)
 
-	return last, priceCount
+	return new(big.Int).Set(last), new(big.Int).Set(priceCount)
 }
 
 func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int, lastReward *big.Int, off bool) {
@@ -493,7 +493,7 @@ func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int, lastReward *big.Int, 
 	defer appDB.mu.Unlock()
 
 	appDB.price = &TimePrice{
-		T:    uint64(t.Nanosecond()),
+		T:    t.UnixNano(),
 		R0:   big.NewInt(0).Set(r0), // BIP
 		R1:   big.NewInt(0).Set(r1), // USDTE
 		Off:  off,
@@ -542,5 +542,5 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int, lastReward *big.In
 			panic(err)
 		}
 	}
-	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1, new(big.Int).Set(appDB.price.Last), appDB.price.Off
+	return time.Unix(0, appDB.price.T), appDB.price.R0, appDB.price.R1, new(big.Int).Set(appDB.price.Last), appDB.price.Off
 }
