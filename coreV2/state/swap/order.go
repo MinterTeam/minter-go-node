@@ -86,6 +86,10 @@ type ChangeDetailsWithOrders struct {
 }
 
 func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
+	var amountInBurned = "0"
+	if c.AmountInBurned != nil {
+		amountInBurned = c.AmountInBurned.String()
+	}
 	return json.Marshal(struct {
 		AmountIn            string   `json:"amount_in"`
 		AmountOut           string   `json:"amount_out"`
@@ -98,7 +102,7 @@ func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
 		AmountOut:           c.AmountOut.String(),
 		CommissionAmountIn:  c.CommissionAmountIn.String(),
 		CommissionAmountOut: c.CommissionAmountOut.String(),
-		AmountInBurned:      c.AmountInBurned.String(),
+		AmountInBurned:      amountInBurned,
 		Orders:              c.Orders,
 	})
 }
