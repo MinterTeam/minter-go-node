@@ -472,7 +472,8 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 	}
 
 	if off && diff.Sign() != -1 {
-		last.Add(last, big.NewInt(10))
+		last.Add(last, big.NewInt(5e18))
+		last.Add(last, big.NewInt(5e18))
 		burn := big.NewInt(0).Sub(priceCount, last)
 		if burn.Sign() != 1 {
 			last.Set(priceCount)
