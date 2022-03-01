@@ -165,7 +165,7 @@ func NewStateV3(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize in
 		return nil, err
 	}
 
-	state, err := newStateForTree(iavlTree.GetLastImmutable(), events, db, keepLastStates) // todo
+	state, err := newStateForTreeV2(iavlTree.GetLastImmutable(), events, db, keepLastStates) // todo
 	if err != nil {
 		return nil, err
 	}
