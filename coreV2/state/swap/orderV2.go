@@ -24,7 +24,7 @@ func (s *SwapV2) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmo
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, minAmount1Out))
 	}
 
-	s.hundleLittleExpiredOrders(expiredOrders)
+	s.handleLittleExpiredOrders(expiredOrders)
 
 	owners := sortOwners(ownersMap)
 	for _, b := range owners {
@@ -37,6 +37,7 @@ func (s *SwapV2) PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmo
 	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(commission1000))
 	s.bus.Accounts().AddBalance(burnAddress, coin0, commission1000)
 
+	details.AmountInBurned = commission1000
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
@@ -47,7 +48,7 @@ func (s *SwapV2) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amou
 		panic(fmt.Sprintf("calculatedAmount1Out %s less minAmount1Out %s", amount1Out, maxAmount0In))
 	}
 
-	s.hundleLittleExpiredOrders(expiredOrders)
+	s.handleLittleExpiredOrders(expiredOrders)
 
 	owners := sortOwners(ownersMap)
 	for _, b := range owners {
@@ -59,10 +60,12 @@ func (s *SwapV2) PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amou
 	commission1000 := calcCommission1000(amount0In)
 	s.bus.Checker().AddCoin(coin0, big.NewInt(0).Neg(commission1000))
 	s.bus.Accounts().AddBalance(burnAddress, coin0, commission1000)
+
+	details.AmountInBurned = commission1000
 	return amount0In, amount1Out, pair.GetID(), details, owners
 }
 
-func (s *SwapV2) hundleLittleExpiredOrders(expiredOrders []*Limit) {
+func (s *SwapV2) handleLittleExpiredOrders(expiredOrders []*Limit) {
 	for _, limit := range expiredOrders {
 		returnVolume := big.NewInt(0).Set(limit.WantSell)
 		s.bus.Accounts().AddBalance(limit.Owner, limit.Coin1, returnVolume)

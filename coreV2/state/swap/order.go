@@ -81,6 +81,7 @@ type ChangeDetailsWithOrders struct {
 	AmountOut           *big.Int
 	CommissionAmountIn  *big.Int
 	CommissionAmountOut *big.Int
+	AmountInBurned      *big.Int
 	Orders              []*Limit
 }
 
@@ -90,12 +91,14 @@ func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
 		AmountOut           string   `json:"amount_out"`
 		CommissionAmountIn  string   `json:"commission_amount_in"`
 		CommissionAmountOut string   `json:"commission_amount_out"`
+		AmountInBurned      string   `json:"amount_in_burned"`
 		Orders              []*Limit `json:"orders"`
 	}{
 		AmountIn:            c.AmountIn.String(),
 		AmountOut:           c.AmountOut.String(),
 		CommissionAmountIn:  c.CommissionAmountIn.String(),
 		CommissionAmountOut: c.CommissionAmountOut.String(),
+		AmountInBurned:      c.AmountInBurned.String(),
 		Orders:              c.Orders,
 	})
 }
