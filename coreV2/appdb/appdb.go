@@ -328,7 +328,7 @@ func (appDB *AppDB) GetVersionName(height uint64) string {
 func (appDB *AppDB) GetVersionHeight(name string) uint64 {
 	for _, version := range appDB.GetVersions() {
 		if version.Name == name {
-			return version.Height
+			return version.Height + 1
 		}
 	}
 
