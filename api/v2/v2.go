@@ -20,6 +20,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -92,7 +93,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 		}),
 	)
 	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1000000000)),
 	}
 	err = gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
@@ -101,7 +102,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	}
 
 	mux := http.NewServeMux()
-	openapi := "/v2/openapi-ui/"
+	const openapi = "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/v2/" {
