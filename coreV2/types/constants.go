@@ -26,7 +26,7 @@ func GetExpireOrdersPeriod() uint64 {
 	return GetExpireOrdersPeriodWithChain(CurrentChainID)
 }
 
-const yearX3 = 21024000    // 3y = 94608000sec/4.5
+const yearX3 = 18921600    // 3y = 94608000sec/5
 const mounth = week * 4    // 1m
 const week = day * 7       // 1w
 const weekCorrect = 134400 // 1w

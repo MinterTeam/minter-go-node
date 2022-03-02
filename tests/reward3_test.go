@@ -240,7 +240,9 @@ func TestReward_Update_Down(t *testing.T) {
 
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.GetEventsDB().LoadEvents(13)[0])
+	t.Log(app.CurrentState().App().Reward())
 }
+
 func TestReward_Update_Up(t *testing.T) {
 	state := DefaultAppState() // generate default state
 

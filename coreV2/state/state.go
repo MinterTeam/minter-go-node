@@ -580,7 +580,7 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 	commission := commission.NewCommission(immutableTree)
 
 	update := update.New(immutableTree)
-
+	log.Println(1)
 	state := &State{
 		Validators:  validatorsState,
 		App:         appState,

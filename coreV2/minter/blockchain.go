@@ -150,7 +150,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			v260: {}, // amm with orderbook
 			v261: {}, // hotfix
 			v262: {}, // hotfix
-			V3: {}, // tokenomics
+			V3:   {}, // tokenomics
 		},
 		executor: GetExecutor(""),
 	}
@@ -281,7 +281,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
 		t, _, _, _, _ := blockchain.appDB.GetPrice()
-		if t.IsZero() || req.Header.Time.Sub(t) > time.Hour*24 && req.Header.Time.Hour() > 12 {
+		if t.IsZero() || req.Header.Time.Sub(t) > time.Hour*24 && req.Header.Time.Hour() > 11 {
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
 			newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
