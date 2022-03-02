@@ -5,6 +5,9 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"google.golang.org/protobuf/types/known/wrapperspb"
+	"math/big"
 	"strings"
 	"time"
 
@@ -122,6 +125,20 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 					Coin:            e.Coin,
 					ValidatorPubKey: e.ValidatorPubKeyString(),
 				}
+			case *events.UnlockEvent:
+				m = &pb.UnlockEvent{
+					Address: e.AddressString(),
+					Amount:  e.Amount,
+					Coin:    e.Coin,
+				}
+			case *events.StakeMoveEvent:
+				m = &pb.StakeMoveEvent{
+					Address:           e.AddressString(),
+					Amount:            e.Amount,
+					Coin:              e.Coin,
+					CandidatePubKey:   e.CandidatePubKey.String(),
+					ToCandidatePubKey: e.ToCandidatePubKey.String(),
+				}
 			case *events.RemoveCandidateEvent:
 				m = &pb.RemoveCandidateEvent{
 					CandidatePubKey: e.CandidatePubKeyString(),
@@ -129,6 +146,11 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 			case *events.UpdateNetworkEvent:
 				m = &pb.UpdateNetworkEvent{
 					Version: e.Version,
+				}
+			case *events.UpdatedBlockRewardEvent:
+				m = &pb.UpdatedBlockRewardEvent{
+					Value:                   e.Value,
+					ValueLockedStakeRewards: e.ValueLockedStakeRewards,
 				}
 			case *events.UpdateCommissionsEvent:
 				m = &pb.UpdateCommissionsEvent{
@@ -199,7 +221,20 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockField_size:
 			response.Size = uint64(block.Block.Size())
 		case pb.BlockField_block_reward:
-			response.BlockReward = s.rewards.GetRewardForBlock(uint64(height)).String()
+			if h := s.blockchain.GetVersionHeight(minter.V3); req.Height < h {
+				response.BlockReward = wrapperspb.String(s.rewards.GetRewardForBlock(uint64(height)).String())
+				continue
+			}
+
+			state, err := s.blockchain.GetStateForHeight(req.Height)
+			if err != nil { // is ok
+				//return nil, status.Error(codes.NotFound, err.Error())
+				continue
+			}
+
+			reward, rewardWithLock := state.App().Reward()
+			response.BlockReward = wrapperspb.String(reward.String())
+			response.LockedStakeRewards = wrapperspb.String(new(big.Int).Mul(rewardWithLock, big.NewInt(3)).String())
 		case pb.BlockField_transactions:
 			response.Transactions, err = s.blockTransaction(block, blockResults, s.blockchain.CurrentState().Coins(), req.FailedTxs)
 			if err != nil {

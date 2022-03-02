@@ -141,7 +141,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 			return Response{
 				Code: code.IncorrectMultiSignature,
 				Log:  "Incorrect multi-signature",
-				Info: EncodeError(code.NewIncorrectMultiSignature()),
+				Info: EncodeError(code.NewIncorrectMultiSignature("error in the number of signers")),
 			}
 		}
 
@@ -155,7 +155,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 				return Response{
 					Code: code.IncorrectMultiSignature,
 					Log:  "Incorrect multi-signature",
-					Info: EncodeError(code.NewIncorrectMultiSignature()),
+					Info: EncodeError(code.NewIncorrectMultiSignature(err.Error())),
 				}
 			}
 
@@ -195,7 +195,7 @@ func (e *Executor) RunTx(context state.Interface, rawTx []byte, rewardPool *big.
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
 	if !commissions.Coin.IsBaseCoin() {
-		price = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
+		price, _ = checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
 	}
 	if price == nil || price.Sign() != 1 {
 		return Response{

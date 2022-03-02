@@ -62,7 +62,7 @@ func TestUnbondTx(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 5, &sync.Map{}, 0, false)
 
 	if response.Code != 0 {
 		t.Fatalf("Response code is not 0. Error %s", response.Log)
@@ -498,7 +498,7 @@ func TestUnbondTxToNotExistStake(t *testing.T) {
 
 	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.StakeNotFound {
-		t.Fatalf("Response code is not %d. Error %s", code.StakeNotFound, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.StakeNotFound, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {
@@ -549,7 +549,7 @@ func TestUnbondTxToInsufficientStake(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
+	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 2, &sync.Map{}, 0, false)
 	if response.Code != code.InsufficientStake {
 		t.Fatalf("Response code is not %d. Error %s", code.InsufficientStake, response.Log)
 	}
@@ -654,7 +654,7 @@ func TestUnbondTxToInsufficientAmountAtWaitlist(t *testing.T) {
 
 	response := NewExecutor(GetData).RunTx(cState, encodedTx, big.NewInt(0), 0, &sync.Map{}, 0, false)
 	if response.Code != code.InsufficientWaitList {
-		t.Fatalf("Response code is not %d. Error %s", code.InsufficientWaitList, response.Log)
+		t.Fatalf("Response code is not %d. Error %d %s", code.InsufficientWaitList, response.Code, response.Log)
 	}
 
 	if err := checkState(cState); err != nil {

@@ -190,7 +190,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 			checkDuplicatePools[swapper.GetID()] = struct{}{}
 
 			if isGasCommissionFromPoolSwap == true && swapper.GetID() == commissionPoolSwapper.GetID() {
-				commissionInBaseCoin = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
+				commissionInBaseCoin, _ = commissionPoolSwapper.CalculateBuyForSellWithOrders(commission)
 				if tx.CommissionCoin() == coinToSell && coinToBuy.IsBaseCoin() {
 					swapper = swapper.AddLastSwapStepWithOrders(commission, commissionInBaseCoin, true)
 				}
@@ -205,7 +205,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 
 			var valueToBuyCalc *big.Int
 			coinToBuyModel := checkState.Coins().GetCoin(coinToBuy)
-			errResp, valueToBuyCalc = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
+			errResp, valueToBuyCalc, _ = CheckSwap(swapper, coinToSellModel, coinToBuyModel, valueToSell, valueToBuy, false)
 			if errResp != nil {
 				return *errResp
 			}
@@ -234,7 +234,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 				detailsCom *swap.ChangeDetailsWithOrders
 				ownersCom  []*swap.OrderDetail
 			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
 				CoinIn:   tx.CommissionCoin(),
@@ -259,7 +259,7 @@ func (data SellAllSwapPoolDataV260) Run(tx *Transaction, context state.Interface
 		var poolIDs tagPoolsChange
 
 		for i, coinToBuy := range data.Coins[1:] {
-			amountIn, amountOut, poolID, details, owners := deliverState.Swap.PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
+			amountIn, amountOut, poolID, details, owners := deliverState.Swapper().PairSellWithOrders(coinToSell, coinToBuy, valueToSell, big.NewInt(0))
 
 			tags := &tagPoolChange{
 				PoolID:   poolID,

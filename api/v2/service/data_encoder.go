@@ -199,7 +199,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			PubKey: d.PubKey.String(),
 		}
 	case transaction.TypeUnbond:
-		d := data.(*transaction.UnbondDataV260)
+		d := data.(*transaction.UnbondDataV3)
 		m = &pb.UnbondData{
 			PubKey: d.PubKey.String(),
 			Coin: &pb.Coin{
@@ -323,7 +323,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 			Commission: uint64(d.Commission),
 		}
 	case transaction.TypeVoteCommission:
-		d := data.(*transaction.VoteCommissionDataV250)
+		d := data.(*transaction.VoteCommissionDataV3)
 		m = priceCommissionData(d, rCoins.GetCoin(d.Coin))
 	case transaction.TypeVoteUpdate:
 		d := data.(*transaction.VoteUpdateDataV230)
@@ -365,6 +365,30 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 		m = &pb.RemoveLimitOrderData{
 			Id: uint64(d.ID),
 		}
+	case transaction.TypeMoveStake:
+		d := data.(*transaction.MoveStakeData)
+		m = &pb.MoveStakeData{
+			FromPubKey: d.FromPubKey.String(),
+			ToPubKey:   d.ToPubKey.String(),
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Value: d.Value.String(),
+		}
+	case transaction.TypeLockStake:
+		//d := data.(*transaction.LockStakeData)
+		m = &pb.LockStakeData{}
+	case transaction.TypeLock:
+		d := data.(*transaction.LockData)
+		m = &pb.LockData{
+			DueBlock: uint64(d.DueBlock),
+			Coin: &pb.Coin{
+				Id:     uint64(d.Coin),
+				Symbol: rCoins.GetCoin(d.Coin).GetFullSymbol(),
+			},
+			Value: d.Value.String(),
+		}
 	default:
 		return nil, errors.New("unknown tx type")
 	}
@@ -377,7 +401,7 @@ func encode(data transaction.Data, txType transaction.TxType, rCoins coins.RCoin
 	return a, nil
 }
 
-func priceCommissionData(d *transaction.VoteCommissionDataV250, coin *coins.Model) proto.Message {
+func priceCommissionData(d *transaction.VoteCommissionDataV3, coin *coins.Model) proto.Message {
 	return &pb.VoteCommissionData{
 		PubKey: d.PubKey.String(),
 		Height: d.Height,
@@ -430,6 +454,9 @@ func priceCommissionData(d *transaction.VoteCommissionDataV250, coin *coins.Mode
 		FailedTx:                d.FailedTxPrice().String(),
 		AddLimitOrder:           d.AddLimitOrderPrice().String(),
 		RemoveLimitOrder:        d.RemoveLimitOrderPrice().String(),
+		MoveStake:               d.MoveStakePrice().String(),
+		LockStake:               d.LockStakePrice().String(),
+		Lock:                    d.LockPrice().String(),
 	}
 }
 

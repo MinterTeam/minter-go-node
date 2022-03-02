@@ -33,7 +33,7 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	cfg := config.GetConfig(storage.GetMinterHome())
 	cfg.DBBackend = "memdb"
 
-	app := minter.NewMinterBlockchain(storage, cfg, nil, updateStakePeriod, expiredOrdersPeriod)
+	app := minter.NewMinterBlockchain(storage, cfg, nil, updateStakePeriod, expiredOrdersPeriod, nil)
 	var updates []tmTypes.ValidatorUpdate
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
@@ -55,17 +55,23 @@ func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 }
 
 // SendBeginBlock sends BeginBlock message to given Blockchain instance
-func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginBlock {
+func SendBeginBlock(app *minter.Blockchain, height int64, times ...time.Time) tmTypes.ResponseBeginBlock {
 	var voteInfos []tmTypes.VoteInfo
-	for _, validator := range app.CurrentState().Validators().GetValidators() {
+	validators := app.CurrentState().Validators().GetValidators()
+	for _, validator := range validators {
 		address := validator.GetAddress()
 		voteInfos = append(voteInfos, tmTypes.VoteInfo{
 			Validator: tmTypes.Validator{
 				Address: address[:],
-				Power:   0,
+				Power:   int64(100 / len(validators)),
 			},
 			SignedLastBlock: true,
 		})
+	}
+
+	var t time.Time
+	if len(times) == 1 {
+		t = times[0]
 	}
 	return app.BeginBlock(tmTypes.RequestBeginBlock{
 		Hash: nil,
@@ -73,7 +79,7 @@ func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginB
 			Version:            version.Consensus{},
 			ChainID:            "",
 			Height:             height,
-			Time:               time.Time{},
+			Time:               t,
 			LastBlockId:        tmTypes1.BlockID{},
 			LastCommitHash:     nil,
 			DataHash:           nil,

@@ -42,6 +42,12 @@ func DefaultConfig() *Config {
 		"c578fba1bdb5265be75dd412f8cf1bbeb7399620@seed.minter.stakeholder.space:26656," +
 		"bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
 
+	cfg.P2P.PersistentPeers =
+		"bac66d7240caca750dfb78a1ebb0a82a7a5ba898@state-test.minter.network:26656," +
+			"5b877dcc33c780bf9ae9dfde9070c055832b72b5@sync-test.minter.network:26656," +
+			"ddda6ce2626e6da6055bb32ebece2907c7997d3f@sync104.minter.su:26656," +
+			"7e1c0be4cfbc99a7b81cb5566a3eb9832fff542f@sync101.minter.su:26656"
+
 	cfg.TxIndex = &tmConfig.TxIndexConfig{
 		Indexer: "kv",
 	}
@@ -68,6 +74,12 @@ func DefaultConfig() *Config {
 	cfg.PrivValidatorKey = "config/priv_validator.json"
 	cfg.PrivValidatorState = "config/priv_validator_state.json"
 	cfg.NodeKey = "config/node_key.json"
+
+	//cfg.StateSync.RPCServers = []string{"sync104.minter.su:26657", "state-test.minter.network:26657", "sync-test.minter.network:26657"}
+	cfg.StateSync.RPCServers = []string{"state-test.minter.network:26657", "sync-test.minter.network:26657", "sync101.minter.su:26657"}
+	cfg.StateSync.TrustHeight = 9297941
+	cfg.StateSync.TrustHash = "ACBF351E69958469A651AC128003B3BABCEE620DB7ECD89AAC2A70AE26665A92"
+	cfg.StateSync.TrustPeriod = time.Hour * 8760
 
 	return cfg
 }
@@ -98,6 +110,7 @@ type Config struct {
 	BaseConfig `mapstructure:",squash"`
 
 	// Options for services
+	StateSync       *tmConfig.StateSyncConfig       `mapstructure:"statesync"`
 	RPC             *tmConfig.RPCConfig             `mapstructure:"rpc"`
 	P2P             *tmConfig.P2PConfig             `mapstructure:"p2p"`
 	Mempool         *tmConfig.MempoolConfig         `mapstructure:"mempool"`
@@ -110,6 +123,7 @@ type Config struct {
 func defaultConfig() *Config {
 	return &Config{
 		BaseConfig:      DefaultBaseConfig(),
+		StateSync:       tmConfig.DefaultStateSyncConfig(),
 		RPC:             tmConfig.DefaultRPCConfig(),
 		P2P:             tmConfig.DefaultP2PConfig(),
 		Mempool:         tmConfig.DefaultMempoolConfig(),
@@ -149,19 +163,10 @@ func GetTmConfig(cfg *Config) *tmConfig.Config {
 			ABCI:                    cfg.ABCI,
 			FilterPeers:             cfg.FilterPeers,
 		},
-		RPC:     cfg.RPC,
-		P2P:     cfg.P2P,
-		Mempool: cfg.Mempool,
-		// StateSync:       &tmConfig.StateSyncConfig{
-		// 	Enable:        true,
-		// 	TempDir:       "",
-		// 	RPCServers:    []string{}, // todo
-		// 	TrustPeriod:   168 * time.Hour,
-		// 	TrustHeight:   0,
-		// 	TrustHash:     "",
-		// 	DiscoveryTime: 15 * time.Second,
-		// },
-		StateSync:       tmConfig.DefaultStateSyncConfig(),
+		RPC:             cfg.RPC,
+		P2P:             cfg.P2P,
+		Mempool:         cfg.Mempool,
+		StateSync:       cfg.StateSync,
 		FastSync:        tmConfig.DefaultFastSyncConfig(),
 		Consensus:       cfg.Consensus,
 		TxIndex:         cfg.TxIndex,
@@ -262,6 +267,11 @@ type BaseConfig struct {
 	StateMemAvailable int `mapstructure:"state_mem_available"`
 
 	HaltHeight int `mapstructure:"halt_height"`
+
+	// State sync snapshot interval
+	SnapshotInterval int `mapstructure:"snapshot_interval"`
+	// State sync snapshot to keep
+	SnapshotKeepRecent int `mapstructure:"snapshot_keep_recent"`
 }
 
 // DefaultBaseConfig returns a default base configuration for a Tendermint node
@@ -286,11 +296,14 @@ func DefaultBaseConfig() BaseConfig {
 		WSConnectionDuration:    time.Minute,
 		ValidatorMode:           false,
 		KeepLastStates:          120,
-		StateCacheSize:          1000000,
-		StateMemAvailable:       1024,
 		APISimultaneousRequests: 100,
 		LogPath:                 "stdout",
 		LogFormat:               LogFormatPlain,
+		StateCacheSize:          1000000,
+		StateMemAvailable:       1024,
+		HaltHeight:              0,
+		SnapshotInterval:        0,
+		SnapshotKeepRecent:      2,
 	}
 }
 
@@ -332,7 +345,7 @@ func DefaultLogLevel() string {
 // DefaultPackageLogLevels returns a default log level setting so all packages
 // log at "error", while the `state` and `main` packages log at "info"
 func DefaultPackageLogLevels() string {
-	return fmt.Sprintf("consensus:info,main:info,state:info,*:%s", DefaultLogLevel())
+	return fmt.Sprintf("consensus:info,main:info,state:info,node:info,*:%s", DefaultLogLevel())
 }
 
 // -----------------------------------------------------------------------------

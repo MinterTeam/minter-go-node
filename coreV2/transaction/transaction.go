@@ -64,6 +64,8 @@ const (
 	TypeCreateSwapPool          TxType = 0x22
 	TypeAddLimitOrder           TxType = 0x23
 	TypeRemoveLimitOrder        TxType = 0x24
+	TypeLockStake               TxType = 0x25
+	TypeLock                    TxType = 0x26
 )
 
 const (
@@ -102,6 +104,9 @@ const (
 	gasDeclareCandidacy = 10
 	gasDelegate         = 6
 	gasUnbond           = 6
+	gasMoveStake        = 6
+	gasLockStake        = 2
+	gasLock             = 2
 
 	gasSetCandidateOnline      = 1
 	gasSetCandidateOffline     = 1

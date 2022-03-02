@@ -16,16 +16,22 @@ func init() {
 	tmjson.RegisterType(&jail{}, "jail")
 	tmjson.RegisterType(&unbond{}, "unbond")
 	tmjson.RegisterType(&kick{}, "kick")
+	tmjson.RegisterType(&move{}, "move")
 	tmjson.RegisterType(&orderExpired{}, "orderExpired")
+	tmjson.RegisterType(&unlock{}, "unlock")
+
 	tmjson.RegisterType(&RewardEvent{}, TypeRewardEvent)
 	tmjson.RegisterType(&SlashEvent{}, TypeSlashEvent)
 	tmjson.RegisterType(&JailEvent{}, TypeJailEvent)
 	tmjson.RegisterType(&UnbondEvent{}, TypeUnbondEvent)
+	tmjson.RegisterType(&StakeMoveEvent{}, TypeStakeMoveEvent)
 	tmjson.RegisterType(&StakeKickEvent{}, TypeStakeKickEvent)
 	tmjson.RegisterType(&UpdateNetworkEvent{}, TypeUpdateNetworkEvent)
 	tmjson.RegisterType(&UpdateCommissionsEvent{}, TypeUpdateCommissionsEvent)
 	tmjson.RegisterType(&OrderExpiredEvent{}, TypeOrderExpiredEvent)
 	tmjson.RegisterType(&RemoveCandidateEvent{}, TypeRemoveCandidateEvent)
+	tmjson.RegisterType(&UpdatedBlockRewardEvent{}, TypeUpdatedBlockRewardEvent)
+	tmjson.RegisterType(&UnlockEvent{}, TypeUnlockEvent)
 }
 
 // IEventsDB is an interface of Events
@@ -123,11 +129,13 @@ func (store *eventsStore) LoadEvents(height uint32) Events {
 			}
 			resultEvents = append(resultEvents, stake.compile(p, store.idAddress[stake.addressID()]))
 		} else if c, ok := compactEvent.(*jail); ok {
-			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
-		} else if c, ok := compactEvent.(*orderExpired); ok {
+			resultEvents = append(resultEvents, c.compile(store.idPubKey[c.pubKeyID()]))
+		} else if c, ok := compactEvent.(address); ok {
 			resultEvents = append(resultEvents, c.compile(store.idAddress[c.addressID()]))
 		} else if c, ok := compactEvent.(*removeCandidate); ok {
-			resultEvents = append(resultEvents, c.compile(types.Pubkey(store.idPubKey[c.pubKeyID()])))
+			resultEvents = append(resultEvents, c.compile(store.idPubKey[c.pubKeyID()]))
+		} else if c, ok := compactEvent.(*move); ok {
+			resultEvents = append(resultEvents, c.compile(store.idPubKey[c.FromPubKeyID], store.idPubKey[c.ToPubKeyID], store.idAddress[c.addressID()]))
 		} else if c, ok := compactEvent.(Event); ok {
 			resultEvents = append(resultEvents, c)
 		} else {
@@ -156,9 +164,19 @@ func (store *eventsStore) CommitEvents(height uint32) error {
 			data = append(data, jail.convert(store.savePubKey(key)))
 			continue
 		}
-		if order, ok := item.(*OrderExpiredEvent); ok {
+		if order, ok := item.(addressE); ok {
 			address := store.saveAddress(order.address())
 			data = append(data, order.convert(address))
+			continue
+		}
+		if move, ok := item.(*StakeMoveEvent); ok {
+			address := store.saveAddress(move.address())
+			data = append(data, move.convert(store.savePubKey(&move.CandidatePubKey), store.savePubKey(&move.ToCandidatePubKey), address))
+			continue
+		}
+		if move, ok := item.(*StakeMoveEvent); ok {
+			address := store.saveAddress(move.address())
+			data = append(data, move.convert(store.savePubKey(&move.CandidatePubKey), store.savePubKey(&move.ToCandidatePubKey), address))
 			continue
 		}
 		data = append(data, item)

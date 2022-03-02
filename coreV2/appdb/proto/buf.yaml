@@ -1,0 +1,7 @@
+version: v1beta1
+name: buf.build/minterteam/node-grpc-gateway
+deps:
+  - buf.build/gogo/protobuf
+breaking:
+  use:
+    - WIRE_JSON

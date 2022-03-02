@@ -48,10 +48,10 @@ type EditableChecker interface {
 	CalculateAddAmountsForPrice(float *big.Float) (amount0, amount1 *big.Int)
 	// Deprecated
 	CalculateBuyForSell(amount0In *big.Int) (amount1Out *big.Int)
-	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int)
+	CalculateBuyForSellWithOrders(amount0In *big.Int) (amount1Out *big.Int, orders []*Limit)
 	// Deprecated
 	CalculateSellForBuy(amount1Out *big.Int) (amount0In *big.Int)
-	CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int)
+	CalculateSellForBuyWithOrders(amount1Out *big.Int) (amount0In *big.Int, orders []*Limit)
 	CalculateAddLiquidity(amount0 *big.Int, supply *big.Int) (liquidity *big.Int, amount1 *big.Int)
 	CheckSwap(amount0In, amount1Out *big.Int) error
 	CheckMint(amount0, maxAmount1, totalSupply *big.Int) (err error)
@@ -74,6 +74,7 @@ type RSwap interface {
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error)
 }
 
+// Deprecated
 type Swap struct {
 	muPairs       sync.RWMutex
 	pairs         map[PairKey]*Pair
@@ -454,6 +455,8 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
+var v262 int64 = math.MaxInt64 // -1
+
 func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	basePath := []byte{mainPrefix}
 
@@ -475,6 +478,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		b, err := rlp.EncodeToBytes(s.nextOrderID)
 		if err != nil {
 			s.muNextOrdersID.Unlock()
+			panic(err)
 			return err
 		}
 		db.Set([]byte{mainPrefix, totalOrdersIDPrefix}, b)
@@ -541,19 +545,27 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			db.Set(pathOrderID, pairOrderBytes)
 		}
 
+		//if version < v262 {
 		lenB := len(pair.buyOrders.ids)
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
 		if lenB > 10 {
 			pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
 		}
-		//pair.buyOrders.ids = nil
+		//} else {
+		//	pair.loadedBuyOrders.ids = nil
+		//	pair.buyOrders.ids = nil
+		//}
 
+		//if version < v262 {
 		lenS := len(pair.sellOrders.ids)
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
 		if lenS > 10 {
 			pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
 		}
-		//pair.sellOrders.ids = nil
+		//} else {
+		//	pair.loadedSellOrders.ids = nil
+		//	pair.sellOrders.ids = nil
+		//}
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})

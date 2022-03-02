@@ -129,7 +129,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			return Response{
 				Code: code.IncorrectMultiSignature,
 				Log:  "Incorrect multi-signature",
-				Info: EncodeError(code.NewIncorrectMultiSignature()),
+				Info: EncodeError(code.NewIncorrectMultiSignature("error in the number of signers")),
 			}
 		}
 
@@ -143,7 +143,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				return Response{
 					Code: code.IncorrectMultiSignature,
 					Log:  "Incorrect multi-signature",
-					Info: EncodeError(code.NewIncorrectMultiSignature()),
+					Info: EncodeError(code.NewIncorrectMultiSignature(err.Error())),
 				}
 			}
 
@@ -182,18 +182,20 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	coinCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price_coin"), Value: []byte(strconv.Itoa(int(commissions.Coin)))}
 	priceCommission := abcTypes.EventAttribute{Key: []byte("tx.commission_price"), Value: []byte(price.String())}
 
-	if !commissions.Coin.IsBaseCoin() {
-		var resp *Response
-		resp, price = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
-		if resp != nil {
-			return *resp
+	if price.Sign() != 0 {
+		if !commissions.Coin.IsBaseCoin() {
+			var resp *Response
+			resp, price, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), price, big.NewInt(0), false)
+			if resp != nil {
+				return *resp
+			}
 		}
-	}
-	if price == nil || price.Sign() != 1 {
-		return Response{
-			Code: code.CommissionCoinNotSufficient,
-			Log:  fmt.Sprint("Not possible to pay commission"),
-			Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+		if price == nil || price.Sign() != 1 {
+			return Response{
+				Code: code.CommissionCoinNotSufficient,
+				Log:  fmt.Sprint("Not possible to pay commission"),
+				Info: EncodeError(code.NewCommissionCoinNotSufficient("", "")),
+			}
 		}
 	}
 
@@ -215,7 +217,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 
 		if !commissions.Coin.IsBaseCoin() {
 			var resp *Response
-			resp, commissionInBaseCoin = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
+			resp, commissionInBaseCoin, _ = CheckSwap(checkState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()), checkState.Coins().GetCoin(commissions.Coin), checkState.Coins().GetCoin(0), commissionInBaseCoin, big.NewInt(0), false)
 			if resp != nil {
 				return *resp
 			}
@@ -265,7 +267,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 				if isGasCommissionFromPoolSwap {
 					if !commissions.Coin.IsBaseCoin() {
 						var resp *Response
-						resp, commissionInBaseCoin = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
+						resp, commissionInBaseCoin, _ = CheckSwap(commissionPoolSwapper, checkState.Coins().GetCoin(tx.CommissionCoin()), checkState.Coins().GetCoin(0), commission, big.NewInt(0), false)
 						if resp != nil {
 							return *resp
 						}
@@ -288,14 +290,14 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 			}
 
 			if deliverState, ok := context.(*state.State); ok {
-				var tagsCom *tagPoolChange
 				if isGasCommissionFromPoolSwap {
+					var tagsCom *tagPoolChange
 					var (
 						poolIDCom  uint32
 						detailsCom *swap.ChangeDetailsWithOrders
 						ownersCom  []*swap.OrderDetail
 					)
-					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+					commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 					tagsCom = &tagPoolChange{
 						PoolID:   poolIDCom,
 						CoinIn:   tx.CommissionCoin(),
@@ -308,16 +310,19 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 					for _, value := range ownersCom {
 						deliverState.Accounts.AddBalance(value.Owner, tx.CommissionCoin(), value.ValueBigInt)
 					}
+					response.Tags = append(response.Tags,
+						abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())})
 				} else if !tx.CommissionCoin().IsBaseCoin() {
 					deliverState.Coins.SubVolume(tx.CommissionCoin(), commission)
 					deliverState.Coins.SubReserve(tx.CommissionCoin(), commissionInBaseCoin)
+					response.Tags = append(response.Tags,
+						abcTypes.EventAttribute{Key: []byte("tx.fail_fee_reserve"), Value: []byte(commissionInBaseCoin.String())})
 				}
 
 				deliverState.Accounts.SubBalance(intruder, tx.CommissionCoin(), commission)
 
 				rewardPool.Add(rewardPool, commissionInBaseCoin)
 				response.Tags = append(response.Tags,
-					abcTypes.EventAttribute{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail_fee"), Value: []byte(commission.String())},
 					abcTypes.EventAttribute{Key: []byte("tx.fail"), Value: []byte{49}, Index: true}, // "1"
 				)

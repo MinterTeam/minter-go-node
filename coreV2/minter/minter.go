@@ -2,6 +2,7 @@ package minter
 
 import (
 	"fmt"
+	"github.com/cosmos/cosmos-sdk/snapshots"
 	"log"
 	"math/big"
 	"os"
@@ -21,6 +22,17 @@ import (
 	tmNode "github.com/tendermint/tendermint/node"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
 )
+
+// SetSnapshotStore sets the snapshot store.
+func (blockchain *Blockchain) SetSnapshotStore(snapshotStore *snapshots.Store, snapshotInterval, snapshotKeepRecent int) {
+	if snapshotStore == nil {
+		blockchain.snapshotManager = nil
+		return
+	}
+	blockchain.snapshotInterval = uint64(snapshotInterval)
+	blockchain.snapshotKeepRecent = uint32(snapshotKeepRecent)
+	blockchain.snapshotManager = snapshots.NewManager(snapshotStore, blockchain.appDB)
+}
 
 func (blockchain *Blockchain) RpcClient() *rpc.Local {
 	return blockchain.rpcClient
@@ -62,6 +74,8 @@ func (blockchain *Blockchain) stop() {
 func (blockchain *Blockchain) WaitStop() error {
 	defer close(blockchain.stopOk)
 	blockchain.tmNode.Wait()
+	blockchain.wgSnapshot.Wait()
+	blockchain.wgSnapshot.Add(1)
 	return blockchain.Close()
 }
 
@@ -87,12 +101,11 @@ func (blockchain *Blockchain) calculatePowers(vals []*validators2.Validator) {
 func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	height := blockchain.Height()
 
-	if h := blockchain.appDB.GetVersionHeight(v260); h > 0 && height > h {
+	if h := blockchain.GetVersionHeight(v260); h > 0 {
 		blockchain.stateDeliver.Candidates.RecalculateStakesV2(height)
 	} else {
 		blockchain.stateDeliver.Candidates.RecalculateStakes(height)
 	}
-
 	valsCount := validators.GetValidatorsCountForBlock(height)
 	newCandidates := blockchain.stateDeliver.Candidates.GetNewCandidates(valsCount)
 	if len(newCandidates) < valsCount {
@@ -122,7 +135,6 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 	blockchain.stateDeliver.Validators.SetNewValidators(newCandidates)
 
 	activeValidators := blockchain.appDB.GetValidators()
-
 	blockchain.appDB.SetValidators(newValidators)
 
 	updates := newValidators
@@ -149,34 +161,45 @@ func (blockchain *Blockchain) updateValidators() []abciTypes.ValidatorUpdate {
 
 // CurrentState returns immutable state of Minter Blockchain
 func (blockchain *Blockchain) CurrentState() *state.CheckState {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.stateCheck
 }
 
 // AvailableVersions returns all available versions in ascending order
 func (blockchain *Blockchain) AvailableVersions() []int {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.stateDeliver.Tree().AvailableVersions()
 }
 func (blockchain *Blockchain) UpdateVersions() []*appdb.Version {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
-
 	return blockchain.appDB.GetVersions()
+}
+func (blockchain *Blockchain) GetVersionHeight(v string) uint64 {
+	return blockchain.appDB.GetVersionHeight(v)
+}
+
+func (blockchain *Blockchain) GetEmission() *big.Int {
+	emission := blockchain.appDB.Emission()
+	if emission == nil || emission.Sign() != 1 {
+		return blockchain.rewardsCounter.GetBeforeBlock(blockchain.Height())
+	}
+
+	return emission
 }
 
 // GetStateForHeight returns immutable state of Minter Blockchain for given height
 func (blockchain *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
 	if height > 0 {
-		s, err := state.NewCheckStateAtHeight(height, blockchain.storages.StateDB())
-		if err != nil {
-			return nil, err
+		if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h { // todo
+			s, err := state.NewCheckStateAtHeightV3(height, blockchain.storages.StateDB())
+			if err != nil {
+				return nil, err
+			}
+			return s, nil
+		} else {
+			s, err := state.NewCheckStateAtHeight(height, blockchain.storages.StateDB())
+			if err != nil {
+				return nil, err
+			}
+			return s, nil
 		}
-		return s, nil
 	}
 	return blockchain.CurrentState(), nil
 }
@@ -264,16 +287,14 @@ func (blockchain *Blockchain) StatisticData() *statistics.Data {
 
 // GetValidatorStatus returns given validator's status
 func (blockchain *Blockchain) GetValidatorStatus(address types.TmAddress) int8 {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 
 	return blockchain.validatorsStatuses[address]
 }
 
 // DeleteStateVersions deletes states in given range
 func (blockchain *Blockchain) DeleteStateVersions(from, to int64) error {
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
 
 	return blockchain.stateDeliver.Tree().DeleteVersionsRange(from, to)
 }

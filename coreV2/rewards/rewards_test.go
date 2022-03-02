@@ -7,13 +7,22 @@ import (
 	"testing"
 )
 
+func TestEmission(t *testing.T) {
+	s := NewReward().GetBeforeBlock(lastBlock - 9150000 + 1).String()
+	if s != TotalEmission {
+		t.Error(s)
+	}
+}
+
 type Results struct {
 	Block  uint64
 	Result *big.Int
 }
 
 func NewFrom0Block() *Reward {
-	return &Reward{startHeight: 0}
+	reward := NewReward()
+	reward.startHeight = 0
+	return reward
 }
 
 func TestGetRewardForBlock(t *testing.T) {

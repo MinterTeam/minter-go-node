@@ -28,6 +28,271 @@ import (
 
 func init() {
 	minimumOrderVolume = 100 // todo
+	v262 = math.MaxInt64
+}
+
+func TestPair_LoadOrders_bagSkip0(t *testing.T) {
+	v262 = -1
+	defer func() { v262 = math.MaxInt64 }()
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("31370593307539213096153157"), helpers.StringToBigInt("57461516319002531561548"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair := swap.Pair(0, 1)
+
+	t.Log(pair.Price().Text('f', 18))
+
+	pair.AddOrder(helpers.StringToBigInt("20600000000000000000000"), helpers.StringToBigInt("36989101097630229235"), types.Address{1}, 9294610)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	removedOrder := pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5496234812874385476"), types.Address{1}, 9294658)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap.PairRemoveLimitOrder(removedOrder.ID())
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5484634354072161230"), types.Address{1}, 9295804)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	pair.SellWithOrders(helpers.StringToBigInt("4000000000000000000000000"))
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(6, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+	t.Log(pair.Price().Text('f', 18))
+}
+func TestPair_LoadOrders_bagSkip2(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("31370593307539213096153157"), helpers.StringToBigInt("57461516319002531561548"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair := swap.Pair(0, 1)
+
+	t.Log(pair.Price().Text('f', 18))
+
+	pair.AddOrder(helpers.StringToBigInt("20600000000000000000000"), helpers.StringToBigInt("36989101097630229235"), types.Address{1}, 9294610)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	removedOrder := pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5496234812874385476"), types.Address{1}, 9294658)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap.PairRemoveLimitOrder(removedOrder.ID())
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5484634354072161230"), types.Address{1}, 9295804)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	pair.SellWithOrders(helpers.StringToBigInt("4000000000000000000000000"))
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(6, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+	t.Log(pair.Price().Text('f', 18))
+}
+func TestPair_LoadOrders_bagSkip1(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(0, 1, helpers.StringToBigInt("31370593307539213096153157"), helpers.StringToBigInt("57461516319002531561548"))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(1, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair := swap.Pair(0, 1)
+
+	t.Log(pair.Price().Text('f', 18))
+
+	pair.AddOrder(helpers.StringToBigInt("20600000000000000000000"), helpers.StringToBigInt("36989101097630229235"), types.Address{1}, 9294610)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	removedOrder := pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5496234812874385476"), types.Address{1}, 9294658)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap.PairRemoveLimitOrder(removedOrder.ID())
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pair.AddOrder(helpers.StringToBigInt("3060000000000000000000"), helpers.StringToBigInt("5484634354072161230"), types.Address{1}, 9295804)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	pair.SellWithOrders(helpers.StringToBigInt("4000000000000000000000000"))
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	immutableTree, err = tree.NewMutableTree(6, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+
+	pair = swap.Pair(0, 1)
+
+	t.Log(pair.orderSellByIndex(0))
+	t.Log(pair.orderSellByIndex(1))
+	t.Log(pair.Price().Text('f', 18))
 }
 
 func TestCmpPrice(t *testing.T) {
@@ -1564,6 +1829,63 @@ func TestSwap_loadSellOrders_dirty(t *testing.T) {
 
 }
 
+func TestPair_LoadOrders_bagSort01(t *testing.T) {
+	memDB := db.NewMemDB()
+	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
+	if err != nil {
+		t.Fatal(err)
+	}
+	newBus := bus.NewBus()
+	checker.NewChecker(newBus)
+
+	swap := New(newBus, immutableTree.GetLastImmutable())
+	_, _, _, _ = swap.PairCreate(1, 0, helpers.StringToBigInt("10000000000000000000000"), helpers.StringToBigInt("10000000000000000000000"))
+
+	pair := swap.Pair(1, 0)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	swap = New(newBus, immutableTree.GetLastImmutable())
+	pair = swap.Pair(1, 0)
+
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999993771961322406"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999992979828068462"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999990513182822656"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999987022814828419"), types.Address{1}, 1)
+	pair.AddOrder(helpers.StringToBigInt("1000000000000000000"), helpers.StringToBigInt("999985282425228748"), types.Address{1}, 1)
+
+	//t.Log(pair.orderSellByIndex(3))
+	t.Log(pair.orderSellByIndex(7))
+
+	if !reflect.DeepEqual(pair.sellOrderIDs(), []uint32{1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 0}) {
+		t.Error("unsorted", pair.sellOrderIDs(), []uint32{1, 6, 2, 7, 3, 8, 4, 9, 5, 10, 0})
+	}
+
+	//t.SkipNow()
+	last, index := pair.OrderSellLast()
+	if last.id != 10 || index != 9 {
+		t.Fatal(last, index)
+	}
+
+	_, _, err = immutableTree.Commit(swap)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	last, index = swap.Pair(1, 0).OrderSellLast()
+	if last.id != 10 || index != 9 {
+		t.Fatal(last, index)
+	}
+}
 func TestPair_LoadOrders_bagSort1(t *testing.T) {
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
@@ -2875,9 +3197,9 @@ func TestPair_AddLastSwapStepWithOrders(t *testing.T) {
 	_, _, _, _ = pair.SellWithOrders(addAmount0ForPrice)
 
 	sell := big.NewInt(15e15)
-	calcBuy1 := pair.CalculateBuyForSellWithOrders(sell)
+	calcBuy1, _ := pair.CalculateBuyForSellWithOrders(sell)
 	pair1 := pair.AddLastSwapStepWithOrders(sell, calcBuy1, false)
-	calcBuy2 := pair1.CalculateBuyForSellWithOrders(sell)
+	calcBuy2, _ := pair1.CalculateBuyForSellWithOrders(sell)
 	pair1.AddLastSwapStepWithOrders(sell, calcBuy2, false)
 
 	if len(pair.dirtyOrders.list) != 0 {
@@ -3288,7 +3610,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 	t.Run("order", func(t *testing.T) {
 		swap := New(newBus, immutableTree.GetLastImmutable())
 		pair := swap.Pair(0, 1)
-		amount1Out := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
+		amount1Out, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
 		_, orders := pair.calculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
 		if len(orders) == 0 {
 			t.Error("empty orders")
@@ -3444,8 +3766,8 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 	t.Run("cmp", func(t *testing.T) {
 		amount1Out01Mem := pair01.CalculateBuyForSell(big.NewInt(1e10))
 		amount1Out10Mem := pair10.CalculateBuyForSell(big.NewInt(1e10))
-		amount1Out01OBMem := pair01.CalculateBuyForSellWithOrders(big.NewInt(1e10))
-		amount1Out10OBMem := pair10.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		amount1Out01OBMem, _ := pair01.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		amount1Out10OBMem, _ := pair10.CalculateBuyForSellWithOrders(big.NewInt(1e10))
 		t.Run("mem", func(t *testing.T) {
 			if amount1Out01Mem.Cmp(amount1Out10Mem) != 0 {
 				t.Error(amount1Out01Mem, amount1Out10Mem)
@@ -3467,8 +3789,8 @@ func TestSwap_Export_WithOrders(t *testing.T) {
 		pair10Disk := swap.Pair(1, 0)
 		amount1Out01Disk := pair01Disk.CalculateBuyForSell(big.NewInt(1e10))
 		amount1Out10Disk := pair10Disk.CalculateBuyForSell(big.NewInt(1e10))
-		amount1Out01OBDisk := pair01Disk.CalculateBuyForSellWithOrders(big.NewInt(1e10))
-		amount1Out10OBDisk := pair10Disk.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		amount1Out01OBDisk, _ := pair01Disk.CalculateBuyForSellWithOrders(big.NewInt(1e10))
+		amount1Out10OBDisk, _ := pair10Disk.CalculateBuyForSellWithOrders(big.NewInt(1e10))
 		t.Run("disk", func(t *testing.T) {
 			if amount1Out01Disk.Cmp(amount1Out10Disk) != 0 {
 				t.Error(amount1Out01Disk, amount1Out10Disk)
@@ -3805,14 +4127,14 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 	t.Run("without orders", func(t *testing.T) {
 		t.Run("sell", func(t *testing.T) {
 			amount1Out := pair.CalculateBuyForSell(big.NewInt(5000))
-			amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(5000))
+			amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(5000))
 			if amount1Out.Cmp(amount1OutWithOB) != 0 {
 				t.Error("not equal", amount1Out, amount1OutWithOB)
 			}
 		})
 		t.Run("buy", func(t *testing.T) {
 			amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(5000))
-			amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(5000))
+			amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(5000))
 			if amount0In.Cmp(amount0InWithOB) != 0 {
 				t.Error("not equal", amount0In, amount0InWithOB)
 			}
@@ -3828,7 +4150,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 			t.Run("sell", func(t *testing.T) {
 				t.Run("before first order", func(t *testing.T) {
 					amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146))
+					amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146))
 					if amount1Out.Cmp(amount1OutWithOB) != 0 {
 						t.Error("not equal sell before first order", amount1Out, amount1OutWithOB)
 					}
@@ -3836,7 +4158,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 
 				t.Run("first order", func(t *testing.T) {
 					amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000))
+					amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000))
 					if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "998" {
 						t.Error("want to spend 2,000 more and get 1,000-0.2% more by order", amount1Out, amount1OutWithOB)
 					}
@@ -3847,13 +4169,13 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 							t.Error("Recovered", r)
 						}
 					}()
-					_ = pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000 + 1))
+					_, _ = pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000 + 1))
 				})
 				t.Run("more order", func(t *testing.T) {
 					amount1 := pair.CalculateBuyForSell(big.NewInt(4146))
 					p := pair.AddLastSwapStep(big.NewInt(4146), amount1)
 					amount1Out := big.NewInt(0).Add(amount1, p.CalculateBuyForSell(big.NewInt(1000)))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002 + 1000))
+					amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002 + 1000))
 					if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "999" {
 						t.Error("want to spend 2,002-0.1% more and get 1,000-0.1% more by order", amount1Out, amount1OutWithOB)
 					}
@@ -3862,7 +4184,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 			t.Run("buy", func(t *testing.T) {
 				t.Run("before first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
-					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926))
+					amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926))
 					if amount0In.Cmp(amount0InWithOB) != 0 {
 						t.Error("not equal", amount0In, amount0InWithOB)
 					}
@@ -3870,7 +4192,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				t.Run("first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 					amount0In.Add(amount0In, big.NewInt(1))
-					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
+					amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2002" { // todo:
 						t.Error("want to get 1,000-0.2% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
@@ -3881,14 +4203,14 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 							t.Error("Recovered", r)
 						}
 					}()
-					_ = pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 1))
+					_, _ = pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 1))
 				})
 				t.Run("more order", func(t *testing.T) {
 					amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 					amount0.Add(amount0, big.NewInt(1)) // ok, погрешность CalculateAddAmountsForPrice
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
-					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
+					amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2002" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
@@ -3903,7 +4225,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 				t.Run("sell", func(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-						amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000))
+						amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000))
 						if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "998" {
 							t.Error("want to spend 2,000 more and get 1,000-0.2% more by order", amount1Out, amount1OutWithOB)
 						}
@@ -3911,7 +4233,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					t.Run("all orders", func(t *testing.T) {
 						amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
 						//amount1Out.Add(amount1Out, big.NewInt(1))
-						amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004))
+						amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004))
 						if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "1998" { // todo:
 							t.Error("want to spend 4,000 more and get 2,000-0.2% more by order", amount1Out, amount1OutWithOB)
 						}
@@ -3922,7 +4244,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 								amount1 := pair.CalculateBuyForSell(big.NewInt(4146))
 								p := pair.AddLastSwapStep(big.NewInt(4146), amount1).AddLastSwapStep(big.NewInt(4), big.NewInt(-2))
 								amount1Out := big.NewInt(0).Add(amount1, p.CalculateBuyForSell(big.NewInt(i)))
-								amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004 + i))
+								amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004 + i))
 								if amount1OutWithOB.Cmp(amount1Out.Add(amount1Out, big.NewInt(1998))) != 0 {
 									t.Error("want to spend 4,000 more and get 2,000-0.1% more by order", amount1Out, amount1OutWithOB)
 								}
@@ -3934,7 +4256,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 						amount0In.Add(amount0In, big.NewInt(1))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
+						amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2002" {
 							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 						}
@@ -3942,7 +4264,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 					t.Run("all orders", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 						amount0In.Add(amount0In, big.NewInt(1))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
+						amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4004" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
@@ -3952,7 +4274,7 @@ func TestPair_CalculateBuyForSellWithOrders_01(t *testing.T) {
 						amount0.Add(amount0, big.NewInt(1))
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
 						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
+						amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4004" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
@@ -3990,14 +4312,14 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 	t.Run("without orders", func(t *testing.T) {
 		t.Run("sell", func(t *testing.T) {
 			amount1Out := pair.CalculateBuyForSell(big.NewInt(5000))
-			amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(5000))
+			amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(5000))
 			if amount1Out.Cmp(amount1OutWithOB) != 0 {
 				t.Error("not equal", amount1Out, amount1OutWithOB)
 			}
 		})
 		t.Run("buy", func(t *testing.T) {
 			amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(5000))
-			amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(5000))
+			amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(5000))
 			if amount0In.Cmp(amount0InWithOB) != 0 {
 				t.Error("not equal", amount0In, amount0InWithOB)
 			}
@@ -4014,7 +4336,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 			t.Run("sell", func(t *testing.T) {
 				t.Run("before first order", func(t *testing.T) {
 					amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146))
+					amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146))
 					if amount1Out.Cmp(amount1OutWithOB) != 0 {
 						t.Error("not equal sell before first order", amount1Out, amount1OutWithOB)
 					}
@@ -4022,7 +4344,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 
 				t.Run("first order", func(t *testing.T) {
 					amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
+					amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
 					if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "999" {
 						t.Error("want to spend 2,000 more and get 1,000-0.1% more by order", amount1Out, amount1OutWithOB)
 					}
@@ -4033,13 +4355,13 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 							t.Error("Recovered", r)
 						}
 					}()
-					_ = pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000 + 1))
+					_, _ = pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2000 + 1))
 				})
 				t.Run("more order", func(t *testing.T) {
 					amount1Out0 := pair.CalculateBuyForSell(big.NewInt(4146))
 					amount1Out1 := pair.AddLastSwapStep(big.NewInt(4146), amount1Out0).CalculateBuyForSell(big.NewInt(1000))
 					amount1Out := big.NewInt(0).Add(amount1Out0, amount1Out1)
-					amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002 + 1000))
+					amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002 + 1000))
 					if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "999" {
 						t.Error("want to spend 2,000 more and get 1,000-0.1% more by order", amount1Out, amount1OutWithOB)
 					}
@@ -4048,7 +4370,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 			t.Run("buy", func(t *testing.T) {
 				t.Run("before first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
-					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926))
+					amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926))
 					if amount0In.Cmp(amount0InWithOB) != 0 {
 						t.Error("not equal", amount0In, amount0InWithOB)
 					}
@@ -4056,7 +4378,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				t.Run("first order", func(t *testing.T) {
 					amount0In := pair.CalculateSellForBuy(big.NewInt(2926))
 					amount0In.Add(amount0In, big.NewInt(1))
-					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
+					amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2002" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
@@ -4067,14 +4389,14 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 							t.Error("Recovered", r)
 						}
 					}()
-					_ = pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 1))
+					_, _ = pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 1))
 				})
 				t.Run("more order", func(t *testing.T) {
 					amount0 := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 					amount0.Add(amount0, big.NewInt(1))
 					p := pair.AddLastSwapStep(amount0, big.NewInt(2926)).AddLastSwapStep(big.NewInt(2), big.NewInt(-1))
 					amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
-					amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
+					amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999 + 466))
 					if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2002" {
 						t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 					}
@@ -4089,14 +4411,14 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 				t.Run("sell", func(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-						amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
+						amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 2002))
 						if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "999" {
 							t.Error("want to spend 2,000 more and get 1,000-0.1% more by order", amount1Out, amount1OutWithOB)
 						}
 					})
 					t.Run("all orders", func(t *testing.T) {
 						amount1Out := pair.CalculateBuyForSell(big.NewInt(4146))
-						amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004))
+						amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004))
 						if big.NewInt(0).Sub(amount1OutWithOB, amount1Out).String() != "1998" {
 							t.Error("want to spend 4,000 more and get 2,000-0.1% more by order", amount1Out, amount1OutWithOB)
 						}
@@ -4108,7 +4430,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 								p := pair.AddLastSwapStep(big.NewInt(4146), amount1).AddLastSwapStep(big.NewInt(4), big.NewInt(-2))
 								amount11 := p.CalculateBuyForSell(big.NewInt(i))
 								amount1Out := big.NewInt(0).Add(amount1, amount11)
-								amount1OutWithOB := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004 + i))
+								amount1OutWithOB, _ := pair.CalculateBuyForSellWithOrders(big.NewInt(4146 + 4004 + i))
 								if amount1OutWithOB.Cmp(big.NewInt(0).Add(amount1Out, big.NewInt(1998))) != 0 {
 									t.Error("want to spend 4,000 more and get 2,000-0.1% more by order", amount1Out, amount1OutWithOB)
 								}
@@ -4120,7 +4442,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					t.Run("before second order", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 						amount0In.Add(amount0In, big.NewInt(1))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
+						amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 999))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "2002" {
 							t.Error("want to get 1,000-0.1% more and spend 2,000 more by order", amount0In, amount0InWithOB)
 						}
@@ -4128,7 +4450,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 					t.Run("all orders", func(t *testing.T) {
 						amount0In := pair.CalculateSellForBuyAllowNeg(big.NewInt(2926))
 						amount0In.Add(amount0In, big.NewInt(1))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
+						amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4004" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}
@@ -4138,7 +4460,7 @@ func TestPair_CalculateBuyForSellWithOrders_10(t *testing.T) {
 						amount0.Add(amount0, big.NewInt(1))
 						p := pair.AddLastSwapStep(amount0, big.NewInt(2926))
 						amount0In := big.NewInt(0).Add(amount0, p.CalculateSellForBuy(big.NewInt(466)))
-						amount0InWithOB := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
+						amount0InWithOB, _ := pair.CalculateSellForBuyWithOrders(big.NewInt(2926 + 1998 + 466))
 						if big.NewInt(0).Sub(amount0InWithOB, amount0In).String() != "4004" {
 							t.Error("want to get 2,000-0.1% more and spend 4,000 more by order", amount0In, amount0InWithOB)
 						}

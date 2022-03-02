@@ -119,10 +119,10 @@ func TestStateExport(t *testing.T) {
 	state.Candidates.Create(address1, address1, address1, candidatePubKey1, 10, 0, 0)
 	state.Candidates.Create(address2, address2, address2, candidatePubKey2, 30, 0, 0)
 	state.Validators.Create(candidatePubKey1, helpers.BipToPip(big.NewInt(1)))
-	state.FrozenFunds.AddFund(height+110, address1, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(100)), nil)
-	state.FrozenFunds.AddFund(height+120, address1, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(3)), nil)
-	state.FrozenFunds.AddFund(height+140, address2, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(500)), nil)
-	state.FrozenFunds.AddFund(height+150, address2, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTest2ID, helpers.BipToPip(big.NewInt(1000)), nil)
+	state.FrozenFunds.AddFund(height+110, address1, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(100)), 0)
+	state.FrozenFunds.AddFund(height+120, address1, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), types.GetBaseCoinID(), helpers.BipToPip(big.NewInt(3)), 0)
+	state.FrozenFunds.AddFund(height+140, address2, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTestID, helpers.BipToPip(big.NewInt(500)), 0)
+	state.FrozenFunds.AddFund(height+150, address2, &candidatePubKey1, state.Candidates.ID(candidatePubKey1), coinTest2ID, helpers.BipToPip(big.NewInt(1000)), 0)
 
 	newCheck0 := &check.Check{
 		Nonce:    []byte("test nonce"),

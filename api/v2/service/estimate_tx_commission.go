@@ -38,7 +38,7 @@ func (s *Service) EstimateTxCommission(ctx context.Context, req *pb.EstimateTxCo
 	commissions := cState.Commission().GetCommissions()
 	price := decodedTx.Price(commissions)
 	if !commissions.Coin.IsBaseCoin() {
-		price = cState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSell(price)
+		price, _ = cState.Swap().GetSwapper(commissions.Coin, types.GetBaseCoinID()).CalculateBuyForSellWithOrders(price)
 	}
 	if price == nil {
 		return nil, s.createError(status.New(codes.FailedPrecondition, "Not possible to pay commission"), transaction.EncodeError(code.NewCommissionCoinNotSufficient("", "")))

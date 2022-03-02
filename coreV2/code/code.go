@@ -28,6 +28,7 @@ const (
 	VoteExpired                  uint32 = 120
 	VoteAlreadyExists            uint32 = 121
 	WrongUpdateVersionName       uint32 = 122
+	WrongDueHeight               uint32 = 123
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
@@ -62,6 +63,7 @@ const (
 	PeriodLimitReached    uint32 = 413
 	CandidateJailed       uint32 = 414
 	TooBigStake           uint32 = 415
+	UnbondBlocked         uint32 = 416
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -723,10 +725,11 @@ func NewNotEnoughMultisigVotes(neededVotes, gotVotes string) *notEnoughMultisigV
 
 type incorrectMultiSignature struct {
 	Code string `json:"code,omitempty"`
+	Text string `json:"text"`
 }
 
-func NewIncorrectMultiSignature() *incorrectMultiSignature {
-	return &incorrectMultiSignature{Code: strconv.Itoa(int(IncorrectMultiSignature))}
+func NewIncorrectMultiSignature(text string) *incorrectMultiSignature {
+	return &incorrectMultiSignature{Code: strconv.Itoa(int(IncorrectMultiSignature)), Text: text}
 }
 
 type wrongCrr struct {
@@ -909,5 +912,16 @@ func NewWrongOrderVolume(v0, v1 string) *wrongOrderVolume {
 		Code:    strconv.Itoa(int(WrongOrderVolume)),
 		Volume0: v0,
 		Volume1: v1,
+	}
+}
+
+type unbondBlocked struct {
+	Code               string `json:"code,omitempty"`
+	BlockedUntilHeight string `json:"blocked_until_height"`
+}
+
+func NewUnbondBlocked(height string) *unbondBlocked {
+	return &unbondBlocked{
+		BlockedUntilHeight: strconv.Itoa(int(UnbondBlocked)),
 	}
 }

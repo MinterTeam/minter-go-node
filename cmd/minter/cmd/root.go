@@ -44,6 +44,7 @@ var RootCmd = &cobra.Command{
 		if isTestnet {
 			types.CurrentChainID = types.ChainTestnet
 			version.Version += "-testnet"
+			updateStakePeriod = 120
 		}
 
 		peers, err := cmd.Flags().GetString("persistent-peers")
@@ -53,6 +54,15 @@ var RootCmd = &cobra.Command{
 
 		if peers != "" {
 			cfg.P2P.PersistentPeers = peers
+		}
+
+		stateSync, err := cmd.Flags().GetBool("state-sync")
+		if err != nil {
+			panic(err)
+		}
+
+		if stateSync {
+			cfg.StateSync.Enable = stateSync
 		}
 	},
 }

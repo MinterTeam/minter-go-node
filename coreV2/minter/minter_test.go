@@ -56,7 +56,7 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 
 	ctx, cancelFunc := context.WithCancel(context.Background())
 
-	app := NewMinterBlockchain(storage, minterCfg, ctx, 120, 0)
+	app := NewMinterBlockchain(storage, minterCfg, ctx, 120, 0, nil)
 	nodeKey, err := p2p.LoadOrGenNodeKey(cfg.NodeKeyFile())
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +70,6 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 		getTestGenesis(pv, storage.GetMinterHome(), initialHeight),
 		tmNode.DefaultDBProvider,
 		tmNode.DefaultMetricsProvider(cfg.Instrumentation),
-		nil,
 		logger,
 		tmNode.CustomReactors(map[string]p2p.Reactor{
 			// "PEX":        p2pmock.NewReactor(),
@@ -108,7 +107,12 @@ func initTestNode(t *testing.T, initialHeight int64) (*Blockchain, *rpc.Local, *
 	return app, tmCli, pv, func() {
 		cancelFunc()
 		if err := app.WaitStop(); err != nil {
-			t.Skip(err)
+			if err.Error() == "leveldb: closed" {
+				t.Helper()
+				t.Log(err)
+				return
+			}
+			t.Error(err)
 		}
 	}
 }
@@ -353,8 +357,8 @@ func TestBlockchain_Height(t *testing.T) {
 		t.Fatal("invalid blockchain height")
 	}
 
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
@@ -395,8 +399,8 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 		t.Fatal("statistic last block and event event last block header time not equal")
 	}
 
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 
 	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
@@ -463,9 +467,9 @@ func TestBlockchain_IsApplicationHalted(t *testing.T) {
 			t.Fatalf("don't stop on block %d", height)
 			return
 		case <-time.After(2 * time.Second):
-			blockchain.lock.RLock()
+			blockchain.lockValidators.RLock()
 			exportedState := blockchain.CurrentState().Export()
-			blockchain.lock.RUnlock()
+			blockchain.lockValidators.RUnlock()
 			if err := exportedState.Verify(); err != nil {
 				t.Fatal(err)
 			}
@@ -615,8 +619,8 @@ func TestBlockchain_SendTx(t *testing.T) {
 		t.Fatalf("Timeout waiting for the tx to be committed")
 	}
 
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
@@ -632,7 +636,7 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 	pubkey := types.BytesToPubkey(pv.Key.PubKey.Bytes()[:])
 	blockchain.stateDeliver.RLock()
 	blockchain.stateDeliver.Candidates.SubStake(developers.Address, pubkey, 0, big.NewInt(0).Set(value))
-	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, &pubkey, blockchain.stateDeliver.Candidates.ID(pubkey), 0, big.NewInt(0).Set(value), nil)
+	blockchain.stateDeliver.FrozenFunds.AddFund(targetHeight, developers.Address, &pubkey, blockchain.stateDeliver.Candidates.ID(pubkey), 0, big.NewInt(0).Set(value), 0)
 	blockchain.stateDeliver.RUnlock()
 
 	blocks, err := tmCli.Subscribe(context.Background(), "test-client", "tm.event = 'NewBlock'")
@@ -647,8 +651,8 @@ func TestBlockchain_FrozenFunds(t *testing.T) {
 		break
 	}
 
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
 		t.Fatal(err)
@@ -721,9 +725,9 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	}
 	<-txs
 	nonce++
-	blockchain.lock.RLock()
+	blockchain.lockValidators.RLock()
 	coinID := blockchain.CurrentState().Coins().GetCoinBySymbol(symbol, 0).ID()
-	blockchain.lock.RUnlock()
+	blockchain.lockValidators.RUnlock()
 	{
 		buyCoinData := transaction.BuyCoinData{
 			CoinToBuy:          coinID,
@@ -904,7 +908,7 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 			}
 		}
 	}()
-	blockchain.lock.RLock()
+	blockchain.lockValidators.RLock()
 	events := blockchain.eventsDB.LoadEvents(135)
 	if len(events) == 0 {
 		t.Error("no jail")
@@ -913,14 +917,14 @@ func TestBlockchain_RecalculateStakes_andRemoveValidator(t *testing.T) {
 	if candidate == nil {
 		t.Fatal("candidate not found")
 	}
-	blockchain.lock.RUnlock()
+	blockchain.lockValidators.RUnlock()
 
 	if candidate.Status == candidates.CandidateStatusOnline {
 		t.Fatal("candidate not Offline")
 	}
 
-	blockchain.lock.RLock()
-	defer blockchain.lock.RUnlock()
+	blockchain.lockValidators.RLock()
+	defer blockchain.lockValidators.RUnlock()
 
 	exportedState := blockchain.CurrentState().Export()
 	if err := exportedState.Verify(); err != nil {
