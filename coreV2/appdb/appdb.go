@@ -494,7 +494,7 @@ func (appDB *AppDB) SetPrice(t time.Time, r0, r1 *big.Int, lastReward *big.Int, 
 	defer appDB.mu.Unlock()
 
 	appDB.price = &TimePrice{
-		T:    uint64(t.UnixNano()),
+		T:    uint64(t.UTC().UnixNano()),
 		R0:   big.NewInt(0).Set(r0), // BIP
 		R1:   big.NewInt(0).Set(r1), // USDTE
 		Off:  off,
@@ -543,5 +543,5 @@ func (appDB *AppDB) GetPrice() (t time.Time, r0, r1 *big.Int, lastReward *big.In
 			panic(err)
 		}
 	}
-	return time.Unix(0, int64(appDB.price.T)), appDB.price.R0, appDB.price.R1, new(big.Int).Set(appDB.price.Last), appDB.price.Off
+	return time.Unix(0, int64(appDB.price.T)).UTC(), appDB.price.R0, appDB.price.R1, new(big.Int).Set(appDB.price.Last), appDB.price.Off
 }
