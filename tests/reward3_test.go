@@ -211,9 +211,9 @@ func TestReward_Update_Down(t *testing.T) {
 	SendEndBlock(app, 10)   // send EndBlock
 	SendCommit(app)         // send Commit
 
-	SendBeginBlock(app, 11) // send BeginBlock
-	SendEndBlock(app, 11)   // send EndBlock
-	SendCommit(app)         // send Commit
+	SendBeginBlock(app, 11, time.Unix(1643889603, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 11)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
 	{
 		SendBeginBlock(app, 12) // send BeginBlock
 
@@ -234,9 +234,9 @@ func TestReward_Update_Down(t *testing.T) {
 		SendCommit(app)       // send Commit
 	}
 
-	SendBeginBlock(app, 13, time.Unix(1643208154, 0)) // send BeginBlock
-	SendEndBlock(app, 13)                             // send EndBlock
-	SendCommit(app)                                   // send Commit
+	SendBeginBlock(app, 13, time.Unix(1646308803, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 13)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
 
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.GetEventsDB().LoadEvents(13)[0])
@@ -357,9 +357,9 @@ func TestReward_Update_Up(t *testing.T) {
 	SendEndBlock(app, 10)   // send EndBlock
 	SendCommit(app)         // send Commit
 
-	SendBeginBlock(app, 11) // send BeginBlock
-	SendEndBlock(app, 11)   // send EndBlock
-	SendCommit(app)         // send Commit
+	SendBeginBlock(app, 11, time.Unix(1643716803, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 11)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
 	{
 		SendBeginBlock(app, 12) // send BeginBlock
 
@@ -380,9 +380,9 @@ func TestReward_Update_Up(t *testing.T) {
 		SendCommit(app)       // send Commit
 	}
 
-	SendBeginBlock(app, 13, time.Unix(1643208154, 0)) // send BeginBlock
-	SendEndBlock(app, 13)                             // send EndBlock
-	SendCommit(app)                                   // send Commit
+	SendBeginBlock(app, 13, time.Unix(1643803203, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 13)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
 
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.GetEventsDB().LoadEvents(13)[0])
@@ -407,9 +407,9 @@ func TestReward_Update_Up(t *testing.T) {
 		SendCommit(app)       // send Commit
 	}
 
-	SendBeginBlock(app, 15, time.Unix(1643640154, 0)) // send BeginBlock
-	SendEndBlock(app, 15)                             // send EndBlock
-	SendCommit(app)                                   // send Commit
+	SendBeginBlock(app, 15, time.Unix(1643889603, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 15)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
 
 	t.Log(app.GetEventsDB().LoadEvents(15)[0])
 }
