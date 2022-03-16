@@ -549,26 +549,40 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			db.Set(pathOrderID, pairOrderBytes)
 		}
 
-		//if version < v262 {
-		lenB := len(pair.buyOrders.ids)
-		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
-		if lenB > 10 {
-			pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
-		}
-		//} else {
-		//	pair.loadedBuyOrders.ids = nil
-		//	pair.buyOrders.ids = nil
+		//var wrongSort bool
+		//var prev *Limit
+		//orders := pair.getOrders(pair.buyOrders.ids)
+		//for _, order := range orders {
+		//	if prev == nil {
+		//		prev = order
+		//		continue
+		//	}
+		//	if prev.Price().Cmp(order.Price()) == -1 {
+		//		panic(fmt.Sprint("wrongSort", prev.id, order.id))
+		//	}
+		//	prev = order
 		//}
 
 		//if version < v262 {
-		lenS := len(pair.sellOrders.ids)
-		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
-		if lenS > 10 {
-			pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
-		}
+		//lenB := len(pair.buyOrders.ids)
+		//pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
+		//if lenB > 10 {
+		//	pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
+		//}
 		//} else {
-		//	pair.loadedSellOrders.ids = nil
-		//	pair.sellOrders.ids = nil
+		pair.loadedBuyOrders.ids = nil
+		pair.buyOrders.ids = nil
+		//}
+
+		//if version < v262 {
+		//lenS := len(pair.sellOrders.ids)
+		//pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
+		//if lenS > 10 {
+		//	pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
+		//}
+		//} else {
+		pair.loadedSellOrders.ids = nil
+		pair.sellOrders.ids = nil
 		//}
 
 		pair.dirtyOrders.mu.Lock()
@@ -595,9 +609,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
 
-	if version > 9294612 {
-		panic(112233)
-	}
 	return nil
 }
 
