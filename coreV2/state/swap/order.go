@@ -1109,10 +1109,9 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	}
 	sortedOrder := order.sort()
 
-	if order.id == 4914 || order.id == 4818 {
+	if order.id == 4914 || order.id == 4818 || order.id == 3691 || order.id == 4858 {
 		LogBug = true
-		log.Println("beforeAdd")
-		log.Println("PairKey", p.PairKey)
+		log.Println("beforeAdd", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
 		log.Println("loadedSellOrderIDs", p.loadedSellOrderIDs())
 	}
@@ -1127,7 +1126,6 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 
 	if LogBug && p.GetID() == 132 {
 		log.Println("afterAdd", order.id)
-		log.Println("PairKey", p.PairKey)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
 		log.Println("loadedSellOrderIDs", p.loadedSellOrderIDs())
 	}

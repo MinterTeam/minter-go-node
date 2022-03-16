@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
+	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -500,6 +501,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 	for _, key := range s.getOrderedDirtyOrderPairs() {
 		pair, _ := s.pair(key)
+
 		pair.lockOrders.Lock()
 
 		for _, id := range pair.getDirtyOrdersList() {
@@ -534,6 +536,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			db.Set(newPath, []byte{})
+
+			if LogBug && pair.GetID() == 132 {
+				log.Printf("%q\n", newPath)
+			}
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
 			if err != nil {
@@ -589,6 +595,10 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		pair.lockOrders.Unlock()
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
+
+	if version > 9300200 {
+		panic(112233)
+	}
 	return nil
 }
 
