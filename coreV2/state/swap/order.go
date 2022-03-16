@@ -1125,7 +1125,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	p.setOrder(sortedOrder)
 	p.orderSellByIndex(0)
 
-	if LogBug && p.GetID() == 2012 {
+	if LogBug && p.GetID() == 132 {
 		log.Println("afterAdd", order.id)
 		log.Println("PairKey", p.PairKey)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
