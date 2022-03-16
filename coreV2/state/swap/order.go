@@ -970,6 +970,13 @@ func (p *Pair) loadedSellOrderIDs() []uint32 {
 	return p.loadedSellOrders.ids
 }
 
+func (p *Pair) loadedSellOrderIDsSorted() []uint32 {
+	if p.isSorted() {
+		return p.loadedSellOrderIDs()
+	}
+	return p.loadedBuyOrderIDs()
+}
+
 func (p *Pair) loadedBuyOrderIDs() []uint32 {
 	return p.loadedBuyOrders.ids
 }
@@ -1113,7 +1120,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 		LogBug = true
 		log.Println("beforeAdd", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
-		log.Println("loadedSellOrderIDs", p.loadedSellOrderIDs())
+		log.Println("loadedSellOrderIDsSorted", p.loadedSellOrderIDsSorted())
 	}
 
 	p.lockOrders.Lock()
@@ -1127,7 +1134,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	if LogBug && p.GetID() == 132 {
 		log.Println("afterAdd", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
-		log.Println("loadedSellOrderIDs", p.loadedSellOrderIDs())
+		log.Println("loadedSellOrderIDsSorted", p.loadedSellOrderIDsSorted())
 	}
 	return order
 }
