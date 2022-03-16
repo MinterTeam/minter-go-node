@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
-	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -514,7 +513,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			}
 
 			pathOrderID := pathOrder(limit.id)
-
+			limit.Price()
 			oldSortPrice := limit.OldSortPrice()
 			newPath := pricePath(key, limit.reCalcOldSortPrice(), limit.id, !limit.IsBuy)
 			if oldSortPrice.Sign() != 0 {
@@ -538,7 +537,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			db.Set(newPath, []byte{})
 
 			if LogBug && pair.GetID() == 132 {
-				log.Printf("%q\n", newPath)
+
 			}
 
 			pairOrderBytes, err := rlp.EncodeToBytes(limit)
