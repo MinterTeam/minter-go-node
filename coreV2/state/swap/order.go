@@ -1116,7 +1116,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	}
 	sortedOrder := order.sort()
 
-	if LogBug || p.GetID() == 132 && !p.isSorted() && order.id == 4914 {
+	if (p.GetID() == 132 && p.isSorted()) && (LogBug || order.id == 4914) {
 		LogBug = true
 		log.Println("beforeAdd", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
@@ -1131,8 +1131,8 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	p.setOrder(sortedOrder)
 	p.orderSellByIndex(0)
 
-	if LogBug && p.GetID() == 132 && !p.isSorted() {
-		log.Println("afterAdd", order.id)
+	if LogBug && p.GetID() == 132 && p.isSorted() {
+		log.Println("±", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
 		log.Println("loadedSellOrderIDsSorted", p.loadedSellOrderIDsSorted())
 	}
@@ -1502,7 +1502,7 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 	defer p.deletedSellOrderIDs().mu.Unlock()
 
 	orders := p.sellOrderIDs()
-	if LogBug && p.GetID() == 132 && !p.isSorted() && !p.isSorted() {
+	if LogBug && p.GetID() == 132 && !p.isSorted() {
 		log.Println("orders1", orders)
 	}
 	var fromOrder *Limit
