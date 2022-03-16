@@ -595,7 +595,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
 
-	if version > 9300200 {
+	if version > 9294612 {
 		panic(112233)
 	}
 	return nil

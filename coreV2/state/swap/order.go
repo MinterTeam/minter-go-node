@@ -1116,7 +1116,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	}
 	sortedOrder := order.sort()
 
-	if LogBug && p.GetID() == 132 || order.id == 4914 || order.id == 4818 || order.id == 3691 || order.id == 4858 {
+	if LogBug && p.GetID() == 132 && order.id == 4914 {
 		LogBug = true
 		log.Println("beforeAdd", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
@@ -1502,7 +1502,9 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 	defer p.deletedSellOrderIDs().mu.Unlock()
 
 	orders := p.sellOrderIDs()
-
+	if LogBug && p.GetID() == 132 {
+		log.Println("orders1", orders)
+	}
 	var fromOrder *Limit
 	// если массив не пустой, то пересортировать, если есть грязные!
 	if len(orders) != 0 {
@@ -1510,6 +1512,9 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 		if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 			// пересортируем, что бы лист почистился и пересортировался
 			orders, _ = p.updateDirtyOrders(orders, true)
+			if LogBug && p.GetID() == 132 {
+				log.Println("orders2", orders)
+			}
 			lastI := len(orders) - 1
 			// если загружены не все
 			if lastI >= 0 && orders[lastI] != 0 {
@@ -1518,8 +1523,18 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 					//log.Println("b")
 					// загрузим с последнего нужное количество и отсортируем
 					fromOrder = p.order(orders[lastI])
+					if LogBug && p.GetID() == 132 {
+						log.Println("fromOrder1", fromOrder.id)
+					}
 					loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI)
+					if LogBug && p.GetID() == 132 {
+						log.Println("loadedNextOrders1", loadedNextOrders)
+					}
 					resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
+					if LogBug && p.GetID() == 132 {
+						log.Println("resortedOrders1", resortedOrders)
+						log.Println("unsets1", unsets)
+					}
 					//resortedOrders, unsets := p.updateDirtyOrders(append(orders, loadedNextOrders...), true)
 					// проверим загружены ли все
 					lastJ := len(resortedOrders) - 1
@@ -1534,9 +1549,18 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 							var resortLoadedNextOrders []uint32
 							resortLoadedNextOrders, unsets = p.updateDirtyOrders(loadedNextOrders, true)
 							resortedOrders = append(resortedOrders, resortLoadedNextOrders...)
+							if LogBug && p.GetID() == 132 {
+								log.Println("fromOrder2", fromOrder)
+								log.Println("loadedNextOrders2", loadedNextOrders)
+								log.Println("resortLoadedNextOrders1", resortLoadedNextOrders)
+								log.Println("resortedOrders1", resortedOrders)
+							}
 						}
 					}
 					orders = resortedOrders
+					if LogBug && p.GetID() == 132 {
+						log.Println("orders3", orders)
+					}
 				}
 			}
 		} else {
@@ -1549,15 +1573,33 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 				loadedNextOrders := p.loadSellOrders(p, fromOrder, index-lastI)
 				// тк нет грязных, то просто складываем
 				orders = append(orders, loadedNextOrders...)
+				if LogBug && p.GetID() == 132 {
+					log.Println("fromOrder3", fromOrder)
+					log.Println("loadedNextOrders3", loadedNextOrders)
+					log.Println("orders4", orders)
+				}
 			}
 		}
 	} else {
 		num := index
+		if LogBug && p.GetID() == 132 {
+			log.Println("fromOrder4", fromOrder)
+			log.Println("orders5", orders)
+			log.Println("num1", num)
+		}
 		for {
 			orders = append(orders, p.loadSellOrders(p, fromOrder, num+1)...)
+			if LogBug && p.GetID() == 132 {
+				log.Println("fromOrder4", fromOrder)
+				log.Println("orders5", orders)
+			}
 			num = 0
 			if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 				orders, num = p.updateDirtyOrders(orders, true)
+			}
+			if LogBug && p.GetID() == 132 {
+				log.Println("num2", num)
+				log.Println("orders6", orders)
 			}
 			if num <= 0 {
 				break
