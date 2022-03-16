@@ -1116,7 +1116,7 @@ func (p *Pair) AddOrder(wantBuyAmount0, wantSellAmount1 *big.Int, sender types.A
 	}
 	sortedOrder := order.sort()
 
-	if LogBug && p.GetID() == 132 && order.id == 4914 {
+	if LogBug || p.GetID() == 132 && order.id == 4914 {
 		LogBug = true
 		log.Println("beforeAdd", order.id)
 		log.Println("sellOrderIDs", p.sellOrderIDs())
