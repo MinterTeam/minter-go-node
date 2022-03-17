@@ -1512,10 +1512,26 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 		// если есть грязные.
 		if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 			// пересортируем, что бы лист почистился и пересортировался
+			needLoadMore := len(p.deletedSellOrderIDs().list) - len(orders)
+			if needLoadMore >= 0 {
+				if LogBug && p.GetID() == LogBugPair && p.isSorted() {
+					log.Println("len(p.deletedSellOrderIDs().list) - len(orders)", needLoadMore)
+				}
+				if lastI := len(orders) - 1; lastI >= 0 && orders[lastI] != 0 {
+					fromOrder = p.order(orders[lastI])
+					needLoadMore++
+				}
+				orders = append(orders, p.loadSellOrders(p, fromOrder, needLoadMore)...)
+				if LogBug && p.GetID() == LogBugPair && p.isSorted() {
+					log.Println("orders2.2", orders)
+				}
+			}
+
 			orders, _ = p.updateDirtyOrders(orders, true)
 			if LogBug && p.GetID() == LogBugPair && p.isSorted() {
 				log.Println("orders2", orders)
 			}
+
 			lastI := len(orders) - 1
 			// если загружены не все
 			if lastI >= 0 && orders[lastI] != 0 {
