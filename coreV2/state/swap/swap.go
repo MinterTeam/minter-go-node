@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
+	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -452,6 +453,8 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	if isSale {
 		saleByte = 1
 	}
+
+	log.Println()
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
