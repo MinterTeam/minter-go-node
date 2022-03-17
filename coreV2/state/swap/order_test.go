@@ -28,14 +28,15 @@ import (
 
 func init() {
 	minimumOrderVolume = 100 // todo
-	v262 = math.MaxInt64
+	versionWithoutBug = 1
+	HasBug = false
+	LogBugPair = 1
 }
 
 func TestPair_LoadOrders_bagSkip9295610(t *testing.T) {
-	LogBug = true
-	LogBugPair = 1
-	//v262 = -1
-	//defer func() { v262 = math.MaxInt64 }()
+
+	//versionWithoutBug = -1
+	//defer func() { versionWithoutBug = math.MaxInt64 }()
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -154,8 +155,8 @@ func TestPair_LoadOrders_bagSkip9295610(t *testing.T) {
 
 }
 func TestPair_LoadOrders_bagSkip0(t *testing.T) {
-	v262 = -1
-	defer func() { v262 = math.MaxInt64 }()
+	versionWithoutBug = -1
+	defer func() { versionWithoutBug = math.MaxInt64 }()
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {

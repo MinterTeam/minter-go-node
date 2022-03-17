@@ -6,7 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
-	"log"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/MinterTeam/minter-go-node/rlp"
+	"github.com/cosmos/iavl"
 	"math"
 	"math/big"
 	"sort"
@@ -14,13 +18,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"time"
-
-	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/MinterTeam/minter-go-node/rlp"
-	"github.com/cosmos/iavl"
 )
 
 var Bound = big.NewInt(minimumLiquidity)
@@ -454,11 +451,12 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 		saleByte = 1
 	}
 
-	log.Println()
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
-var v262 int64 = math.MaxInt64 // -1
+var versionWithoutBug int64 = 9318000
+var HasBug = true
+var LogBugPair = uint32(132)
 
 func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	basePath := []byte{mainPrefix}
@@ -540,7 +538,7 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 			db.Set(newPath, []byte{})
 
-			if LogBug && pair.GetID() == 132 {
+			if HasBug && pair.GetID() == 132 {
 
 			}
 
@@ -552,20 +550,6 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 
 			db.Set(pathOrderID, pairOrderBytes)
 		}
-
-		//var wrongSort bool
-		//var prev *Limit
-		//orders := pair.getOrders(pair.buyOrders.ids)
-		//for _, order := range orders {
-		//	if prev == nil {
-		//		prev = order
-		//		continue
-		//	}
-		//	if prev.Price().Cmp(order.Price()) == -1 {
-		//		panic(fmt.Sprint("wrongSort", prev.id, order.id))
-		//	}
-		//	prev = order
-		//}
 
 		//if version < v262 {
 		lenB := len(pair.buyOrders.ids)
@@ -613,8 +597,8 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	s.dirtiesOrders = map[PairKey]struct{}{}
 
-	if version > 9295825 {
-		time.Sleep(time.Hour * 12)
+	if HasBug && version > versionWithoutBug {
+		HasBug = false
 	}
 	return nil
 }
