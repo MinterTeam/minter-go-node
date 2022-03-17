@@ -188,6 +188,7 @@ func (data UnbondDataV3) Run(tx *Transaction, context state.Interface, rewardPoo
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.PubKey[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
+			{Key: []byte("tx.unlock_block_id"), Value: []byte(strconv.Itoa(int(unbondAtBlock)))},
 		}
 	}
 
