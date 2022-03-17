@@ -2,14 +2,13 @@ package transaction
 
 import (
 	"fmt"
-	"math/big"
-
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/commission"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	abcTypes "github.com/tendermint/tendermint/abci/types"
+	"math/big"
 )
 
 type LockData struct {

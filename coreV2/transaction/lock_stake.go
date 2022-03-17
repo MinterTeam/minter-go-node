@@ -3,6 +3,7 @@ package transaction
 import (
 	"fmt"
 	"math/big"
+	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -104,6 +105,7 @@ func (data LockStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
+			{Key: []byte("tx.unlock_block_id"), Value: []byte(strconv.Itoa(int(lockUnbondAtBlock)))},
 		}
 	}
 

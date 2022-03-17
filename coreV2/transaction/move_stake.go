@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/hexutil"
 	"math/big"
+	"strconv"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
@@ -181,6 +182,7 @@ func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPo
 			{Key: []byte("tx.public_key"), Value: []byte(hex.EncodeToString(data.FromPubKey[:])), Index: true},
 			{Key: []byte("tx.to_public_key"), Value: []byte(hex.EncodeToString(data.ToPubKey[:])), Index: true},
 			{Key: []byte("tx.coin_id"), Value: []byte(data.Coin.String()), Index: true},
+			{Key: []byte("tx.unlock_block_id"), Value: []byte(strconv.Itoa(int(frozzToBlock)))},
 		}
 	}
 
