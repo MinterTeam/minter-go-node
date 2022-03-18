@@ -28,12 +28,9 @@ import (
 
 func init() {
 	minimumOrderVolume = 100 // todo
-	v262 = math.MaxInt64
 }
 
 func TestPair_LoadOrders_bagSkip0(t *testing.T) {
-	v262 = -1
-	defer func() { v262 = math.MaxInt64 }()
 	memDB := db.NewMemDB()
 	immutableTree, err := tree.NewMutableTree(0, memDB, 1024, 0)
 	if err != nil {
@@ -3627,7 +3624,7 @@ func TestPair_SellWithOrders_01_FullOrder(t *testing.T) {
 		}
 		//pair.OrderSellByIndex(0)
 		t.Run("unset", func(t *testing.T) {
-			if len(pair.sellOrderIDs()) != 0 {
+			if len(pair.sellOrderIDs()) != 0 && pair.sellOrderIDs()[0] != 0 {
 				t.Errorf("slice len %d, want empty: %v", len(pair.sellOrderIDs()), pair.sellOrderIDs())
 				t.Logf("%#v", pair.getOrder(pair.sellOrderIDs()[0]))
 
