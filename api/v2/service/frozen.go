@@ -59,7 +59,7 @@ func (s *Service) Frozen(ctx context.Context, req *pb.FrozenRequest) (*pb.Frozen
 				}
 			}
 			var moveToCandidateKey *wrapperspb.StringValue
-			if len(fund.MoveToCandidate) != 0 {
+			if fund.GetMoveToCandidateID() != 0 {
 				moveToCandidateKey = wrapperspb.String(cState.Candidates().PubKey(fund.MoveToCandidate[0]).String())
 			}
 			var fromCandidateKey *wrapperspb.StringValue
@@ -162,7 +162,7 @@ func (s *Service) FrozenAll(ctx context.Context, req *pb.FrozenAllRequest) (*pb.
 			}
 
 			var moveToCandidateKey *wrapperspb.StringValue
-			if len(fund.MoveToCandidate) != 0 {
+			if fund.GetMoveToCandidateID() != 0 {
 				moveToCandidateKey = wrapperspb.String(cState.Candidates().PubKey(fund.MoveToCandidate[0]).String())
 			}
 			var fromCandidateKey *wrapperspb.StringValue

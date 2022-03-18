@@ -5,7 +5,6 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
-	"log"
 	"math"
 	"math/big"
 	"sort"
@@ -113,7 +112,6 @@ func (s *SwapV2) getOrderedDirtyOrderPairs() []PairKey {
 func NewV2(bus *bus.Bus, db *iavl.ImmutableTree) *SwapV2 {
 	immutableTree := atomic.Value{}
 	immutableTree.Store(db)
-	log.Println("NewV2") // todo: delete
 	return &SwapV2{pairs: map[PairKey]*PairV2{}, bus: bus, db: immutableTree, dirties: map[PairKey]struct{}{}, dirtiesOrders: map[PairKey]struct{}{}}
 }
 
