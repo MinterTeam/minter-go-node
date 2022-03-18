@@ -169,7 +169,7 @@ func (f *FrozenFunds) getFromTo(ctx context.Context, from, to uint64) (res []*Mo
 		if len(value) == 0 {
 			return false
 		}
-		height := binary.BigEndian.Uint64(key)
+		height := binary.BigEndian.Uint64(key[1:])
 		ff := &Model{}
 		if err := rlp.DecodeBytes(value, ff); err != nil {
 			panic(fmt.Sprintf("failed to decode frozen funds at height %d: %s", height, err))
