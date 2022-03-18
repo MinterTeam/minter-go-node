@@ -41,13 +41,17 @@ func (m *Model) delete() {
 
 func (m *Model) addFund(address types.Address, pubkey *types.Pubkey, candidateID uint32, coin types.CoinID, value *big.Int, moveToCandidateID uint32) {
 	m.lock.Lock()
+	var moveToCandidate []uint32
+	if moveToCandidateID != 0 {
+		moveToCandidate = []uint32{moveToCandidateID}
+	}
 	m.List = append(m.List, Item{
 		Address:         address,
 		CandidateKey:    pubkey,
 		CandidateID:     candidateID,
 		Coin:            coin,
 		Value:           value,
-		MoveToCandidate: []uint32{moveToCandidateID},
+		MoveToCandidate: moveToCandidate,
 	})
 	m.lock.Unlock()
 
