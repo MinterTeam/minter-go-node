@@ -130,7 +130,7 @@ func (s *Service) FrozenAll(ctx context.Context, req *pb.FrozenAllRequest) (*pb.
 
 	var frozen []*pb.FrozenResponse_Frozen
 
-	fundsAll := cState.FrozenFunds().GetFrozenFundsAll(ctx, startHeight, endHeight)
+	fundsAll := cState.FrozenFunds().GetFrozenFundsAll(ctx, startHeight, endHeight+1)
 	for _, funds := range fundsAll {
 		if funds == nil {
 			continue
