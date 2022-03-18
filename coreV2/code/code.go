@@ -64,6 +64,7 @@ const (
 	CandidateJailed       uint32 = 414
 	TooBigStake           uint32 = 415
 	UnbondBlocked         uint32 = 416
+	EqualPubKey           uint32 = 417
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -922,6 +923,19 @@ type unbondBlocked struct {
 
 func NewUnbondBlocked(height string) *unbondBlocked {
 	return &unbondBlocked{
-		BlockedUntilHeight: strconv.Itoa(int(UnbondBlocked)),
+		Code:               strconv.Itoa(int(UnbondBlocked)),
+		BlockedUntilHeight: height,
+	}
+}
+
+type equalPubKey struct {
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key"`
+}
+
+func NewEqualPubKey(pubKey string) *equalPubKey {
+	return &equalPubKey{
+		Code:      strconv.Itoa(int(EqualPubKey)),
+		PublicKey: pubKey,
 	}
 }

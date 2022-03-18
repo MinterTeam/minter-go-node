@@ -31,6 +31,14 @@ func (data MoveStakeData) Gas() int64 {
 }
 
 func (data MoveStakeData) basicCheck(tx *Transaction, context *state.CheckState) *Response {
+	if data.FromPubKey.Equals(data.ToPubKey) {
+		return &Response{
+			Code: code.EqualPubKey,
+			Log:  fmt.Sprintf("Candidate \"FromPubKey\" equals candidate \"ToPubKey\": %s", data.FromPubKey),
+			Info: EncodeError(code.NewEqualPubKey(data.ToPubKey.String())),
+		}
+	}
+
 	if !context.Coins().Exists(data.Coin) {
 		return &Response{
 			Code: code.CoinNotExists,
