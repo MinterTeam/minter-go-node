@@ -75,10 +75,11 @@ func DefaultConfig() *Config {
 	cfg.PrivValidatorState = "config/priv_validator_state.json"
 	cfg.NodeKey = "config/node_key.json"
 
-	//cfg.StateSync.RPCServers = []string{"sync104.minter.su:26657", "state-test.minter.network:26657", "sync-test.minter.network:26657"}
+	//cfg.StateSync.RPCServers = []string{"sync-test.minter.network:26657", "sync104.minter.su:26657", "state-test.minter.network:26657"}
 	cfg.StateSync.RPCServers = []string{"state-test.minter.network:26657", "sync-test.minter.network:26657", "sync101.minter.su:26657"}
-	cfg.StateSync.TrustHeight = 9297941
-	cfg.StateSync.TrustHash = "ACBF351E69958469A651AC128003B3BABCEE620DB7ECD89AAC2A70AE26665A92"
+
+	cfg.StateSync.TrustHeight = 9718108
+	cfg.StateSync.TrustHash = "39AE80DD60C8A93308E39ABE0AB0E0622498C9CACE9F5F2A39082929AC1E159B"
 	cfg.StateSync.TrustPeriod = time.Hour * 8760
 
 	return cfg

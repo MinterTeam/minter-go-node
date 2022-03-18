@@ -661,6 +661,13 @@ func (p *PairV2) deletedBuyOrderIDs() *orderDirties {
 	return p.deletedSellOrders
 }
 
+func (p *Pair) loadedSellOrderIDsSorted() []uint32 {
+	if p.isSorted() {
+		return p.loadedSellOrderIDs()
+	}
+	return p.loadedBuyOrderIDs()
+}
+
 func (p *PairV2) loadedSellOrderIDs() []uint32 {
 	return p.loadedSellOrders.ids
 }
@@ -916,7 +923,7 @@ func (s *SwapV2) loadBuyOrders(pair *PairV2, fromOrder *Limit, limit int) []uint
 		return false
 	})
 
-	if !has {
+	if !has || len(slice) < limit {
 		slice = append(slice, 0)
 	}
 
@@ -1122,6 +1129,15 @@ func (p *PairV2) orderSellLoadToIndex(index int) *Limit {
 		// если есть грязные.
 		if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 			// пересортируем, что бы лист почистился и пересортировался
+
+			needLoadMore := len(p.deletedSellOrderIDs().list) - len(orders)
+			if lastI := len(orders) - 1; lastI >= 0 && orders[lastI] != 0 {
+				fromOrder = p.order(orders[lastI])
+				needLoadMore++
+			}
+			if needLoadMore >= 0 {
+				orders = append(orders, p.loadSellOrders(p, fromOrder, needLoadMore)...)
+			}
 			orders, _ = p.updateDirtyOrders(orders, true)
 			lastI := len(orders) - 1
 			// если загружены не все

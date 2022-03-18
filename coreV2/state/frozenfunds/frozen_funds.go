@@ -1,6 +1,7 @@
 package frozenfunds
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
 	"math/big"
@@ -21,6 +22,7 @@ const mainPrefix = byte('f')
 type RFrozenFunds interface {
 	Export(state *types.AppState, height uint64)
 	GetFrozenFunds(height uint64) *Model
+	GetFrozenFundsAll(ctx context.Context, from, to uint64) []*Model
 }
 
 type FrozenFunds struct {
@@ -90,6 +92,9 @@ func (f *FrozenFunds) Commit(db *iavl.MutableTree, version int64) error {
 func (f *FrozenFunds) GetFrozenFunds(height uint64) *Model {
 	return f.get(height)
 }
+func (f *FrozenFunds) GetFrozenFundsAll(ctx context.Context, from, to uint64) []*Model {
+	return f.getFromTo(ctx, from, to)
+}
 
 func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64, candidateID uint32) {
 	for cBlock := fromHeight; cBlock <= toHeight; cBlock++ {
@@ -151,6 +156,32 @@ func (f *FrozenFunds) GetOrNew(height uint64) *Model {
 	}
 
 	return ff
+}
+
+func (f *FrozenFunds) getFromTo(ctx context.Context, from, to uint64) (res []*Model) {
+	f.immutableTree().IterateRange(getPath(from), getPath(to), true, func(key []byte, value []byte) bool {
+		select {
+		case <-ctx.Done():
+			return true
+		default:
+		}
+
+		if len(value) == 0 {
+			return false
+		}
+		height := binary.BigEndian.Uint64(key)
+		ff := &Model{}
+		if err := rlp.DecodeBytes(value, ff); err != nil {
+			panic(fmt.Sprintf("failed to decode frozen funds at height %d: %s", height, err))
+		}
+
+		ff.height = height
+
+		res = append(res, ff)
+		return false
+	})
+
+	return res
 }
 
 func (f *FrozenFunds) get(height uint64) *Model {

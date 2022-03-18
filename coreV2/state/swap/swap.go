@@ -455,8 +455,6 @@ func pricePath(key PairKey, price *big.Float, id uint32, isSale bool) []byte {
 	return append(append(append(append([]byte{mainPrefix}, key.pathOrders()...), saleByte), pricePath...), byteID...)
 }
 
-var v262 int64 = math.MaxInt64 // -1
-
 func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 	basePath := []byte{mainPrefix}
 
@@ -545,27 +543,21 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 			db.Set(pathOrderID, pairOrderBytes)
 		}
 
-		//if version < v262 {
 		lenB := len(pair.buyOrders.ids)
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
 		if lenB > 10 {
 			pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
 		}
-		//} else {
 		//	pair.loadedBuyOrders.ids = nil
 		//	pair.buyOrders.ids = nil
-		//}
 
-		//if version < v262 {
 		lenS := len(pair.sellOrders.ids)
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
 		if lenS > 10 {
 			pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
 		}
-		//} else {
 		//	pair.loadedSellOrders.ids = nil
 		//	pair.sellOrders.ids = nil
-		//}
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})

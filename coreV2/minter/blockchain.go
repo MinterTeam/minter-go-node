@@ -188,7 +188,7 @@ const ( // known update versions
 	v250 = "v250" // commissions and failed txs
 	v260 = "v260" // orderbook
 	v261 = "v261" // hotfix
-	v262 = "v262" // hotfix
+	v262 = "v262" // hotfix (moved to V3)
 	V3   = "v300" // tokenomics
 )
 
@@ -275,7 +275,7 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 // BeginBlock signals the beginning of a block.
 func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTypes.ResponseBeginBlock {
 	height := uint64(req.Header.Height)
-	if h := blockchain.appDB.GetVersionHeight(v262); (h > 0 && height == h) || blockchain.stateDeliver == nil {
+	if h := blockchain.appDB.GetVersionHeight(V3); (h > 0 && height == h) || blockchain.stateDeliver == nil {
 		blockchain.initState()
 	}
 
