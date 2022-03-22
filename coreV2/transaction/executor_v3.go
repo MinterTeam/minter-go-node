@@ -339,6 +339,9 @@ func (e *ExecutorV3) RunTx(context state.Interface, rawTx []byte, rewardPool *bi
 				}
 				rewardPool.Sub(rewardPool, symbolPrice)
 				deliverState.Accounts.AddBalance([20]byte{}, 0, symbolPrice)
+				response.Tags = append(response.Tags,
+					abcTypes.EventAttribute{Key: []byte("tx.burned_for_symbol"), Value: []byte(symbolPrice.String())},
+				)
 			}
 		}
 	}
