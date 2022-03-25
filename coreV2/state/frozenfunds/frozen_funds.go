@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/big"
 	"sort"
 	"sync"
@@ -248,24 +249,23 @@ func (f *FrozenFunds) Delete(height uint64) {
 }
 
 func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
-	for i := height; i <= height+types.GetUnbondPeriodWithChain(types.ChainMainnet); i++ {
-		frozenFunds := f.get(i)
+
+	for _, frozenFunds := range f.GetFrozenFundsAll(context.Background(), height, math.MaxUint64) {
 		if frozenFunds == nil {
 			continue
 		}
 
-		frozenFunds.lock.RLock()
 		for _, frozenFund := range frozenFunds.List {
 			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-				Height:       i,
-				Address:      frozenFund.Address,
-				CandidateKey: frozenFund.CandidateKey,
-				CandidateID:  uint64(frozenFund.CandidateID),
-				Coin:         uint64(frozenFund.Coin),
-				Value:        frozenFund.Value.String(),
+				Height:            frozenFunds.height,
+				Address:           frozenFund.Address,
+				CandidateKey:      frozenFund.CandidateKey,
+				CandidateID:       uint64(frozenFund.CandidateID),
+				Coin:              uint64(frozenFund.Coin),
+				Value:             frozenFund.Value.String(),
+				MoveToCandidateID: uint64(frozenFund.GetMoveToCandidateID()),
 			})
 		}
-		frozenFunds.lock.RUnlock()
 	}
 }
 
