@@ -246,7 +246,13 @@ func (blockchain *Blockchain) InitChain(req abciTypes.RequestInitChain) abciType
 	initialHeight := uint64(req.InitialHeight) - 1
 
 	blockchain.appDB.SetStartHeight(initialHeight)
-	blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
+	if len(genesisState.Versions) == 0 {
+		blockchain.appDB.AddVersion(genesisState.Version, initialHeight)
+	} else {
+		for _, history := range genesisState.Versions {
+			blockchain.appDB.AddVersion(history.Name, history.Height)
+		}
+	}
 	blockchain.initState()
 
 	if err := blockchain.stateDeliver.Import(genesisState, genesisState.Version); err != nil {

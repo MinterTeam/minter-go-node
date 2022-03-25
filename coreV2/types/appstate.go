@@ -29,14 +29,22 @@ type AppState struct {
 	TotalSlashed        string             `json:"total_slashed"`
 
 	// TODO: Import/Export
-	Emission    string `json:"emission"`
-	BlockReward string `json:"block_reward"`
-	PrevPrice   struct {
-		AmountBIP  string `json:"amount_bip"`
-		AmountUSDT string `json:"amount_usdt"`
-	} `json:"prev_price"`
+	Emission  string    `json:"emission"`
+	PrevPrice TimePrice `json:"prev_price"`
 
-	Version string `json:"version,omitempty"`
+	Version  string           `json:"version,omitempty"`
+	Versions []VersionHistory `json:"version,omitempty"`
+}
+type VersionHistory struct {
+	Height uint64
+	Name   string
+}
+type TimePrice struct {
+	Time       uint64 `json:"time"`
+	AmountBIP  string `json:"amount_bip"`
+	AmountUSDT string `json:"amount_usdt"`
+	Off        bool   `json:"off"`
+	Last       string `json:"last"`
 }
 
 func (s *AppState) Verify() error {

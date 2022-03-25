@@ -179,6 +179,7 @@ func (a *App) ExportV1(state *types.AppState, volume *big.Int) {
 func (a *App) Export(state *types.AppState) {
 	state.MaxGas = a.GetMaxGas()
 	state.TotalSlashed = a.GetTotalSlashed().String()
+	state.BlockReward, state.BlockReward = a.getOrNew().reward()
 }
 
 func (a *App) SetReward(newRewards *big.Int, safeReward *big.Int) {
