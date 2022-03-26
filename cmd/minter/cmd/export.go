@@ -14,7 +14,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
 	mtypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/go-amino"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
@@ -91,7 +90,7 @@ func export(cmd *cobra.Command, args []string) error {
 	appState.Version = db.GetVersionName(height)
 	versions := db.GetVersions()
 	for _, v := range versions {
-		appState.Versions = append(appState.Versions, mtypes.VersionHistory{
+		appState.Versions = append(appState.Versions, mtypes.Version{
 			Height: v.Height,
 			Name:   v.Name,
 		})
@@ -99,12 +98,12 @@ func export(cmd *cobra.Command, args []string) error {
 
 	appState.Emission = db.Emission().String()
 	t, r0, r1, reward, off := db.GetPrice()
-	appState.PrevPrice = mtypes.TimePrice{
+	appState.PrevReward = mtypes.RewardPrice{
 		Time:       uint64(t.UTC().UnixNano()),
 		AmountBIP:  r0.String(),
 		AmountUSDT: r1.String(),
 		Off:        off,
-		Last:       reward.String(),
+		Reward:     reward.String(),
 	}
 	var jsonBytes []byte
 	if indent {
