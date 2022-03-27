@@ -25,7 +25,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		return nil, status.Error(codes.InvalidArgument, "Value to buy not specified")
 	}
 
-	if len(req.Route) > 3 {
+	if len(req.Route) > 5 {
 		return nil, s.createError(status.New(codes.OutOfRange, "maximum allowed length of the exchange chain is 5"), transaction.EncodeError(code.NewCustomCode(code.TooLongSwapRoute)))
 	}
 
