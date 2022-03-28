@@ -183,6 +183,10 @@ func (a *App) Export(state *types.AppState) {
 
 func (a *App) SetReward(newRewards *big.Int, safeReward *big.Int) {
 	model := a.getOrNew()
+	_, safeRewardOld := model.reward()
+	if safeRewardOld.Cmp(safeReward) == 0 && safeReward.Sign() == 0 {
+		return
+	}
 	model.setReward(newRewards, safeReward)
 }
 

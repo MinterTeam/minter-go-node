@@ -3,6 +3,7 @@ package minter
 import (
 	"context"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
@@ -24,7 +25,6 @@ import (
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
 	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
 	"github.com/MinterTeam/minter-go-node/coreV2/statistics"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -286,13 +286,18 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
-		t, _, _, _, _ := blockchain.appDB.GetPrice()
-		if t.IsZero() || req.Header.Time.Sub(t) > time.Hour && req.Header.Time.Hour() == 12 {
-			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-			newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
-			blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
-			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueLockedStakeRewards: new(big.Int).Mul(safeReward, big.NewInt(3)).String()})
+		if blockchain.appDB.Emission().Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
+			t, _, _, _, _ := blockchain.appDB.GetPrice()
+			if t.IsZero() || req.Header.Time.Sub(t) > time.Hour && req.Header.Time.Hour() == 12 {
+				reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
+				newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
+				blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
+				blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueLockedStakeRewards: new(big.Int).Mul(safeReward, big.NewInt(3)).String()})
+			}
+		} else {
+			blockchain.stateDeliver.App.SetReward(big.NewInt(0), big.NewInt(0))
 		}
+
 	}
 
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
