@@ -19,7 +19,7 @@ func TestSwap3_BuyGas0(t *testing.T) {
 			TotalBipStake: stake,
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -129,7 +129,7 @@ func TestSwap3_BuyGas0(t *testing.T) {
 		MultisigData: nil,
 	})
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock
@@ -198,7 +198,7 @@ func TestSwap3_BuyGas1(t *testing.T) {
 			TotalBipStake: stake,
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -307,7 +307,7 @@ func TestSwap3_BuyGas1(t *testing.T) {
 		MultisigData: nil,
 	})
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock
@@ -372,7 +372,7 @@ func TestSwap3_SellGas0(t *testing.T) {
 			TotalBipStake: stake,
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -502,7 +502,7 @@ func TestSwap3_SellGas0(t *testing.T) {
 		MultisigData: nil,
 	})
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock
@@ -571,7 +571,7 @@ func TestSwap3_SellGas0_2(t *testing.T) {
 			TotalBipStake: stake,
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -701,7 +701,7 @@ func TestSwap3_SellGas0_2(t *testing.T) {
 		MultisigData: nil,
 	})
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock

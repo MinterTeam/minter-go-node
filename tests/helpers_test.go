@@ -23,7 +23,7 @@ const (
 )
 
 // CreateApp creates and returns new Blockchain instance
-func CreateApp(state types.AppState) *minter.Blockchain {
+func CreateApp(state types.AppState, initialHeightOmitempty ...int64) *minter.Blockchain {
 	jsonState, err := amino.MarshalJSON(state)
 	if err != nil {
 		panic(err)
@@ -38,11 +38,15 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
 	}
+	initialHeight := int64(1)
+	if len(initialHeightOmitempty) == 1 {
+		initialHeight = initialHeightOmitempty[0]
+	}
 	app.InitChain(tmTypes.RequestInitChain{
 		Time:          time.Now(),
 		ChainId:       "test",
 		Validators:    updates,
-		InitialHeight: 1,
+		InitialHeight: initialHeight,
 		AppStateBytes: jsonState,
 	})
 

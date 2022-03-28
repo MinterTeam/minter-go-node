@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/tendermint/go-amino"
 	"io"
 	"log"
 	"os"
