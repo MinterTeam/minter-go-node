@@ -464,10 +464,24 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 				safeRewardVariable := big.NewInt(0).Set(reward)
 				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
+					// BipValue(100) - x?
+					// GetTotalBipStake(1000) - 100%
+					// х = BipValue(100) * 100 / GetTotalBipStake(1000) = 10
+
+					// safeRewards(2000) - 100%
+					// y = x % (10)
+					// y = safeRewards(2000) / 100 * x(10) = 200
+					// y = safeRewards * BipValue(100) / GetTotalBipStake(1000)
+					// y * 3
+
+					// y - 20% - 10%
+					// y - 0,2y - 0,1(y - 0,2y)
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
-					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
 					safeRewards.Mul(safeRewards, big.NewInt(3))
+					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeReward, big.NewInt(20)), big.NewInt(100))) // commission Dev and DAO
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeReward, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
 					moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewards, reward))
 					safeRewardVariable.Set(safeRewards)
 				}
