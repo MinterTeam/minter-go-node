@@ -101,6 +101,135 @@ func TestReward_Simple(t *testing.T) {
 	t.Log(app.CurrentState().App().Reward())
 }
 
+func TestReward_X3Cmp(t *testing.T) {
+	state := DefaultAppState() // generate default state
+
+	stake := helpers.BipToPip(big.NewInt(10_000))
+
+	state.Accounts = []types.Account{
+		{
+			Address:             types.Address{11},
+			Balance:             nil,
+			Nonce:               0,
+			MultisigData:        nil,
+			LockStakeUntilBlock: 99999999,
+		},
+	}
+	state.Validators = []types.Validator{
+		{
+			TotalBipStake: big.NewInt(0).Add(stake, stake).String(),
+			PubKey:        types.Pubkey{1},
+			AccumReward:   "1000000",
+			AbsentTimes:   types.NewBitArray(24),
+		},
+	}
+
+	state.Candidates = []types.Candidate{
+		{
+			ID:             1,
+			RewardAddress:  types.Address{1},
+			OwnerAddress:   types.Address{1},
+			ControlAddress: types.Address{1},
+			TotalBipStake:  big.NewInt(0).Add(stake, stake).String(),
+			PubKey:         types.Pubkey{1},
+			Commission:     99,
+			Stakes: []types.Stake{
+				{
+					Owner:    types.Address{5},
+					Coin:     0,
+					Value:    stake.String(),
+					BipValue: stake.String(),
+				},
+				{
+					Owner:    types.Address{11},
+					Coin:     0,
+					Value:    stake.String(),
+					BipValue: stake.String(),
+				},
+			},
+			Updates:                  nil,
+			Status:                   2,
+			JailedUntil:              0,
+			LastEditCommissionHeight: 0,
+		},
+	}
+	state.UpdateVotes = []types.UpdateVote{
+		{
+			Height: 11,
+			Votes: []types.Pubkey{
+				[32]byte{1},
+			},
+			Version: "v300",
+		},
+	}
+	state.Coins = []types.Coin{
+		{
+			ID:           types.USDTID,
+			Name:         "USDT (Tether USD, Ethereum)",
+			Symbol:       types.StrToCoinBaseSymbol("USDTE"),
+			Volume:       "10000000000000000000000000",
+			Crr:          0,
+			Reserve:      "0",
+			MaxSupply:    "10000000000000000000000000",
+			Version:      0,
+			OwnerAddress: &types.Address{},
+			Mintable:     true,
+			Burnable:     true,
+		},
+	}
+	state.Pools = []types.Pool{
+		{
+			Coin0:    0,
+			Coin1:    types.USDTID,
+			Reserve0: "3500000000000000000000000000",
+			Reserve1: "10000000000000000000000000",
+			ID:       1,
+			Orders:   nil,
+		},
+	}
+
+	app := CreateApp(state, 9) // create application
+
+	SendBeginBlock(app, 9) // send BeginBlock
+	SendEndBlock(app, 9)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 10) // send BeginBlock
+	SendEndBlock(app, 10)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	SendBeginBlock(app, 11) // send BeginBlock
+	SendEndBlock(app, 11)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	SendBeginBlock(app, 12) // send BeginBlock
+	SendEndBlock(app, 12)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	t.Log(app.UpdateVersions()[1])
+	t.Log(app.GetEventsDB().LoadEvents(12)[0])
+	t.Log(app.CurrentState().App().Reward())
+
+	SendBeginBlock(app, 13) // send BeginBlock
+	SendEndBlock(app, 13)   // send EndBlock
+	SendCommit(app)         // send Commit
+	SendBeginBlock(app, 14) // send BeginBlock
+	SendEndBlock(app, 14)   // send EndBlock
+	SendCommit(app)         // send Commit
+
+	t.Log(app.GetEventsDB().LoadEvents(14)[0])
+	t.Log(app.GetEventsDB().LoadEvents(14)[1])
+	t.Log(app.GetEventsDB().LoadEvents(14)[2])
+	t.Log(app.GetEventsDB().LoadEvents(14)[3])
+	t.Log(app.GetEventsDB().LoadEvents(14)[4])
+	appState := app.CurrentState().Export()
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+	t.Logf("%#v", appState.Candidates[0].Stakes[0].Value) // 10001152000000000000000 +
+	t.Logf("%#v", appState.Candidates[0].Stakes[1].Value) // 10001152000000000000000 + x3
+}
+
 func TestReward_Update_Down(t *testing.T) {
 	state := DefaultAppState() // generate default state
 
@@ -412,4 +541,11 @@ func TestReward_Update_Up(t *testing.T) {
 	SendCommit(app)                                         // send Commit
 
 	t.Log(app.GetEventsDB().LoadEvents(15)[0])
+
+	appState := app.CurrentState().Export()
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+	t.Logf("%#v", appState.Candidates[0].Stakes[0].Value)
+	t.Logf("%#v", appState.Candidates[0].Stakes[1].Value)
 }

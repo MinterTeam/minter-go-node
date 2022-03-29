@@ -478,12 +478,13 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 					// y - 0,2y - 0,1(y - 0,2y)
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
-					safeRewards.Mul(safeRewards, big.NewInt(3))
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
-					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeReward, big.NewInt(20)), big.NewInt(100))) // commission Dev and DAO
-					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeReward, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-					moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewards, reward))
+					safeRewards.Mul(safeRewards, big.NewInt(3))
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(20)), big.NewInt(100))) // commission Dev and DAO
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+
 					safeRewardVariable.Set(safeRewards)
+					moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewards, reward))
 				}
 				candidate.AddUpdate(types.GetBaseCoinID(), safeRewardVariable, safeRewardVariable, stake.Owner)
 				v.bus.Checker().AddCoin(types.GetBaseCoinID(), safeRewardVariable)
