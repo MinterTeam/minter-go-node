@@ -480,6 +480,9 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 					feeRewards := big.NewInt(0).Sub(reward, calcRewards)
 
 					safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
+					if safeRewardVariable.Sign() < 1 {
+						continue
+					}
 
 					moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewardVariable, reward))
 				}
