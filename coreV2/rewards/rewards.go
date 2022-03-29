@@ -21,7 +21,7 @@ func NewReward() *Reward {
 	return &Reward{startHeight: 9150000, totalEmissionBig: helpers.StringToBigInt(TotalEmission)}
 }
 func (r *Reward) GetBeforeBlock(blockHeight uint64) *big.Int {
-	before := helpers.StringToBigInt("2423599954000000000000000000")
+	before := helpers.StringToBigInt("2842199955000000000000000000")
 	for i := uint64(1); i <= blockHeight; i++ {
 		before.Add(before, r.GetRewardForBlock(i))
 	}
