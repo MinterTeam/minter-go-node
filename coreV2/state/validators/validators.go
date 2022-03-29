@@ -464,7 +464,6 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 				safeRewardVariable := big.NewInt(0).Set(reward)
 				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
-					// todo: move up
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
