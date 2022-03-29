@@ -480,7 +480,7 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
 					safeRewards.Mul(safeRewards, big.NewInt(3))
-					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(20)), big.NewInt(100))) // commission Dev and DAO
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
 					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
 
 					safeRewardVariable.Set(safeRewards)
