@@ -28,15 +28,22 @@ type AppState struct {
 	MaxGas              uint64             `json:"max_gas"`
 	TotalSlashed        string             `json:"total_slashed"`
 
-	// TODO: Import/Export
-	Emission    string `json:"emission"`
-	BlockReward string `json:"block_reward"`
-	PrevPrice   struct {
-		AmountBIP  string `json:"amount_bip"`
-		AmountUSDT string `json:"amount_usdt"`
-	} `json:"prev_price"`
+	Emission   string      `json:"emission"`
+	PrevReward RewardPrice `json:"prev_reward"`
 
-	Version string `json:"version,omitempty"`
+	Version  string    `json:"version,omitempty"`
+	Versions []Version `json:"versions,omitempty"`
+}
+type Version struct {
+	Height uint64 `json:"height,omitempty"`
+	Name   string `json:"name,omitempty"`
+}
+type RewardPrice struct {
+	Time       uint64 `json:"time"`
+	AmountBIP  string `json:"amount_bip"`
+	AmountUSDT string `json:"amount_usdt"`
+	Off        bool   `json:"off"`
+	Reward     string `json:"reward"`
 }
 
 func (s *AppState) Verify() error {

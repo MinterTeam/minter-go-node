@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"github.com/MinterTeam/minter-go-node/version"
+	"github.com/tendermint/go-amino"
 	"io"
 	"log"
 	"os"
@@ -12,8 +13,8 @@ import (
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
 	"github.com/MinterTeam/minter-go-node/coreV2/appdb"
 	"github.com/MinterTeam/minter-go-node/coreV2/state"
+	mtypes "github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/spf13/cobra"
-	"github.com/tendermint/go-amino"
 	tmproto "github.com/tendermint/tendermint/proto/tendermint/types"
 	"github.com/tendermint/tendermint/types"
 )
@@ -88,7 +89,23 @@ func export(cmd *cobra.Command, args []string) error {
 	log.Printf("Verify state OK\n")
 
 	appState.Version = db.GetVersionName(height)
+	versions := db.GetVersions()
+	for _, v := range versions {
+		appState.Versions = append(appState.Versions, mtypes.Version{
+			Height: v.Height,
+			Name:   v.Name,
+		})
+	}
 
+	appState.Emission = db.Emission().String()
+	t, r0, r1, reward, off := db.GetPrice()
+	appState.PrevReward = mtypes.RewardPrice{
+		Time:       uint64(t.UTC().UnixNano()),
+		AmountBIP:  r0.String(),
+		AmountUSDT: r1.String(),
+		Off:        off,
+		Reward:     reward.String(),
+	}
 	var jsonBytes []byte
 	if indent {
 		jsonBytes, err = amino.NewCodec().MarshalJSONIndent(appState, "", "	")
@@ -124,7 +141,7 @@ func export(cmd *cobra.Command, args []string) error {
 				AppVersion: version.AppVer,
 			},
 		},
-		AppHash:  nil,
+		AppHash:  nil, // todo: test with db.GetLastBlockHash()
 		AppState: json.RawMessage(jsonBytes),
 	}
 

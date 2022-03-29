@@ -20,7 +20,7 @@ func TestReward_Simple(t *testing.T) {
 			TotalBipStake: stake,
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -82,7 +82,7 @@ func TestReward_Simple(t *testing.T) {
 		},
 	}
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock
@@ -133,7 +133,7 @@ func TestReward_Update_Down(t *testing.T) {
 			TotalBipStake: totalBipStake.String(),
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -201,7 +201,7 @@ func TestReward_Update_Down(t *testing.T) {
 		},
 	}
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock
@@ -279,7 +279,7 @@ func TestReward_Update_Up(t *testing.T) {
 			TotalBipStake: totalBipStake.String(),
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -347,7 +347,7 @@ func TestReward_Update_Up(t *testing.T) {
 		},
 	}
 
-	app := CreateApp(state) // create application
+	app := CreateApp(state, 9) // create application
 
 	SendBeginBlock(app, 9) // send BeginBlock
 	SendEndBlock(app, 9)   // send EndBlock

@@ -93,7 +93,7 @@ func TestLockTx(t *testing.T) {
 			TotalBipStake: stake,
 			PubKey:        types.Pubkey{1},
 			AccumReward:   "1000000",
-			AbsentTimes:   nil,
+			AbsentTimes:   types.NewBitArray(24),
 		},
 	}
 
@@ -169,13 +169,28 @@ func TestLockTx(t *testing.T) {
 		MultisigData: nil,
 	})
 
-	app := CreateApp(state) // create application
-	SendBeginBlock(app, 5)  // send BeginBlock
-	SendEndBlock(app, 5)    // send EndBlock
-	SendCommit(app)         // send Commit
-	SendBeginBlock(app, 6)  // send BeginBlock
-	SendEndBlock(app, 6)    // send EndBlock
-	SendCommit(app)         // send Commit
+	app := CreateApp(state, 1) // create application
+
+	//SendBeginBlock(app, 1) // send BeginBlock
+	//SendEndBlock(app, 1)   // send EndBlock
+	//SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 2) // send BeginBlock
+	SendEndBlock(app, 2)   // send EndBlock
+	SendCommit(app)        // send Commit
+	SendBeginBlock(app, 3) // send BeginBlock
+	SendEndBlock(app, 3)   // send EndBlock
+	SendCommit(app)        // send Commit
+	SendBeginBlock(app, 4) // send BeginBlock
+	SendEndBlock(app, 4)   // send EndBlock
+	SendCommit(app)        // send Commit
+
+	SendBeginBlock(app, 5) // send BeginBlock
+	SendEndBlock(app, 5)   // send EndBlock
+	SendCommit(app)        // send Commit
+	SendBeginBlock(app, 6) // send BeginBlock
+	SendEndBlock(app, 6)   // send EndBlock
+	SendCommit(app)        // send Commit
 
 	SendBeginBlock(app, 7) // send BeginBlock
 	tx := CreateTx(app, address, transaction.TypeLock, transaction.LockData{
@@ -202,6 +217,15 @@ func TestLockTx(t *testing.T) {
 		}
 	}
 
+	SendBeginBlock(app, 8)  // send BeginBlock
+	SendEndBlock(app, 8)    // send EndBlock
+	SendCommit(app)         // send Commit
+	SendBeginBlock(app, 9)  // send BeginBlock
+	SendEndBlock(app, 9)    // send EndBlock
+	SendCommit(app)         // send Commit
+	SendBeginBlock(app, 10) // send BeginBlock
+	SendEndBlock(app, 10)   // send EndBlock
+	SendCommit(app)         // send Commit
 	SendBeginBlock(app, 11) // send BeginBlock
 	SendEndBlock(app, 11)   // send EndBlock
 	SendCommit(app)         // send Commit
