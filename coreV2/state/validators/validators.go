@@ -467,9 +467,9 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
-					safeRewards.Mul(safeRewards, big.NewInt(3))
 					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
 					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+					safeRewards.Mul(safeRewards, big.NewInt(3))
 
 					calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
 					calcRewards.Mul(calcRewards, stake.BipValue)
