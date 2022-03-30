@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/cosmos/cosmos-sdk/snapshots"
 	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
 	"github.com/cosmos/cosmos-sdk/types/errors"
@@ -286,8 +285,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	}
 
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
-		emission := blockchain.appDB.Emission()
-		if emission == nil || emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
+		if emission := blockchain.appDB.Emission(); emission == nil || emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			t, _, _, _, _ := blockchain.appDB.GetPrice()
 			if t.IsZero() || req.Header.Time.Sub(t) > time.Hour && req.Header.Time.Hour() == 12 {
 				reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
@@ -566,9 +564,6 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 			})
 			blockchain.grace.AddGracePeriods(graceForUpdate(height))
 			blockchain.executor = GetExecutor(v)
-			if v == V3 {
-				blockchain.stateDeliver.SwapV2 = swap.NewV2(blockchain.stateDeliver.Bus(), blockchain.stateDeliver.Tree().GetLastImmutable())
-			}
 		}
 		blockchain.stateDeliver.Updates.Delete(height)
 	}

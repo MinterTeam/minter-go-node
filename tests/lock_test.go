@@ -12,42 +12,6 @@ import (
 func TestLock_Simple(t *testing.T) {
 	state := DefaultAppState() // generate default state
 
-	//stake := helpers.BipToPip(big.NewInt(10_000)).String()
-
-	//state.Validators = []types.Validator{
-	//	{
-	//		TotalBipStake: stake,
-	//		PubKey:        types.Pubkey{1},
-	//		AccumReward:   "1000000",
-	//		AbsentTimes:   nil,
-	//	},
-	//}
-	//
-	//state.Candidates = []types.Candidate{
-	//	{
-	//		ID:             1,
-	//		RewardAddress:  types.Address{1},
-	//		OwnerAddress:   types.Address{1},
-	//		ControlAddress: types.Address{1},
-	//		TotalBipStake:  stake,
-	//		PubKey:         types.Pubkey{1},
-	//		Commission:     5,
-	//		Stakes: []types.Stake{
-	//			{
-	//				Owner:    types.Address{5},
-	//				Coin:     0,
-	//				Value:    stake,
-	//				BipValue: stake,
-	//			},
-	//		},
-	//		Updates:                  nil,
-	//		Status:                   2,
-	//		JailedUntil:              0,
-	//		LastEditCommissionHeight: 0,
-	//	},
-	//}
-	//state.Version = "v300"
-
 	state.FrozenFunds = []types.FrozenFund{
 		{
 			Height:  11,
