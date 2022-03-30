@@ -141,7 +141,8 @@ func export(cmd *cobra.Command, args []string) error {
 				AppVersion: version.AppVer,
 			},
 		},
-		AppHash:  nil, // todo: test with db.GetLastBlockHash()
+		AppHash: nil,
+		//AppHash:  db.GetLastBlockHash(),
 		AppState: json.RawMessage(jsonBytes),
 	}
 

@@ -7,9 +7,21 @@ import (
 	"testing"
 )
 
-func TestEmission(t *testing.T) {
-	s := NewReward().GetBeforeBlock(43702611 + 999).String()
+func TestEmissionMore(t *testing.T) {
+	s := NewFrom0Block().GetBeforeBlock(43702611 + 999).String()
 	if s != TotalEmission {
+		t.Error(s)
+	}
+}
+func TestEmission0(t *testing.T) {
+	s := NewFrom0Block().GetBeforeBlock(43702611).String()
+	if s != TotalEmission {
+		t.Error(s)
+	}
+}
+func TestEmission2(t *testing.T) {
+	s := NewReward().GetBeforeBlock(43702611 - 9150000 - 1).String()
+	if s != "9999999932000000000000000000" {
 		t.Error(s)
 	}
 }
@@ -22,6 +34,7 @@ type Results struct {
 func NewFrom0Block() *Reward {
 	reward := NewReward()
 	reward.startHeight = 0
+	reward.before = helpers.StringToBigInt("200000000000000000000000000")
 	return reward
 }
 

@@ -290,9 +290,11 @@ func (s *State) Import(state types.AppState, version string) error {
 	defer s.Checker.RemoveBaseCoin()
 
 	s.App.SetMaxGas(state.MaxGas)
+	s.App.SetCoinsCount(uint32(len(state.Coins)))
+
 	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
 	s.App.SetTotalSlashed(totalSlash)
-	s.App.SetCoinsCount(uint32(len(state.Coins)))
+	s.Checker.AddCoin(types.GetBaseCoinID(), totalSlash)
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
