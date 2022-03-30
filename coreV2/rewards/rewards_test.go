@@ -8,7 +8,7 @@ import (
 )
 
 func TestEmission(t *testing.T) {
-	s := NewReward().GetBeforeBlock(lastBlock - 9150000 + 1).String()
+	s := NewReward().GetBeforeBlock(43702611 + 999).String()
 	if s != TotalEmission {
 		t.Error(s)
 	}

@@ -10,7 +10,7 @@ const lastBlock = 43702611
 const firstReward = 333
 const lastReward = 68
 
-const TotalEmission = "9381399999000000000000000000"
+const TotalEmission = "9800000000000000000000000000"
 
 type Reward struct {
 	startHeight      uint64
