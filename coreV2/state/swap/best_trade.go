@@ -1,66 +1,108 @@
 package swap
 
-import "math/big"
+import (
+	"context"
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"math/big"
+)
 
-func (s *Swap) GetBestTradeExactOut(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error) {
+func (s *Swap) GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
 	s.loadPools()
 
-	var pairs []*PairTrade
+	var pairs []EditableChecker
 
 	s.muPairs.RLock()
-	for key, pair := range s.pairs {
+	for _, pair := range s.pairs {
 		if pair == nil {
 			continue
 		}
 		reserve0, reserve1 := pair.Reserves()
+		if reserve0.Sign() < 1 || reserve1.Sign() < 1 {
+			continue
+		}
 
-		pairs = append(pairs, NewPair(
-			NewTokenAmount(NewToken(uint64(key.Coin0)), reserve0),
-			NewTokenAmount(NewToken(uint64(key.Coin1)), reserve1),
-		))
+		pairs = append(pairs, pair)
 	}
 	s.muPairs.RUnlock()
 
-	trades, err := GetBestTradeExactOut(
+	trade := GetBestTradeExactOut(ctx,
 		pairs,
-		NewToken(toId),
-		NewTokenAmount(NewToken(fromId), amount),
-		TradeOptions{MaxNumResults: maxNumResults, MaxHops: maxHops},
+		types.CoinID(toId),
+		NewTokenAmount(types.CoinID(fromId), amount),
+		maxHops,
 	)
-	if err != nil {
-		return nil, err
-	}
 
-	return trades, nil
+	return trade
 }
-func (s *Swap) GetBestTradeExactIn(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error) {
+func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
 	s.loadPools()
 
-	var pairs []*PairTrade
+	var pairs []EditableChecker
 
 	s.muPairs.RLock()
-	for key, pair := range s.pairs {
+	for _, pair := range s.pairs {
 		if pair == nil {
 			continue
 		}
 		reserve0, reserve1 := pair.Reserves()
+		if reserve0.Sign() < 1 || reserve1.Sign() < 1 {
+			continue
+		}
 
-		pairs = append(pairs, NewPair(
-			NewTokenAmount(NewToken(uint64(key.Coin0)), reserve0),
-			NewTokenAmount(NewToken(uint64(key.Coin1)), reserve1),
-		))
+		pairs = append(pairs, pair)
 	}
 	s.muPairs.RUnlock()
 
-	trades, err := GetBestTradeExactIn(
-		pairs,
-		NewToken(fromId),
-		NewTokenAmount(NewToken(toId), amount),
-		TradeOptions{MaxNumResults: maxNumResults, MaxHops: maxHops},
-	)
-	if err != nil {
-		return nil, err
-	}
+	trade := GetBestTradeExactOut(ctx, pairs, types.CoinID(toId), NewTokenAmount(types.CoinID(fromId), amount), maxHops)
 
-	return trades, nil
+	return trade
+}
+func (s *Swap) GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
+	s.loadPools()
+
+	var pairs []EditableChecker
+
+	s.muPairs.RLock()
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		reserve0, reserve1 := pair.Reserves()
+		if reserve0.Sign() < 1 || reserve1.Sign() < 1 {
+			continue
+		}
+		pairs = append(pairs, pair)
+	}
+	s.muPairs.RUnlock()
+
+	trades := GetBestTradeExactIn(ctx,
+		pairs,
+		types.CoinID(fromId),
+		NewTokenAmount(types.CoinID(toId), amount),
+		maxHops,
+	)
+
+	return trades
+}
+func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
+	s.loadPools()
+
+	var pairs []EditableChecker
+
+	s.muPairs.RLock()
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		reserve0, reserve1 := pair.Reserves()
+		if reserve0.Sign() < 1 || reserve1.Sign() < 1 {
+			continue
+		}
+		pairs = append(pairs, pair)
+	}
+	s.muPairs.RUnlock()
+
+	trades := GetBestTradeExactIn(ctx, pairs, types.CoinID(fromId), NewTokenAmount(types.CoinID(toId), amount), maxHops)
+
+	return trades
 }

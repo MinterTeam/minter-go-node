@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/helpers"
-	"math/big"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
@@ -293,24 +292,22 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 		return nil, timeoutStatus.Err()
 	}
 
-	var trades []*swap.Trade
+	var trade *swap.Trade
 	if req.Type == pb.BestTradeRequest_input {
-		trades, err = cState.Swap().GetBestTradeExactIn(req.BuyCoin, req.SellCoin, amount, 1, 4)
+		trade = cState.Swap().GetBestTradeExactIn(ctx, req.BuyCoin, req.SellCoin, amount, req.MaxDepth)
 	} else {
-		trades, err = cState.Swap().GetBestTradeExactOut(req.BuyCoin, req.SellCoin, amount, 1, 4)
+		trade = cState.Swap().GetBestTradeExactOut(ctx, req.BuyCoin, req.SellCoin, amount, req.MaxDepth)
 	}
-	if err != nil {
-		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
-	if len(trades) == 0 {
+	if trade == nil {
 		return nil, status.Error(codes.NotFound, "route path not found")
 	}
 
-	trade := trades[0]
 	route := &pb.BestTradeResponse{
-		Path:  make([]uint64, 0, len(trade.Route.Path)),
-		Price: big.NewFloat(0).Quo(big.NewFloat(0).SetInt(trade.Route.MidPrice.Value), big.NewFloat(1e18)).Text('f', 18),
+		Path: make([]uint64, 0, len(trade.Route.Path)),
 	}
 	if req.Type == pb.BestTradeRequest_input {
 		route.Result = trade.OutputAmount.Amount.String()
@@ -318,7 +315,7 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 		route.Result = trade.InputAmount.Amount.String()
 	}
 	for _, token := range trade.Route.Path {
-		route.Path = append(route.Path, token.CoinID)
+		route.Path = append(route.Path, uint64(token))
 	}
 
 	return route, nil
