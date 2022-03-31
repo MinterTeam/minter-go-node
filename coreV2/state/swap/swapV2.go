@@ -49,36 +49,28 @@ func (p *PairV2) Coin1() types.CoinID {
 	return p.PairKey.Coin1
 }
 
-func (s *SwapV2) SwapPools() []*types.Pool {
+func (s *SwapV2) SwapPools() []EditableChecker {
 	s.loadPools()
 
-	var pools []*types.Pool
+	var pools []EditableChecker
 
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
 
 	lenPools := len(s.pairs)
 
-	pools = make([]*types.Pool, 0, lenPools)
+	pools = make([]EditableChecker, 0, lenPools)
 
-	for key, pair := range s.pairs {
+	for _, pair := range s.pairs {
 		if pair == nil {
 			continue
 		}
-		reserve0, reserve1 := pair.Reserves()
-
-		pools = append(pools, &types.Pool{
-			Coin0:    uint64(key.Coin0),
-			Coin1:    uint64(key.Coin1),
-			Reserve0: reserve0.String(),
-			Reserve1: reserve1.String(),
-			ID:       uint64(pair.GetID()),
-		})
+		pools = append(pools, pair)
 	}
 
-	sort.SliceStable(pools, func(i, j int) bool {
-		return strconv.Itoa(int(pools[i].Coin0))+"-"+strconv.Itoa(int(pools[i].Coin1)) < strconv.Itoa(int(pools[j].Coin0))+"-"+strconv.Itoa(int(pools[j].Coin1))
-	})
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
 
 	return pools
 }

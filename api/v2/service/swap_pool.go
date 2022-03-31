@@ -196,6 +196,7 @@ func (s *Service) SwapPool(ctx context.Context, req *pb.SwapPoolRequest) (*pb.Sw
 	}
 
 	return &pb.SwapPoolResponse{
+		Id:        uint64(liquidityID),
 		Price:     swap.CalcPriceSellRat(reserve1, reserve0).FloatString(precision),
 		Amount0:   reserve0.String(),
 		Amount1:   reserve1.String(),
@@ -246,6 +247,7 @@ func (s *Service) SwapPoolProvider(ctx context.Context, req *pb.SwapPoolProvider
 
 	amount0, amount1 := swapper.Amounts(balance, liquidityCoin.Volume())
 	return &pb.SwapPoolResponse{
+		Id:        uint64(swapper.GetID()),
 		Price:     swapper.Reverse().PriceRat().FloatString(precision),
 		Amount0:   amount0.String(),
 		Amount1:   amount1.String(),
@@ -265,12 +267,21 @@ func (s *Service) SwapPools(ctx context.Context, req *pb.SwapPoolsRequest) (*pb.
 		return nil, timeoutStatus.Err()
 	}
 
-	res := &pb.SwapPoolsResponse{Pools: make([]*pb.SwapPoolResponse, 0, len(pools))}
+	res := &pb.SwapPoolsResponse{Pools: make([]*pb.SwapPoolsResponse_SwapPool, 0, len(pools))}
 	for _, pool := range pools {
-		res.Pools = append(res.Pools, &pb.SwapPoolResponse{
-			Amount0:   pool.Reserve0,
-			Amount1:   pool.Reserve0,
-			Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(uint32(pool.ID)), 0).Volume().String(),
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
+		reserve0, reserve1 := pool.Reserves()
+		res.Pools = append(res.Pools, &pb.SwapPoolsResponse_SwapPool{
+			Id:        uint64(pool.GetID()),
+			Price:     pool.Reverse().PriceRat().FloatString(precision),
+			Coin0:     uint64(pool.Coin0()),
+			Coin1:     uint64(pool.Coin1()),
+			Amount0:   reserve0.String(),
+			Amount1:   reserve1.String(),
+			Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(pool.GetID()), 0).Volume().String(),
 		})
 	}
 
