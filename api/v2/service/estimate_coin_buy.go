@@ -94,7 +94,8 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	var resultCommission *big.Int
 	swapFrom := req.SwapFrom
 
-	route := reverseCoinIds(req.Route)
+	route := req.Route[:len(req.Route):len(req.Route)]
+	reverseCoinIds(route)
 
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
@@ -298,13 +299,12 @@ func (s *Service) calcBuyPoolWithCommission(ctx context.Context, commissions *co
 	return commission, valuePool, nil
 }
 
-func reverseCoinIds(a []uint64) []uint64 {
+func reverseCoinIds(a []uint64) {
 	if len(a) == 0 {
-		return nil
+		return
 	}
 	for i := len(a)/2 - 1; i >= 0; i-- {
 		opp := len(a) - 1 - i
 		a[i], a[opp] = a[opp], a[i]
 	}
-	return a[:len(a):len(a)]
 }
