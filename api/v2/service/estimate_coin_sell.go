@@ -258,6 +258,9 @@ func (s *Service) calcSellFromPool(ctx context.Context, value *big.Int, cState *
 		coinBuy := coinTo
 		if buyCoinID != coinBuy.ID() {
 			coinBuy = cState.Coins().GetCoin(buyCoinID)
+			if coinBuy == nil {
+				return nil, s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(code.NewCoinNotExists("", buyCoinID.String())))
+			}
 		}
 		if !swapChecker.Exists() {
 			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinSell.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinSell.ID().String(), coinBuy.ID().String())))
