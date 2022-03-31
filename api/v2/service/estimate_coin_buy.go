@@ -94,7 +94,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	var resultCommission *big.Int
 	swapFrom := req.SwapFrom
 
-	reverseCoinIds(req.Route)
+	route := reverseCoinIds(req.Route)
 
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
@@ -105,7 +105,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		value = valueBancor
 		resultCommission = commissionBancor
 	case pb.SwapFrom_pool:
-		commissionPool, valuePool, err := s.calcBuyPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, req.Route)
+		commissionPool, valuePool, err := s.calcBuyPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, route)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 		resultCommission = commissionPool
 	default:
 		commissionBancor, valueBancor, errBancor := s.calcBuyBancorWithCommission(commissions, cState, requestCoinCommissionID, coinTo, coinFrom, valueToBuy)
-		commissionPool, valuePool, errPool := s.calcBuyPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, req.Route)
+		commissionPool, valuePool, errPool := s.calcBuyPoolWithCommission(ctx, commissions, cState, requestCoinCommissionID, valueToBuy, coinFrom, coinTo, route)
 
 		if valueBancor != nil && valuePool != nil {
 			if valueBancor.Cmp(valuePool) == 1 {
@@ -298,12 +298,13 @@ func (s *Service) calcBuyPoolWithCommission(ctx context.Context, commissions *co
 	return commission, valuePool, nil
 }
 
-func reverseCoinIds(a []uint64) {
+func reverseCoinIds(a []uint64) []uint64 {
 	if len(a) == 0 {
-		return
+		return nil
 	}
 	for i := len(a)/2 - 1; i >= 0; i-- {
 		opp := len(a) - 1 - i
 		a[i], a[opp] = a[opp], a[i]
 	}
+	return a[:len(a):len(a)]
 }
