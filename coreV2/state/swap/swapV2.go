@@ -37,6 +37,65 @@ type SwapV2 struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+
+	muLoadPools sync.Mutex
+	loadedPools bool
+}
+
+func (s *SwapV2) SwapPools() []*types.Pool {
+	s.loadPools()
+
+	var pools []*types.Pool
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	lenPools := len(s.pairs)
+
+	pools = make([]*types.Pool, 0, lenPools)
+
+	for key, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		reserve0, reserve1 := pair.Reserves()
+
+		pools = append(pools, &types.Pool{
+			Coin0:    uint64(key.Coin0),
+			Coin1:    uint64(key.Coin1),
+			Reserve0: reserve0.String(),
+			Reserve1: reserve1.String(),
+			ID:       uint64(pair.GetID()),
+		})
+	}
+
+	sort.SliceStable(pools, func(i, j int) bool {
+		return strconv.Itoa(int(pools[i].Coin0))+"-"+strconv.Itoa(int(pools[i].Coin1)) < strconv.Itoa(int(pools[j].Coin0))+"-"+strconv.Itoa(int(pools[j].Coin1))
+	})
+
+	return pools
+}
+
+func (s *SwapV2) loadPools() {
+	s.muLoadPools.Lock()
+	defer s.muLoadPools.Unlock()
+
+	if s.loadedPools {
+		return
+	}
+
+	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 10 {
+			return false
+		}
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
+		_ = s.Pair(coin0, coin1)
+
+		return false
+	})
+
+	s.loadedPools = true
 }
 
 func (s *SwapV2) ExpireOrders(beforeHeight uint64) {
