@@ -167,10 +167,11 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 		}
 
 		sellCoinID := types.CoinID(sellCoinInt)
+		coinSell := cState.Coins().GetCoin(sellCoinID)
 		swapChecker := cState.Swap().GetSwapper(sellCoinID, buyCoinID)
 
 		if !swapChecker.Exists() {
-			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinFrom.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(coinFrom.ID().String(), coinBuy.ID().String())))
+			return nil, s.createError(status.New(codes.NotFound, fmt.Sprintf("swap pool between coins %s and %s not exists", coinSell.GetFullSymbol(), coinBuy.GetFullSymbol())), transaction.EncodeError(code.NewPairNotExists(sellCoinID.String(), coinBuy.ID().String())))
 		}
 
 		if _, ok := dup[swapChecker.GetID()]; ok {
@@ -184,11 +185,6 @@ func (s *Service) calcBuyFromPool(ctx context.Context, value *big.Int, cState *s
 			} else {
 				swapChecker = commissionPoolSwapper.Reverse()
 			}
-		}
-
-		coinSell := coinFrom
-		if sellCoinID != coinSell.ID() {
-			coinSell = cState.Coins().GetCoin(sellCoinID)
 		}
 
 		errResp, sellValue, _ := transaction.CheckSwap(swapChecker, coinSell, coinBuy, coins.MaxCoinSupply(), buyValue, true)
