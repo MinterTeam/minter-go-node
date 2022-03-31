@@ -95,7 +95,7 @@ func (s *Service) EstimateCoinBuy(ctx context.Context, req *pb.EstimateCoinBuyRe
 	swapFrom := req.SwapFrom
 
 	route := req.Route[:len(req.Route):len(req.Route)]
-	reverseCoinIds(route)
+	//reverseCoinIds(route)
 
 	switch req.SwapFrom {
 	case pb.SwapFrom_bancor:
