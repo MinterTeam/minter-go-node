@@ -2,6 +2,7 @@ package swap
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -27,6 +28,9 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	Coin0() types.CoinID
+	Coin1() types.CoinID
+
 	IsSorted() bool
 	IsOrderAlreadyUsed(id uint32) bool
 	GetOrder(id uint32) *Limit
@@ -63,8 +67,8 @@ type RSwap interface {
 	// Deprecated
 	// ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
-	GetBestTradeExactIn(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
-	GetBestTradeExactOut(fromId, toId uint64, amount *big.Int, maxNumResults, maxHops int) ([]*Trade, error)
+	GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade
+	GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade
 
 	SwapPools() []*types.Pool
 	GetOrder(id uint32) *Limit
@@ -310,7 +314,7 @@ func (s *Swap) Import(state *types.AppState) {
 			}
 
 			pair0.addOrderWithID(v0, v1, order.Owner, uint32(order.ID), order.Height)
-			s.bus.Checker().AddCoin(pair0.Coin1, v1)
+			s.bus.Checker().AddCoin(pair0.Coin1(), v1)
 		}
 	}
 	if state.NextOrderID > 1 {
@@ -374,6 +378,14 @@ func (p *Pair) CheckSwap(amount0In, amount1Out *big.Int) error {
 func (p *Pair) Exists() bool {
 	return p != nil
 }
+
+func (p *Pair) Coin0() types.CoinID {
+	return p.PairKey.Coin0
+}
+func (p *Pair) Coin1() types.CoinID {
+	return p.PairKey.Coin1
+}
+
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{

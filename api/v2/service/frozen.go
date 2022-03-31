@@ -131,6 +131,11 @@ func (s *Service) FrozenAll(ctx context.Context, req *pb.FrozenAllRequest) (*pb.
 	var frozen []*pb.FrozenResponse_Frozen
 
 	fundsAll := cState.FrozenFunds().GetFrozenFundsAll(ctx, startHeight, endHeight+1)
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	for _, funds := range fundsAll {
 		if funds == nil {
 			continue

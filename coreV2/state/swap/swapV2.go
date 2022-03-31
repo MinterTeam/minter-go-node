@@ -42,6 +42,13 @@ type SwapV2 struct {
 	loadedPools bool
 }
 
+func (p *PairV2) Coin0() types.CoinID {
+	return p.PairKey.Coin0
+}
+func (p *PairV2) Coin1() types.CoinID {
+	return p.PairKey.Coin1
+}
+
 func (s *SwapV2) SwapPools() []*types.Pool {
 	s.loadPools()
 
@@ -252,7 +259,7 @@ func (s *SwapV2) Import(state *types.AppState) {
 			}
 
 			pair0.addOrderWithID(v0, v1, order.Owner, uint32(order.ID), order.Height)
-			s.bus.Checker().AddCoin(pair0.Coin1, v1)
+			s.bus.Checker().AddCoin(pair0.Coin1(), v1)
 		}
 	}
 	if state.NextOrderID > 1 {
