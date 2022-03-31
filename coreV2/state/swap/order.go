@@ -322,7 +322,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
 		if amountIn.Sign() == -1 {
-			log.Println(fmt.Sprint(amountIn, amountOut))
+			log.Println("wrong amountIn.Sign() == -1", pair.GetID(), fmt.Sprint(amountIn, amountOut))
 		}
 		if amountIn.Sign() == 0 {
 			return amountOut, orders
@@ -519,7 +519,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
 		if amountOut.Sign() == -1 {
-			log.Println(fmt.Sprint(amountIn, amountOut))
+			log.Println("wrong amountOut.Sign() == -1", pair.GetID(), fmt.Sprint(amountIn, amountOut))
 		}
 		// todo: move check minAmountIn
 		if amountOut.Sign() == 0 {
@@ -615,13 +615,22 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	}
 
 	amount0diff := pair.CalculateSellForBuy(amountOut)
-	if amount0diff != nil {
-		if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
-			fmt.Println(amount0diff, amountOut)
-			panic(err)
+	if amount0diff == nil {
+		r0, r1 := pair.AddLastSwapStep(big.NewInt(0), amountOut).Reserves()
+		if r0.Sign() < 1 || r1.Sign() < 1 {
+			return nil, nil
 		}
-		amountIn.Add(amountIn, amount0diff)
+
+		return amountIn, orders
 	}
+
+	if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
+		fmt.Println(amount0diff, amountOut)
+		panic(err)
+	}
+
+	amountIn.Add(amountIn, amount0diff)
+
 	return amountIn, orders
 }
 

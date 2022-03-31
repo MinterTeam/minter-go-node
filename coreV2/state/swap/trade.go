@@ -132,7 +132,12 @@ func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyO
 				bestTrade = trade
 			}
 		} else if maxHops > 1 && len(pairs) > 1 { // otherwise, consider all the other paths that lead from this token as long as we have not exceeded maxHops
-			pairsExcludingThisPair := append(pairs[:i:i], pairs[i+1:]...)
+			//pairsExcludingThisPair := append(pairs[:i:i], pairs[i+1:]...)
+			temp := make([]EditableChecker, len(pairs))
+			copy(temp, pairs)
+			temp[i] = temp[len(temp)-1]
+			pairsExcludingThisPair := temp[:len(temp)-1]
+
 			newCurrentPairs := append(currentPairs, pair)
 
 			bestTrade = getBestTradeExactIn(ctx, pairsExcludingThisPair, currencyOut, TokenAmount{Amount: amountOut, Token: pair.Coin1()}, maxHops-1, newCurrentPairs, originalAmountIn, bestTrade)
@@ -187,9 +192,13 @@ func getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currency
 			if bestTrade == nil || tradeComparator(bestTrade, trade) {
 				bestTrade = trade
 			}
-		} else if maxHops > 1 && len(pairs) > 1 {
-			// otherwise, consider all the other paths that lead from this token as long as we have not exceeded maxHops
-			pairsExcludingThisPair := append(pairs[:i:i], pairs[i+1:]...)
+		} else if maxHops > 1 && len(pairs) > 1 { // otherwise, consider all the other paths that lead from this token as long as we have not exceeded maxHops
+			//pairsExcludingThisPair := append(pairs[:i:i], pairs[i+1:]...)
+			temp := make([]EditableChecker, len(pairs))
+			copy(temp, pairs)
+			temp[i] = temp[len(temp)-1]
+			pairsExcludingThisPair := temp[:len(temp)-1]
+
 			newCurrentPairs := append([]EditableChecker{pair}, currentPairs...)
 
 			bestTrade = getBestTradeExactOut(ctx, pairsExcludingThisPair, currencyIn, TokenAmount{Amount: amountIn, Token: pair.Coin0()}, maxHops-1, newCurrentPairs, originalAmountOut, bestTrade)
