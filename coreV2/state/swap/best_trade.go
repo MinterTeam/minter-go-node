@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-func (s *Swap) GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
+func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade {
 	s.loadPools()
 
 	var pairs []EditableChecker
@@ -27,14 +27,14 @@ func (s *Swap) GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, am
 
 	trade := GetBestTradeExactOut(ctx,
 		pairs,
-		types.CoinID(toId),
-		NewTokenAmount(types.CoinID(fromId), amount),
+		types.CoinID(inId),
+		NewTokenAmount(types.CoinID(outId), outAmount),
 		maxHops,
 	)
 
 	return trade
 }
-func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
+func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade {
 	s.loadPools()
 
 	var pairs []EditableChecker
@@ -53,11 +53,11 @@ func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, 
 	}
 	s.muPairs.RUnlock()
 
-	trade := GetBestTradeExactOut(ctx, pairs, types.CoinID(toId), NewTokenAmount(types.CoinID(fromId), amount), maxHops)
+	trade := GetBestTradeExactOut(ctx, pairs, types.CoinID(inId), NewTokenAmount(types.CoinID(outId), outAmount), maxHops)
 
 	return trade
 }
-func (s *Swap) GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
+func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade {
 	s.loadPools()
 
 	var pairs []EditableChecker
@@ -77,14 +77,14 @@ func (s *Swap) GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amo
 
 	trades := GetBestTradeExactIn(ctx,
 		pairs,
-		types.CoinID(fromId),
-		NewTokenAmount(types.CoinID(toId), amount),
+		types.CoinID(outId),
+		NewTokenAmount(types.CoinID(inId), inAmount),
 		maxHops,
 	)
 
 	return trades
 }
-func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade {
+func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade {
 	s.loadPools()
 
 	var pairs []EditableChecker
@@ -102,7 +102,7 @@ func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, a
 	}
 	s.muPairs.RUnlock()
 
-	trades := GetBestTradeExactIn(ctx, pairs, types.CoinID(fromId), NewTokenAmount(types.CoinID(toId), amount), maxHops)
+	trades := GetBestTradeExactIn(ctx, pairs, types.CoinID(outId), NewTokenAmount(types.CoinID(inId), inAmount), maxHops)
 
 	return trades
 }
