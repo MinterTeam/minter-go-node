@@ -67,8 +67,8 @@ type RSwap interface {
 	// Deprecated
 	// ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
-	GetBestTradeExactIn(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade
-	GetBestTradeExactOut(ctx context.Context, fromId, toId uint64, amount *big.Int, maxHops uint64) *Trade
+	GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade
+	GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade
 
 	SwapPools() []*types.Pool
 	GetOrder(id uint32) *Limit

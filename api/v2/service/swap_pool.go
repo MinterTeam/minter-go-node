@@ -292,11 +292,16 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 		return nil, timeoutStatus.Err()
 	}
 
+	depth := req.MaxDepth
+	if depth == 0 {
+		depth = 4
+	}
+
 	var trade *swap.Trade
 	if req.Type == pb.BestTradeRequest_input {
-		trade = cState.Swap().GetBestTradeExactIn(ctx, req.BuyCoin, req.SellCoin, amount, req.MaxDepth)
+		trade = cState.Swap().GetBestTradeExactIn(ctx, req.BuyCoin, req.SellCoin, amount, depth)
 	} else {
-		trade = cState.Swap().GetBestTradeExactOut(ctx, req.BuyCoin, req.SellCoin, amount, req.MaxDepth)
+		trade = cState.Swap().GetBestTradeExactOut(ctx, req.SellCoin, req.BuyCoin, amount, depth)
 	}
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
