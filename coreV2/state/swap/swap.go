@@ -70,7 +70,7 @@ type RSwap interface {
 	GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade
 	GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade
 
-	SwapPools() []EditableChecker
+	SwapPools(context.Context) []EditableChecker
 	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
@@ -104,23 +104,31 @@ type Swap struct {
 	loadedPools bool
 }
 
-func (s *Swap) SwapPools() []EditableChecker {
+func (s *Swap) SwapPools(ctx context.Context) []EditableChecker {
 	s.loadPools()
 
-	var pools []EditableChecker
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
 
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
 
-	lenPools := len(s.pairs)
-
-	pools = make([]EditableChecker, 0, lenPools)
+	pools := make([]EditableChecker, 0, len(s.pairs))
 
 	for _, pair := range s.pairs {
 		if pair == nil {
 			continue
 		}
 		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
 	}
 
 	//sort.SliceStable(pools, func(i, j int) bool {
