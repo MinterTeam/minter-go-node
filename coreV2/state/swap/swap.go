@@ -2,6 +2,7 @@ package swap
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -27,6 +28,9 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	Coin0() types.CoinID
+	Coin1() types.CoinID
+
 	IsSorted() bool
 	IsOrderAlreadyUsed(id uint32) bool
 	GetOrder(id uint32) *Limit
@@ -63,6 +67,10 @@ type RSwap interface {
 	// Deprecated
 	// ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
+	GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade
+	GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade
+
+	SwapPools(context.Context) []EditableChecker
 	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
@@ -91,6 +99,65 @@ type Swap struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+
+	muLoadPools sync.Mutex
+	loadedPools bool
+}
+
+func (s *Swap) SwapPools(ctx context.Context) []EditableChecker {
+	s.loadPools()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	pools := make([]EditableChecker, 0, len(s.pairs))
+
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
+	}
+
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
+
+	return pools
+}
+
+func (s *Swap) loadPools() {
+	s.muLoadPools.Lock()
+	defer s.muLoadPools.Unlock()
+
+	if s.loadedPools {
+		return
+	}
+
+	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 10 {
+			return false
+		}
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
+		_ = s.Pair(coin0, coin1)
+
+		return false
+	})
+
+	s.loadedPools = true
 }
 
 func (s *Swap) ExpireOrders(beforeHeight uint64) {
@@ -247,7 +314,7 @@ func (s *Swap) Import(state *types.AppState) {
 			}
 
 			pair0.addOrderWithID(v0, v1, order.Owner, uint32(order.ID), order.Height)
-			s.bus.Checker().AddCoin(pair0.Coin1, v1)
+			s.bus.Checker().AddCoin(pair0.Coin1(), v1)
 		}
 	}
 	if state.NextOrderID > 1 {
@@ -311,6 +378,14 @@ func (p *Pair) CheckSwap(amount0In, amount1Out *big.Int) error {
 func (p *Pair) Exists() bool {
 	return p != nil
 }
+
+func (p *Pair) Coin0() types.CoinID {
+	return p.PairKey.Coin0
+}
+func (p *Pair) Coin1() types.CoinID {
+	return p.PairKey.Coin1
+}
+
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{
