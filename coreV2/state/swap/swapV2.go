@@ -2,6 +2,7 @@ package swap
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
@@ -49,23 +50,31 @@ func (p *PairV2) Coin1() types.CoinID {
 	return p.PairKey.Coin1
 }
 
-func (s *SwapV2) SwapPools() []EditableChecker {
+func (s *SwapV2) SwapPools(ctx context.Context) []EditableChecker {
 	s.loadPools()
 
-	var pools []EditableChecker
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
 
 	s.muPairs.RLock()
 	defer s.muPairs.RUnlock()
 
-	lenPools := len(s.pairs)
-
-	pools = make([]EditableChecker, 0, lenPools)
+	pools := make([]EditableChecker, 0, len(s.pairs))
 
 	for _, pair := range s.pairs {
 		if pair == nil {
 			continue
 		}
 		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
 	}
 
 	//sort.SliceStable(pools, func(i, j int) bool {

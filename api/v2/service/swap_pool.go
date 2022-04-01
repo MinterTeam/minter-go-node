@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
 	"github.com/MinterTeam/minter-go-node/helpers"
+	"sort"
 	"strings"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
@@ -261,7 +262,15 @@ func (s *Service) SwapPools(ctx context.Context, req *pb.SwapPoolsRequest) (*pb.
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	pools := cState.Swap().SwapPools()
+	pools := cState.Swap().SwapPools(ctx)
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	sort.SliceStable(pools, func(i, j int) bool {
+		return pools[i].GetID() < pools[j].GetID()
+	})
 
 	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 		return nil, timeoutStatus.Err()
@@ -272,16 +281,53 @@ func (s *Service) SwapPools(ctx context.Context, req *pb.SwapPoolsRequest) (*pb.
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
 			return nil, timeoutStatus.Err()
 		}
-
+		var ordersSell []*pb.SwapPoolsResponse_SwapPool_LimitOrder
+		var ordersBuy []*pb.SwapPoolsResponse_SwapPool_LimitOrder
+		if req.Orders {
+			for _, order := range pool.OrdersSell(uint32(10000)) {
+				if order == nil {
+					break
+				}
+				ordersSell = append(ordersSell, &pb.SwapPoolsResponse_SwapPool_LimitOrder{
+					Id:       uint64(order.ID()),
+					WantSell: order.WantSell.String(),
+					WantBuy:  order.WantBuy.String(),
+					Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
+					Owner:    order.Owner.String(),
+					Height:   order.Height,
+				})
+				if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+					return nil, timeoutStatus.Err()
+				}
+			}
+			for _, order := range pool.Reverse().OrdersSell(uint32(10000)) {
+				if order == nil {
+					break
+				}
+				ordersBuy = append(ordersBuy, &pb.SwapPoolsResponse_SwapPool_LimitOrder{
+					Id:       uint64(order.ID()),
+					WantSell: order.WantSell.String(),
+					WantBuy:  order.WantBuy.String(),
+					Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
+					Owner:    order.Owner.String(),
+					Height:   order.Height,
+				})
+				if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+					return nil, timeoutStatus.Err()
+				}
+			}
+		}
 		reserve0, reserve1 := pool.Reserves()
 		res.Pools = append(res.Pools, &pb.SwapPoolsResponse_SwapPool{
-			Id:        uint64(pool.GetID()),
-			Price:     pool.Reverse().PriceRat().FloatString(precision),
-			Coin0:     uint64(pool.Coin0()),
-			Coin1:     uint64(pool.Coin1()),
-			Amount0:   reserve0.String(),
-			Amount1:   reserve1.String(),
-			Liquidity: cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(pool.GetID()), 0).Volume().String(),
+			Id:         uint64(pool.GetID()),
+			Price:      pool.Reverse().PriceRat().FloatString(precision),
+			Coin0:      uint64(pool.Coin0()),
+			Coin1:      uint64(pool.Coin1()),
+			Amount0:    reserve0.String(),
+			Amount1:    reserve1.String(),
+			Liquidity:  cState.Coins().GetCoinBySymbol(transaction.LiquidityCoinSymbol(pool.GetID()), 0).Volume().String(),
+			OrdersSell: ordersSell,
+			OrdersBuy:  ordersBuy,
 		})
 	}
 
@@ -304,7 +350,7 @@ func (s *Service) BestTrade(ctx context.Context, req *pb.BestTradeRequest) (*pb.
 	}
 
 	depth := req.MaxDepth
-	if depth == 0 {
+	if depth == 0 || depth > 4 {
 		depth = 4
 	}
 
