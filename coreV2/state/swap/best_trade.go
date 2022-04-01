@@ -6,7 +6,7 @@ import (
 	"math/big"
 )
 
-func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade {
+func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade {
 	trade := GetBestTradeExactOut(ctx,
 		s.SwapPools(ctx),
 		types.CoinID(inId),
@@ -16,12 +16,12 @@ func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, out
 
 	return trade
 }
-func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops uint64) *Trade {
+func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade {
 	trade := GetBestTradeExactOut(ctx, s.SwapPools(ctx), types.CoinID(inId), NewTokenAmount(types.CoinID(outId), outAmount), maxHops)
 
 	return trade
 }
-func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade {
+func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade {
 	trades := GetBestTradeExactIn(ctx,
 		s.SwapPools(ctx),
 		types.CoinID(outId),
@@ -31,7 +31,7 @@ func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAm
 
 	return trades
 }
-func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops uint64) *Trade {
+func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade {
 
 	trades := GetBestTradeExactIn(ctx, s.SwapPools(ctx), types.CoinID(outId), NewTokenAmount(types.CoinID(inId), inAmount), maxHops)
 
