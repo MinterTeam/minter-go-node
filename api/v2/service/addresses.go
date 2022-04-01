@@ -141,6 +141,7 @@ func (s *Service) Addresses(ctx context.Context, req *pb.AddressesRequest) (*pb.
 		res.BipValue = coinsBipValue.String()
 		res.TransactionCount = cState.Accounts().GetNonce(address)
 		res.Multisig = s.getMultisig(cState.Accounts().GetAccount(address))
+		res.LockedStakeUntilBlock = cState.Accounts().GetLockStakeUntilBlock(address)
 		response.Addresses[addr] = &res
 	}
 
