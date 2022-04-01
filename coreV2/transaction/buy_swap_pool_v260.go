@@ -277,11 +277,10 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 		calculatedAmountToSell, ordrs := rSwap.CalculateSellForBuyWithOrders(valueOut)
 		if calculatedAmountToSell == nil {
 			reserve0, reserve1 := rSwap.Reserves()
-			symbolIn := coinIn.GetFullSymbol()
 			symbolOut := coinOut.GetFullSymbol()
 			return &Response{
 				Code: code.InsufficientLiquidity,
-				Log:  fmt.Sprintf("You wanted to buy %s %s, but swap pool has reserve %s %s", valueOut, symbolOut, reserve0.String(), symbolIn),
+				Log:  fmt.Sprintf("You wanted to buy %s %s, but swap pool has reserve %s %s", valueOut, symbolOut, reserve1.String(), symbolOut),
 				Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
 			}, nil, orders
 		}
@@ -327,20 +326,18 @@ func CheckSwap(rSwap swap.EditableChecker, coinIn CalculateCoin, coinOut Calcula
 		orders = ordrs
 	}
 
-	_, commission1orders, _, amount1, _ := swap.CalcDiffPool(valueIn, valueOut, orders)
-
-	_, reserve1 := rSwap.Reserves()
-
-	if reserve1.Cmp(big.NewInt(0).Sub(amount1, commission1orders)) != 1 {
-		reserve0, reserve1 := rSwap.Reserves()
-		symbolIn := coinIn.GetFullSymbol()
-		symbolOut := coinOut.GetFullSymbol()
-		r := &Response{
-			Code: code.InsufficientLiquidity,
-			Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but the pool reserves are %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
-			Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
-		}
-		return r, nil, orders
-	}
+	//_, commission1orders, _, amount1, _ := swap.CalcDiffPool(valueIn, valueOut, orders)
+	//_, reserve1 := rSwap.Reserves()
+	//if reserve1.Cmp(big.NewInt(0).Sub(amount1, commission1orders)) != 1 {
+	//	reserve0, reserve1 := rSwap.Reserves()
+	//	symbolIn := coinIn.GetFullSymbol()
+	//	symbolOut := coinOut.GetFullSymbol()
+	//	r := &Response{
+	//		Code: code.InsufficientLiquidity,
+	//		Log:  fmt.Sprintf("You wanted to exchange %s %s for %s %s, but the pool reserves are %s %s and %s %s", valueIn, symbolIn, valueOut, symbolOut, reserve0.String(), symbolIn, reserve1.String(), symbolOut),
+	//		Info: EncodeError(code.NewInsufficientLiquidity(coinIn.ID().String(), valueIn.String(), coinOut.ID().String(), valueOut.String(), reserve0.String(), reserve1.String())),
+	//	}
+	//	return r, nil, orders
+	//}
 	return nil, res, orders
 }

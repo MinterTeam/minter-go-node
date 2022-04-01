@@ -2,6 +2,7 @@ package swap
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/events"
@@ -37,6 +38,72 @@ type SwapV2 struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+
+	muLoadPools sync.Mutex
+	loadedPools bool
+}
+
+func (p *PairV2) Coin0() types.CoinID {
+	return p.PairKey.Coin0
+}
+func (p *PairV2) Coin1() types.CoinID {
+	return p.PairKey.Coin1
+}
+
+func (s *SwapV2) SwapPools(ctx context.Context) []EditableChecker {
+	s.loadPools()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	pools := make([]EditableChecker, 0, len(s.pairs))
+
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
+	}
+
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
+
+	return pools
+}
+
+func (s *SwapV2) loadPools() {
+	s.muLoadPools.Lock()
+	defer s.muLoadPools.Unlock()
+
+	if s.loadedPools {
+		return
+	}
+
+	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 10 {
+			return false
+		}
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
+		_ = s.Pair(coin0, coin1)
+
+		return false
+	})
+
+	s.loadedPools = true
 }
 
 func (s *SwapV2) ExpireOrders(beforeHeight uint64) {
@@ -193,7 +260,7 @@ func (s *SwapV2) Import(state *types.AppState) {
 			}
 
 			pair0.addOrderWithID(v0, v1, order.Owner, uint32(order.ID), order.Height)
-			s.bus.Checker().AddCoin(pair0.Coin1, v1)
+			s.bus.Checker().AddCoin(pair0.Coin1(), v1)
 		}
 	}
 	if state.NextOrderID > 1 {
