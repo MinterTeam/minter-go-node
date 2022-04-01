@@ -86,11 +86,11 @@ func tradeComparator(tradeA, tradeB *Trade) bool {
 
 	return true
 }
-func GetBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn TokenAmount, maxHops uint64) *Trade {
+func GetBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn TokenAmount, maxHops int32) *Trade {
 	return getBestTradeExactIn(ctx, pairs, currencyOut, currencyAmountIn, maxHops, nil, currencyAmountIn, nil)
 }
 
-func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn TokenAmount, maxHops uint64, currentPairs []EditableChecker, originalAmountIn TokenAmount, bestTrade *Trade) *Trade {
+func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountIn TokenAmount, bestTrade *Trade) *Trade {
 	if maxHops <= 0 {
 		return bestTrade
 	}
@@ -147,11 +147,11 @@ func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyO
 	return bestTrade
 }
 
-func GetBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, amountOut TokenAmount, maxHops uint64) *Trade {
+func GetBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, amountOut TokenAmount, maxHops int32) *Trade {
 	return getBestTradeExactOut(ctx, pairs, currencyIn, amountOut, maxHops, nil, amountOut, nil)
 }
 
-func getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, currencyAmountOut TokenAmount, maxHops uint64, currentPairs []EditableChecker, originalAmountOut TokenAmount, bestTrade *Trade) *Trade {
+func getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, currencyAmountOut TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountOut TokenAmount, bestTrade *Trade) *Trade {
 	if maxHops <= 0 {
 		return bestTrade
 	}
