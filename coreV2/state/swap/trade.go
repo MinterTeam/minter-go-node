@@ -19,6 +19,7 @@ func NewTrade(route Route, amount *TokenAmount, tradeType TradeType) *Trade {
 	if tradeType == TradeTypeExactInput {
 		for i := 0; i < len(route.Path)-1; i++ {
 			pair := route.Pairs[i]
+
 			if pair.Coin1() == outputAmount.Token {
 				pair = pair.Reverse()
 			}
@@ -26,6 +27,7 @@ func NewTrade(route Route, amount *TokenAmount, tradeType TradeType) *Trade {
 			if tokenAmount == nil {
 				return nil
 			}
+
 
 			outputAmount = &TokenAmount{Token: pair.Coin1(), Amount: tokenAmount}
 		}
@@ -39,7 +41,6 @@ func NewTrade(route Route, amount *TokenAmount, tradeType TradeType) *Trade {
 			if tokenAmount == nil {
 				return nil
 			}
-
 			inputAmount = &TokenAmount{Token: pair.Coin0(), Amount: tokenAmount}
 		}
 	}

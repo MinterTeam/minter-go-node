@@ -46,7 +46,7 @@ type SwapV2 struct {
 
 	muLoadPools sync.Mutex
 	loadedPools bool
-
+  
 	trader trader
 }
 
