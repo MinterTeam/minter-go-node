@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.17
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.6.1-0.20220401105353-8d602a4b5c0d
+	github.com/MinterTeam/node-grpc-gateway v1.6.1-0.20220401124240-cbfc596e2f9f
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/cosmos/cosmos-sdk v0.44.5
@@ -18,12 +18,12 @@ require (
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
-	github.com/spf13/cobra v1.3.0
+	github.com/spf13/cobra v1.4.0
 	github.com/spf13/viper v1.10.1
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/tendermint/go-amino v0.16.0
-	github.com/tendermint/tendermint v0.34.16
+	github.com/tendermint/tendermint v0.34.17
 	github.com/tendermint/tm-db v0.6.6
 	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802
 	github.com/urfave/cli/v2 v2.0.0
@@ -33,6 +33,8 @@ require (
 	google.golang.org/grpc v1.45.0
 	google.golang.org/protobuf v1.27.1
 )
+
+replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.17
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
 
@@ -103,5 +105,3 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
-
-replace github.com/tendermint/tendermint => github.com/MinterTeam/tendermint v0.34.16
