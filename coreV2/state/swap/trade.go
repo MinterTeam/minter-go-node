@@ -16,40 +16,38 @@ const (
 type Trade struct {
 	Route        Route
 	TradeType    TradeType
-	InputAmount  TokenAmount
-	OutputAmount TokenAmount
+	InputAmount  *TokenAmount
+	OutputAmount *TokenAmount
 }
 
-func NewTrade(route Route, amount TokenAmount, tradeType TradeType) *Trade {
+func NewTrade(route Route, amount *TokenAmount, tradeType TradeType) *Trade {
 	inputAmount, outputAmount := amount, amount
 	if tradeType == TradeTypeExactInput {
 		for i := 0; i < len(route.Path)-1; i++ {
 			pair := route.Pairs[i]
-			if pair.Coin1() == amount.Token {
+			if pair.Coin1() == outputAmount.Token {
 				pair = pair.Reverse()
 			}
-			tokenAmount, _ := pair.CalculateBuyForSellWithOrders(amount.Amount)
+			tokenAmount, _ := pair.CalculateBuyForSellWithOrders(outputAmount.Amount)
 			if tokenAmount == nil {
 				return nil
 			}
 
-			amount = TokenAmount{Token: pair.Coin1(), Amount: tokenAmount}
+			outputAmount = &TokenAmount{Token: pair.Coin1(), Amount: tokenAmount}
 		}
-		outputAmount = amount
 	} else {
 		for i := len(route.Path) - 1; i > 0; i-- {
 			pair := route.Pairs[i-1]
-			if pair.Coin0() == amount.Token {
+			if pair.Coin0() == inputAmount.Token {
 				pair = pair.Reverse()
 			}
-			tokenAmount, _ := pair.CalculateSellForBuyWithOrders(amount.Amount)
+			tokenAmount, _ := pair.CalculateSellForBuyWithOrders(inputAmount.Amount)
 			if tokenAmount == nil {
 				return nil
 			}
 
-			amount = TokenAmount{Token: pair.Coin0(), Amount: tokenAmount}
+			inputAmount = &TokenAmount{Token: pair.Coin0(), Amount: tokenAmount}
 		}
-		inputAmount = amount
 	}
 
 	if inputAmount.Amount.Sign() < 1 || outputAmount.Amount.Sign() < 1 {
@@ -87,11 +85,11 @@ func tradeComparator(tradeA, tradeB *Trade) bool {
 
 	return true
 }
-func GetBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn TokenAmount, maxHops int32) *Trade {
+func GetBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn *TokenAmount, maxHops int32) *Trade {
 	return getBestTradeExactIn(ctx, pairs, currencyOut, currencyAmountIn, maxHops, nil, currencyAmountIn, nil, make(map[types.CoinID]*big.Int, 2000))
 }
 
-func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountIn TokenAmount, bestTrade *Trade, checks map[types.CoinID]*big.Int) *Trade {
+func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn *TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountIn *TokenAmount, bestTrade *Trade, checks map[types.CoinID]*big.Int) *Trade {
 	if maxHops <= 0 {
 		return bestTrade
 	}
@@ -150,18 +148,18 @@ func getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyO
 
 			newCurrentPairs := append(currentPairs, pair)
 
-			bestTrade = getBestTradeExactIn(ctx, pairsExcludingThisPair, currencyOut, TokenAmount{Amount: amountOut, Token: pair.Coin1()}, maxHops-1, newCurrentPairs, originalAmountIn, bestTrade, checks)
+			bestTrade = getBestTradeExactIn(ctx, pairsExcludingThisPair, currencyOut, NewTokenAmount(pair.Coin1(), amountOut), maxHops-1, newCurrentPairs, originalAmountIn, bestTrade, checks)
 		}
 	}
 
 	return bestTrade
 }
 
-func GetBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, amountOut TokenAmount, maxHops int32) *Trade {
+func GetBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, amountOut *TokenAmount, maxHops int32) *Trade {
 	return getBestTradeExactOut(ctx, pairs, currencyIn, amountOut, maxHops, nil, amountOut, nil, make(map[types.CoinID]*big.Int, 2000))
 }
 
-func getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, currencyAmountOut TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountOut TokenAmount, bestTrade *Trade, checks map[types.CoinID]*big.Int) *Trade {
+func getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, currencyAmountOut *TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountOut *TokenAmount, bestTrade *Trade, checks map[types.CoinID]*big.Int) *Trade {
 	if maxHops <= 0 {
 		return bestTrade
 	}
@@ -219,7 +217,7 @@ func getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currency
 
 			newCurrentPairs := append([]EditableChecker{pair}, currentPairs...)
 
-			bestTrade = getBestTradeExactOut(ctx, pairsExcludingThisPair, currencyIn, TokenAmount{Amount: amountIn, Token: pair.Coin0()}, maxHops-1, newCurrentPairs, originalAmountOut, bestTrade, checks)
+			bestTrade = getBestTradeExactOut(ctx, pairsExcludingThisPair, currencyIn, NewTokenAmount(pair.Coin0(), amountIn), maxHops-1, newCurrentPairs, originalAmountOut, bestTrade, checks)
 		}
 	}
 

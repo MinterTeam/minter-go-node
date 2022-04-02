@@ -10,16 +10,8 @@ type TokenAmount struct {
 	Amount *big.Int
 }
 
-type Token struct {
-	CoinID uint64
-}
-
-func NewToken(coinID uint64) Token {
-	return Token{CoinID: coinID}
-}
-
-func NewTokenAmount(token types.CoinID, amount *big.Int) TokenAmount {
-	return TokenAmount{Token: token, Amount: amount}
+func NewTokenAmount(token types.CoinID, amount *big.Int) *TokenAmount {
+	return &TokenAmount{Token: token, Amount: amount}
 }
 
 func (ta TokenAmount) GetAmount() *big.Int {
