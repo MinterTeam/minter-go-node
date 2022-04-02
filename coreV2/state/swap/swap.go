@@ -102,6 +102,25 @@ type Swap struct {
 
 	muLoadPools sync.Mutex
 	loadedPools bool
+
+	trader trader
+}
+
+func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade {
+	return s.trader.GetBestTradeExactIn(ctx,
+		s.SwapPools(ctx),
+		types.CoinID(outId),
+		NewTokenAmount(types.CoinID(inId), inAmount),
+		maxHops,
+	)
+}
+func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade {
+	return s.trader.GetBestTradeExactOut(ctx,
+		s.SwapPools(ctx),
+		types.CoinID(inId),
+		NewTokenAmount(types.CoinID(outId), outAmount),
+		maxHops,
+	)
 }
 
 func (s *Swap) SwapPools(ctx context.Context) []EditableChecker {
@@ -233,7 +252,7 @@ func (s *Swap) getOrderedDirtyOrderPairs() []PairKey {
 func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 	immutableTree := atomic.Value{}
 	immutableTree.Store(db)
-	return &Swap{pairs: map[PairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[PairKey]struct{}{}, dirtiesOrders: map[PairKey]struct{}{}}
+	return &Swap{trader: &traderV2{}, pairs: map[PairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[PairKey]struct{}{}, dirtiesOrders: map[PairKey]struct{}{}}
 }
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
