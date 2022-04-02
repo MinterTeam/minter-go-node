@@ -57,6 +57,9 @@ func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, o
 	return s.trader.GetBestTradeExactOut(ctx, s.SwapPools(ctx), types.CoinID(inId), NewTokenAmount(types.CoinID(outId), outAmount), maxHops)
 }
 
+func (p *PairV2) GetPairKey() PairKey {
+	return p.PairKey
+}
 func (p *PairV2) Coin0() types.CoinID {
 	return p.PairKey.Coin0
 }

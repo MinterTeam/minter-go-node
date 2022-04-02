@@ -30,6 +30,7 @@ const commission = 2
 type EditableChecker interface {
 	Coin0() types.CoinID
 	Coin1() types.CoinID
+	GetPairKey() PairKey
 
 	IsSorted() bool
 	IsOrderAlreadyUsed(id uint32) bool
@@ -398,6 +399,9 @@ func (p *Pair) Exists() bool {
 	return p != nil
 }
 
+func (p *Pair) GetPairKey() PairKey {
+	return p.PairKey
+}
 func (p *Pair) Coin0() types.CoinID {
 	return p.PairKey.Coin0
 }

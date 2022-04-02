@@ -3,17 +3,16 @@ package swap
 import (
 	"context"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"math/big"
 )
 
 type traderV2 struct {
 }
 
 func (t *traderV2) GetBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn *TokenAmount, maxHops int32) *Trade {
-	return t.getBestTradeExactIn(ctx, pairs, currencyOut, currencyAmountIn, maxHops, nil, currencyAmountIn, nil, make(map[types.CoinID]*big.Int, 2000))
+	return t.getBestTradeExactIn(ctx, pairs, currencyOut, currencyAmountIn, maxHops, nil, currencyAmountIn, nil)
 }
 
-func (t *traderV2) getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn *TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountIn *TokenAmount, bestTrade *Trade, checks map[types.CoinID]*big.Int) *Trade {
+func (t *traderV2) getBestTradeExactIn(ctx context.Context, pairs []EditableChecker, currencyOut types.CoinID, currencyAmountIn *TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountIn *TokenAmount, bestTrade *Trade) *Trade {
 	if maxHops <= 0 {
 		return bestTrade
 	}
@@ -31,7 +30,9 @@ func (t *traderV2) getBestTradeExactIn(ctx context.Context, pairs []EditableChec
 		if pair.Coin0() != tokenAmountIn.Token && pair.Coin1() != tokenAmountIn.Token {
 			continue
 		}
-
+		if maxHops == 1 && pair.Coin0() != tokenOut && pair.Coin1() != tokenOut {
+			continue
+		}
 		if tokenAmountIn.Token == pair.Coin1() {
 			pair = pair.Reverse()
 		}
@@ -51,28 +52,14 @@ func (t *traderV2) getBestTradeExactIn(ctx context.Context, pairs []EditableChec
 				continue
 			}
 
-			if maxPrevToken, ok := checks[pair.Coin0()]; !ok || (ok && maxPrevToken.Cmp(tokenAmountIn.Amount) == -1) { // todo: || maxHops
-				checks[pair.Coin0()] = tokenAmountIn.Amount
-			}
-
 			if bestTrade == nil || tradeComparator(bestTrade, trade) {
 				bestTrade = trade
 			}
 		} else if maxHops > 1 && len(pairs) > 1 { // otherwise, consider all the other paths that lead from this token as long as we have not exceeded maxHops
-
-			if maxPrevToken, ok := checks[pair.Coin0()]; ok && maxPrevToken.Cmp(tokenAmountIn.Amount) == 1 { // todo: || maxHops
-				continue
-			}
-
-			//pairsExcludingThisPair := append(pairs[:i:i], pairs[i+1:]...)
-			temp := make([]EditableChecker, len(pairs))
-			copy(temp, pairs)
-			temp[i] = temp[len(temp)-1]
-			pairsExcludingThisPair := temp[:len(temp)-1]
-
+			otherPair := append(pairs[:i:i], pairs[i+1:]...)
 			newCurrentPairs := append(currentPairs, pair)
 
-			bestTrade = t.getBestTradeExactIn(ctx, pairsExcludingThisPair, currencyOut, NewTokenAmount(pair.Coin1(), amountOut), maxHops-1, newCurrentPairs, originalAmountIn, bestTrade, checks)
+			bestTrade = t.getBestTradeExactIn(ctx, otherPair, currencyOut, NewTokenAmount(pair.Coin1(), amountOut), maxHops-1, newCurrentPairs, originalAmountIn, bestTrade)
 		}
 	}
 
@@ -80,10 +67,10 @@ func (t *traderV2) getBestTradeExactIn(ctx context.Context, pairs []EditableChec
 }
 
 func (t *traderV2) GetBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, amountOut *TokenAmount, maxHops int32) *Trade {
-	return t.getBestTradeExactOut(ctx, pairs, currencyIn, amountOut, maxHops, nil, amountOut, nil, make(map[types.CoinID]*big.Int, 2000))
+	return t.getBestTradeExactOut(ctx, pairs, currencyIn, amountOut, maxHops, nil, amountOut, nil)
 }
 
-func (t *traderV2) getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, currencyAmountOut *TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountOut *TokenAmount, bestTrade *Trade, checks map[types.CoinID]*big.Int) *Trade {
+func (t *traderV2) getBestTradeExactOut(ctx context.Context, pairs []EditableChecker, currencyIn types.CoinID, currencyAmountOut *TokenAmount, maxHops int32, currentPairs []EditableChecker, originalAmountOut *TokenAmount, bestTrade *Trade) *Trade {
 	if maxHops <= 0 {
 		return bestTrade
 	}
@@ -99,6 +86,10 @@ func (t *traderV2) getBestTradeExactOut(ctx context.Context, pairs []EditableChe
 		}
 
 		if pair.Coin0() != tokenAmountOut.Token && pair.Coin1() != tokenAmountOut.Token {
+			continue
+		}
+
+		if maxHops == 1 && pair.Coin0() != tokenIn && pair.Coin1() != tokenIn {
 			continue
 		}
 
@@ -121,27 +112,14 @@ func (t *traderV2) getBestTradeExactOut(ctx context.Context, pairs []EditableChe
 				continue
 			}
 
-			if maxPrevToken, ok := checks[pair.Coin0()]; !ok || (ok && maxPrevToken.Cmp(amountIn) == 1) { // todo: || maxHops
-				checks[pair.Coin1()] = amountIn
-			}
-
 			if bestTrade == nil || tradeComparator(bestTrade, trade) {
 				bestTrade = trade
 			}
 		} else if maxHops > 1 && len(pairs) > 1 { // otherwise, consider all the other paths that lead from this token as long as we have not exceeded maxHops
-			if maxPrevToken, ok := checks[pair.Coin0()]; ok && maxPrevToken.Cmp(amountIn) == -1 { // todo: || maxHops
-				continue
-			}
-
-			//pairsExcludingThisPair := append(pairs[:i:i], pairs[i+1:]...)
-			temp := make([]EditableChecker, len(pairs))
-			copy(temp, pairs)
-			temp[i] = temp[len(temp)-1]
-			pairsExcludingThisPair := temp[:len(temp)-1]
-
+			otherPair := append(pairs[:i:i], pairs[i+1:]...)
 			newCurrentPairs := append([]EditableChecker{pair}, currentPairs...)
 
-			bestTrade = t.getBestTradeExactOut(ctx, pairsExcludingThisPair, currencyIn, NewTokenAmount(pair.Coin0(), amountIn), maxHops-1, newCurrentPairs, originalAmountOut, bestTrade, checks)
+			bestTrade = t.getBestTradeExactOut(ctx, otherPair, currencyIn, NewTokenAmount(pair.Coin0(), amountIn), maxHops-1, newCurrentPairs, originalAmountOut, bestTrade)
 		}
 	}
 
