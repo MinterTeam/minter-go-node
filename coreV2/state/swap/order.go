@@ -1550,6 +1550,15 @@ func (p *Pair) orderSellLoadToIndex(index int) *Limit {
 		// если есть грязные.
 		if p.hasUnsortedSellOrders() || p.hasDeletedSellOrders() {
 			// пересортируем, что бы лист почистился и пересортировался
+
+			needLoadMore := len(p.deletedSellOrderIDs().list) - len(orders)
+			if lastI := len(orders) - 1; lastI >= 0 && orders[lastI] != 0 {
+				fromOrder = p.order(orders[lastI])
+				needLoadMore++
+			}
+			if needLoadMore >= 0 {
+				orders = append(orders, p.loadSellOrders(p, fromOrder, needLoadMore)...)
+			}
 			orders, _ = p.updateDirtyOrders(orders, true)
 			lastI := len(orders) - 1
 			// если загружены не все
