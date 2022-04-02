@@ -25,7 +25,7 @@ require (
 	github.com/tendermint/go-amino v0.16.0
 	github.com/tendermint/tendermint v0.34.17
 	github.com/tendermint/tm-db v0.6.6
-	github.com/tmc/grpc-websocket-proxy v0.0.0-20201229170055-e5319fda7802
+	github.com/tmc/grpc-websocket-proxy v0.0.0-20220101234140-673ab2c3ae75
 	github.com/urfave/cli/v2 v2.0.0
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
