@@ -81,8 +81,8 @@ func BenchmarkSwap_GetBestTrade(b *testing.B) {
 	checker.NewChecker(newBus)
 	swap := NewV2(newBus, immutableTree.GetLastImmutable())
 
-	for i := types.CoinID(0); i < 15; i++ {
-		for j := i + 1; j < 50; j++ {
+	for i := types.CoinID(0); i < 20; i++ {
+		for j := i + 1; j < 30; j++ {
 			swap.PairCreate(i, j, big.NewInt(rand.Int63n(math.MaxInt64-1)+1), big.NewInt(rand.Int63n(math.MaxInt64-1)+1))
 		}
 	}
