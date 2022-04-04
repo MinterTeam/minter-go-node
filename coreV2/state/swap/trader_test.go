@@ -18,7 +18,7 @@ func TestSwap_GetBestTrade(t *testing.T) {
 	newBus := bus.NewBus()
 	checker.NewChecker(newBus)
 
-	for i := int64(0); i < 10; i++ {
+	for i := int64(0); i < 5; i++ {
 		t.Run(fmt.Sprintf("%d", i), func(t *testing.T) {
 			rand0 := rand.New(rand.NewSource(i))
 			memDB := db.NewMemDB()
@@ -27,7 +27,7 @@ func TestSwap_GetBestTrade(t *testing.T) {
 				t.Fatal(err)
 			}
 			swap := NewV2(newBus, immutableTree.GetLastImmutable())
-			for i := types.CoinID(0); i < 10; i++ {
+			for i := types.CoinID(0); i < 20; i++ {
 				for j := i + 1; j < 50; j++ {
 					swap.PairCreate(i, j, big.NewInt(rand0.Int63n(math.MaxInt64-1)+1), big.NewInt(rand0.Int63n(math.MaxInt64-1)+1))
 				}
@@ -46,13 +46,13 @@ func TestSwap_GetBestTrade(t *testing.T) {
 			swap.SwapPools(context.Background())
 
 			swap.trader = &traderV1{}
-			tradeOut := swap.GetBestTradeExactIn(context.Background(), 0, 1, big.NewInt(1e18), 4)
+			tradeOut := swap.GetBestTradeExactIn(context.Background(), 0, 1, big.NewInt(9e18), 4)
 			tradeIn := swap.GetBestTradeExactOut(context.Background(), 1, 0, tradeOut.OutputAmount.Amount, 4)
 
 			swap.trader = &traderV2{}
 			t.Run("GetBestTradeExactInV2", func(t *testing.T) {
-				for i := 0; i < 3; i++ {
-					trade := swap.GetBestTradeExactIn(context.Background(), 0, 1, big.NewInt(1e18), 4)
+				for i := 0; i < 5; i++ {
+					trade := swap.GetBestTradeExactIn(context.Background(), 0, 1, tradeOut.InputAmount.Amount, 4)
 					if trade.OutputAmount.Amount.Cmp(tradeOut.OutputAmount.Amount) == -1 {
 						t.Error(trade.Route.Path, tradeOut.Route.Path)
 						t.Fatal(trade.OutputAmount.Amount, tradeOut.OutputAmount.Amount)
