@@ -29,7 +29,7 @@ func TestSwap_GetBestTrade(t *testing.T) {
 			swap := NewV2(newBus, immutableTree.GetLastImmutable())
 			for i := types.CoinID(0); i < 20; i++ {
 				for j := i + 1; j < 50; j++ {
-					swap.PairCreate(i, j, big.NewInt(rand0.Int63n(math.MaxInt64-1)+1), big.NewInt(rand0.Int63n(math.MaxInt64-1)+1))
+					swap.PairCreate(i, j, big.NewInt(rand0.Int63n(math.MaxInt64-1000)+1000), big.NewInt(rand0.Int63n(math.MaxInt64-1000)+1000))
 				}
 			}
 
@@ -61,7 +61,7 @@ func TestSwap_GetBestTrade(t *testing.T) {
 
 			})
 			t.Run("GetBestTradeExactOutV2", func(t *testing.T) {
-				for i := 0; i < 3; i++ {
+				for i := 0; i < 10; i++ {
 					trade := swap.GetBestTradeExactOut(context.Background(), 1, 0, tradeIn.OutputAmount.Amount, 4)
 					if trade.InputAmount.Amount.Cmp(tradeIn.InputAmount.Amount) == 1 {
 						t.Error(trade.Route.Path, tradeIn.Route.Path)
