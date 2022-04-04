@@ -103,27 +103,67 @@ type Swap struct {
 
 	muLoadPools sync.Mutex
 	loadedPools bool
-  
+
 	trader trader
 }
 
 func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade {
+	pairs := s.swapPools(ctx)
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
 	return s.trader.GetBestTradeExactIn(ctx,
-		s.SwapPools(ctx),
+		pairs,
 		types.CoinID(outId),
 		NewTokenAmount(types.CoinID(inId), inAmount),
 		maxHops,
 	)
 }
 func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade {
+	pairs := s.swapPools(ctx)
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
 	return s.trader.GetBestTradeExactOut(ctx,
-		s.SwapPools(ctx),
+		pairs,
 		types.CoinID(inId),
 		NewTokenAmount(types.CoinID(outId), outAmount),
 		maxHops,
 	)
 }
 
+func (s *Swap) swapPools(ctx context.Context) []EditableChecker {
+	s.loadPools()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	pools := make([]EditableChecker, 0, len(s.pairs))
+
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
+	}
+
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
+
+	return pools
+}
 func (s *Swap) SwapPools(ctx context.Context) []EditableChecker {
 	s.loadPools()
 

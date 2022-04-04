@@ -46,15 +46,25 @@ type SwapV2 struct {
 
 	muLoadPools sync.Mutex
 	loadedPools bool
-  
+
 	trader trader
 }
 
 func (s *SwapV2) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade {
-	return s.trader.GetBestTradeExactIn(ctx, s.SwapPools(ctx), types.CoinID(outId), NewTokenAmount(types.CoinID(inId), inAmount), maxHops)
+	pairs := s.swapPools(ctx)
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	return s.trader.GetBestTradeExactIn(ctx, pairs, types.CoinID(outId), NewTokenAmount(types.CoinID(inId), inAmount), maxHops)
 }
 func (s *SwapV2) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade {
-	return s.trader.GetBestTradeExactOut(ctx, s.SwapPools(ctx), types.CoinID(inId), NewTokenAmount(types.CoinID(outId), outAmount), maxHops)
+	pairs := s.swapPools(ctx)
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	return s.trader.GetBestTradeExactOut(ctx, pairs, types.CoinID(inId), NewTokenAmount(types.CoinID(outId), outAmount), maxHops)
 }
 
 func (p *PairV2) GetPairKey() PairKey {
@@ -67,6 +77,36 @@ func (p *PairV2) Coin1() types.CoinID {
 	return p.PairKey.Coin1
 }
 
+func (s *SwapV2) swapPools(ctx context.Context) []EditableChecker {
+	s.loadPools()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	pools := make([]EditableChecker, 0, len(s.pairs))
+
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
+	}
+
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
+
+	return pools
+}
 func (s *SwapV2) SwapPools(ctx context.Context) []EditableChecker {
 	s.loadPools()
 
