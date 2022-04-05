@@ -372,11 +372,23 @@ func TestReward_Update_Down(t *testing.T) {
 	SendEndBlock(app, 13)                                   // send EndBlock
 	SendCommit(app)
 	SendBeginBlock(app, 14, time.Unix(1646308803, 0).UTC()) // send BeginBlock
-	SendEndBlock(app, 14)                                   // send EndBlock
-	SendCommit(app)                                         // send Commit
+	{
+		//tx := CreateTx(app, address, transaction.TypeSend, transaction.SendData{}, types.USDTID)
+		//response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+		//if response.Code != code.OK {
+		//	t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+		//}
+	}
+	SendEndBlock(app, 14) // send EndBlock
+	SendCommit(app)       // send Commit
 
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	t.Log(app.GetEventsDB().LoadEvents(13)[0])
+
 	t.Log(app.GetEventsDB().LoadEvents(14)[0])
+	t.Log(app.GetEventsDB().LoadEvents(14)[1])
+	t.Log(app.GetEventsDB().LoadEvents(14)[2])
+	t.Log(app.GetEventsDB().LoadEvents(14)[3])
+	//t.Log(app.GetEventsDB().LoadEvents(14)[4])
 	t.Log(app.CurrentState().App().Reward())
 }
 
@@ -527,6 +539,13 @@ func TestReward_Update_Up(t *testing.T) {
 
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.GetEventsDB().LoadEvents(14)[0])
+	t.Log(app.GetEventsDB().LoadEvents(14)[1])
+	t.Log(app.GetEventsDB().LoadEvents(14)[2])
+	t.Log(app.GetEventsDB().LoadEvents(14)[3])
+	t.Log(app.GetEventsDB().LoadEvents(14)[4])
+	t.Log(app.GetEventsDB().LoadEvents(14)[5])
+	t.Log(app.GetEventsDB().LoadEvents(14)[6])
+	t.Log(app.GetEventsDB().LoadEvents(14)[7])
 
 	{
 		SendBeginBlock(app, 14) // send BeginBlock

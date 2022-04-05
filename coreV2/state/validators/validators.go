@@ -385,128 +385,129 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 	calcReward, safeReward := v.bus.App().Reward()
 	for _, validator := range vals {
-		if validator.GetAccumReward().Sign() == 1 {
-			candidate := v.bus.Candidates().GetCandidate(validator.PubKey)
+		candidate := v.bus.Candidates().GetCandidate(validator.PubKey)
 
-			totalReward := big.NewInt(0).Set(validator.GetAccumReward())
-			remainder := big.NewInt(0).Set(validator.GetAccumReward())
+		totalReward := big.NewInt(0).Set(validator.GetAccumReward())
+		remainder := big.NewInt(0).Set(validator.GetAccumReward())
 
-			// pay commission to DAO
-			DAOReward := big.NewInt(0).Set(totalReward)
-			DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
-			DAOReward.Div(DAOReward, big.NewInt(100))
+		// pay commission to DAO
+		DAOReward := big.NewInt(0).Set(totalReward)
+		DAOReward.Mul(DAOReward, big.NewInt(int64(dao.Commission)))
+		DAOReward.Div(DAOReward, big.NewInt(100))
 
-			candidate.AddUpdate(types.GetBaseCoinID(), DAOReward, DAOReward, dao.Address)
-			v.bus.Checker().AddCoin(types.GetBaseCoinID(), DAOReward)
+		candidate.AddUpdate(types.GetBaseCoinID(), DAOReward, DAOReward, dao.Address)
+		v.bus.Checker().AddCoin(types.GetBaseCoinID(), DAOReward)
 
-			remainder.Sub(remainder, DAOReward)
-			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
-				Role:            eventsdb.RoleDAO.String(),
-				Address:         dao.Address,
-				Amount:          DAOReward.String(),
-				ValidatorPubKey: validator.PubKey,
-				ForCoin:         0,
-			})
+		remainder.Sub(remainder, DAOReward)
+		v.bus.Events().AddEvent(&eventsdb.RewardEvent{
+			Role:            eventsdb.RoleDAO.String(),
+			Address:         dao.Address,
+			Amount:          DAOReward.String(),
+			ValidatorPubKey: validator.PubKey,
+			ForCoin:         0,
+		})
 
-			// pay commission to Developers
-			DevelopersReward := big.NewInt(0).Set(totalReward)
-			DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
-			DevelopersReward.Div(DevelopersReward, big.NewInt(100))
+		// pay commission to Developers
+		DevelopersReward := big.NewInt(0).Set(totalReward)
+		DevelopersReward.Mul(DevelopersReward, big.NewInt(int64(developers.Commission)))
+		DevelopersReward.Div(DevelopersReward, big.NewInt(100))
 
-			candidate.AddUpdate(types.GetBaseCoinID(), DevelopersReward, DevelopersReward, developers.Address)
-			v.bus.Checker().AddCoin(types.GetBaseCoinID(), DevelopersReward)
+		candidate.AddUpdate(types.GetBaseCoinID(), DevelopersReward, DevelopersReward, developers.Address)
+		v.bus.Checker().AddCoin(types.GetBaseCoinID(), DevelopersReward)
 
-			remainder.Sub(remainder, DevelopersReward)
-			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
-				Role:            eventsdb.RoleDevelopers.String(),
-				Address:         developers.Address,
-				Amount:          DevelopersReward.String(),
-				ValidatorPubKey: validator.PubKey,
-				ForCoin:         0,
-			})
+		remainder.Sub(remainder, DevelopersReward)
+		v.bus.Events().AddEvent(&eventsdb.RewardEvent{
+			Role:            eventsdb.RoleDevelopers.String(),
+			Address:         developers.Address,
+			Amount:          DevelopersReward.String(),
+			ValidatorPubKey: validator.PubKey,
+			ForCoin:         0,
+		})
 
-			totalReward.Sub(totalReward, DevelopersReward)
-			totalReward.Sub(totalReward, DAOReward)
+		totalReward.Sub(totalReward, DevelopersReward)
+		totalReward.Sub(totalReward, DAOReward)
 
-			// pay commission to validator
-			validatorReward := big.NewInt(0).Set(totalReward)
-			validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
-			validatorReward.Div(validatorReward, big.NewInt(100))
-			totalReward.Sub(totalReward, validatorReward)
+		// pay commission to validator
+		validatorReward := big.NewInt(0).Set(totalReward)
+		validatorReward.Mul(validatorReward, big.NewInt(int64(candidate.Commission)))
+		validatorReward.Div(validatorReward, big.NewInt(100))
+		totalReward.Sub(totalReward, validatorReward)
 
-			candidate.AddUpdate(types.GetBaseCoinID(), validatorReward, validatorReward, candidate.RewardAddress)
-			v.bus.Checker().AddCoin(types.GetBaseCoinID(), validatorReward)
+		candidate.AddUpdate(types.GetBaseCoinID(), validatorReward, validatorReward, candidate.RewardAddress)
+		v.bus.Checker().AddCoin(types.GetBaseCoinID(), validatorReward)
 
-			remainder.Sub(remainder, validatorReward)
-			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
-				Role:            eventsdb.RoleValidator.String(),
-				Address:         candidate.RewardAddress,
-				Amount:          validatorReward.String(),
-				ValidatorPubKey: validator.PubKey,
-				ForCoin:         0,
-			})
+		remainder.Sub(remainder, validatorReward)
+		v.bus.Events().AddEvent(&eventsdb.RewardEvent{
+			Role:            eventsdb.RoleValidator.String(),
+			Address:         candidate.RewardAddress,
+			Amount:          validatorReward.String(),
+			ValidatorPubKey: validator.PubKey,
+			ForCoin:         0,
+		})
 
-			stakes := v.bus.Candidates().GetStakes(validator.PubKey)
-			for _, stake := range stakes {
-				if stake.BipValue.Sign() == 0 {
+		stakes := v.bus.Candidates().GetStakes(validator.PubKey)
+		for _, stake := range stakes {
+			if stake.BipValue.Sign() == 0 {
+				continue
+			}
+
+			reward := big.NewInt(0).Set(totalReward)
+			reward.Mul(reward, stake.BipValue)
+
+			reward.Div(reward, validator.GetTotalBipStake())
+
+			remainder.Sub(remainder, reward)
+
+			safeRewardVariable := big.NewInt(0).Set(reward)
+			if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
+				safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
+				safeRewards.Mul(safeRewards, stake.BipValue)
+				safeRewards.Div(safeRewards, validator.GetTotalBipStake())
+				safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+				safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+				safeRewards.Mul(safeRewards, big.NewInt(3))
+
+				calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
+				calcRewards.Mul(calcRewards, stake.BipValue)
+				calcRewards.Div(calcRewards, validator.GetTotalBipStake())
+				calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+				calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+
+				feeRewards := big.NewInt(0).Sub(reward, calcRewards)
+
+				safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
+				if safeRewardVariable.Sign() < 1 {
 					continue
 				}
 
-				reward := big.NewInt(0).Set(totalReward)
-				reward.Mul(reward, stake.BipValue)
-
-				reward.Div(reward, validator.GetTotalBipStake())
-				if reward.Sign() < 1 {
-					continue
-				}
-
-				remainder.Sub(remainder, reward)
-
-				safeRewardVariable := big.NewInt(0).Set(reward)
-				if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
-					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
-					safeRewards.Mul(safeRewards, stake.BipValue)
-					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
-					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
-					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-					safeRewards.Mul(safeRewards, big.NewInt(3))
-
-					calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
-					calcRewards.Mul(calcRewards, stake.BipValue)
-					calcRewards.Div(calcRewards, validator.GetTotalBipStake())
-					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
-					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-
-					feeRewards := big.NewInt(0).Sub(reward, calcRewards)
-
-					safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
-					if safeRewardVariable.Sign() < 1 {
-						continue
-					}
-
-					moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewardVariable, reward))
-				}
-				candidate.AddUpdate(types.GetBaseCoinID(), safeRewardVariable, safeRewardVariable, stake.Owner)
-				v.bus.Checker().AddCoin(types.GetBaseCoinID(), safeRewardVariable)
-
-				v.bus.Events().AddEvent(&eventsdb.RewardEvent{
-					Role:            eventsdb.RoleDelegator.String(),
-					Address:         stake.Owner,
-					Amount:          safeRewardVariable.String(),
-					ValidatorPubKey: validator.PubKey,
-					ForCoin:         uint64(stake.Coin),
-				})
+				moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewardVariable, reward))
 			}
 
-			validator.SetAccumReward(big.NewInt(0))
-
-			if remainder.Sign() != -1 {
-				v.bus.App().AddTotalSlashed(remainder)
-			} else {
-				panic(fmt.Sprintf("Negative remainder: %s", remainder.String()))
+			if safeRewardVariable.Sign() < 1 {
+				continue
 			}
+
+			candidate.AddUpdate(types.GetBaseCoinID(), safeRewardVariable, safeRewardVariable, stake.Owner)
+			v.bus.Checker().AddCoin(types.GetBaseCoinID(), safeRewardVariable)
+
+			v.bus.Events().AddEvent(&eventsdb.RewardEvent{
+				Role:            eventsdb.RoleDelegator.String(),
+				Address:         stake.Owner,
+				Amount:          safeRewardVariable.String(),
+				ValidatorPubKey: validator.PubKey,
+				ForCoin:         uint64(stake.Coin),
+			})
+		}
+
+		validator.SetAccumReward(big.NewInt(0))
+
+		if remainder.Sign() != -1 {
+			v.bus.App().AddTotalSlashed(remainder)
+		} else {
+			panic(fmt.Sprintf("Negative remainder: %s", remainder.String()))
 		}
 	}
+
 	return moreRewards
 }
 

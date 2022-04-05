@@ -468,7 +468,7 @@ func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeRewar
 	if diff.Cmp(big.NewInt(-10)) != 1 {
 		last.SetInt64(0)
 		off = true
-		return new(big.Int), new(big.Int).Set(priceCount)
+		return last, new(big.Int).Set(priceCount)
 	}
 
 	if off && diff.Sign() != -1 {
