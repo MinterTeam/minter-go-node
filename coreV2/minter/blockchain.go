@@ -287,7 +287,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 {
 		if emission := blockchain.appDB.Emission(); emission == nil || emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			t, _, _, _, _ := blockchain.appDB.GetPrice()
-			if t.IsZero() || req.Header.Time.Sub(t) > time.Hour && req.Header.Time.Hour() == 12 {
+			if t.IsZero() || height%blockchain.updateStakesAndPayRewardsPeriod == 1 && (req.Header.Time.Hour() == 12 || req.Header.Time.Hour() == 13) && req.Header.Time.Sub(t) > 2*time.Hour {
 				reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
 				newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
 				blockchain.stateDeliver.App.SetReward(newRewards, safeReward)

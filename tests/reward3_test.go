@@ -228,6 +228,11 @@ func TestReward_X3Cmp(t *testing.T) {
 	}
 	t.Logf("%#v", appState.Candidates[0].Stakes[0].Value) // 10001152000000000000000 +
 	t.Logf("%#v", appState.Candidates[0].Stakes[1].Value) // 10001152000000000000000 + x3
+	if big.NewInt(0).Div(big.NewInt(0).Sub(helpers.StringToBigInt(appState.Candidates[0].Stakes[1].Value), helpers.StringToBigInt("10001152000000000000000")),
+		big.NewInt(0).Sub(helpers.StringToBigInt(appState.Candidates[0].Stakes[0].Value), helpers.StringToBigInt("10001152000000000000000"))).
+		String() != "3" {
+		t.Error("ee")
+	}
 }
 
 func TestReward_Update_Down(t *testing.T) {
@@ -365,10 +370,13 @@ func TestReward_Update_Down(t *testing.T) {
 
 	SendBeginBlock(app, 13, time.Unix(1646308803, 0).UTC()) // send BeginBlock
 	SendEndBlock(app, 13)                                   // send EndBlock
+	SendCommit(app)
+	SendBeginBlock(app, 14, time.Unix(1646308803, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 14)                                   // send EndBlock
 	SendCommit(app)                                         // send Commit
 
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
-	t.Log(app.GetEventsDB().LoadEvents(13)[0])
+	t.Log(app.GetEventsDB().LoadEvents(14)[0])
 	t.Log(app.CurrentState().App().Reward())
 }
 
@@ -513,8 +521,12 @@ func TestReward_Update_Up(t *testing.T) {
 	SendEndBlock(app, 13)                                   // send EndBlock
 	SendCommit(app)                                         // send Commit
 
+	SendBeginBlock(app, 14, time.Unix(1643803203, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 14)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
+
 	t.Log(app.GetEventsDB().LoadEvents(11)[0])
-	t.Log(app.GetEventsDB().LoadEvents(13)[0])
+	t.Log(app.GetEventsDB().LoadEvents(14)[0])
 
 	{
 		SendBeginBlock(app, 14) // send BeginBlock
@@ -536,16 +548,29 @@ func TestReward_Update_Up(t *testing.T) {
 		SendCommit(app)       // send Commit
 	}
 
-	SendBeginBlock(app, 15, time.Unix(1643889603, 0).UTC()) // send BeginBlock
-	SendEndBlock(app, 15)                                   // send EndBlock
-	SendCommit(app)                                         // send Commit
-
-	t.Log(app.GetEventsDB().LoadEvents(15)[0])
-
 	appState := app.CurrentState().Export()
 	if err := appState.Verify(); err != nil {
 		t.Fatalf("export err: %v", err)
 	}
-	t.Logf("%#v", appState.Candidates[0].Stakes[0].Value)
-	t.Logf("%#v", appState.Candidates[0].Stakes[1].Value)
+
+	t.Logf("%#v", appState.Candidates[0].Stakes[0])
+	t.Logf("%#v", appState.Candidates[0].Stakes[1])
+
+	SendBeginBlock(app, 15, time.Unix(1643889603, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 15)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
+
+	SendBeginBlock(app, 16, time.Unix(1643889603, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 16)                                   // send EndBlock
+	SendCommit(app)                                         // send Commit
+
+	t.Log(app.GetEventsDB().LoadEvents(15)[0])
+
+	appState = app.CurrentState().Export()
+	if err := appState.Verify(); err != nil {
+		t.Fatalf("export err: %v", err)
+	}
+	t.Logf("%#v", appState.Candidates[0].Stakes[0])
+	t.Logf("%#v", appState.Candidates[0].Stakes[1])
+
 }
