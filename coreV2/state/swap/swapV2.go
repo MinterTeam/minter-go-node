@@ -484,15 +484,15 @@ func (s *SwapV2) Commit(db *iavl.MutableTree, version int64) error {
 
 		lenB := len(pair.buyOrders.ids)
 		pair.loadedBuyOrders.ids = pair.buyOrders.ids[:lenB:lenB]
-		if lenB > 10 {
-			pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
+		if lenB > 10000 {
+			pair.buyOrders.ids = pair.buyOrders.ids[:10000:10000]
 		}
 		//pair.buyOrders.ids = nil
 
 		lenS := len(pair.sellOrders.ids)
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
-		if lenS > 10 {
-			pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
+		if lenS > 10000 {
+			pair.sellOrders.ids = pair.sellOrders.ids[:10000:10000]
 		}
 		//pair.sellOrders.ids = nil
 
