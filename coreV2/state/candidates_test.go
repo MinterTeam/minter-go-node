@@ -294,7 +294,7 @@ func TestDoubleSignPenalty(t *testing.T) {
 
 	st.Candidates.RecalculateStakes(0)
 
-	st.FrozenFunds.AddFund(1, addr, &pubkey, st.Candidates.ID(pubkey), coin, amount, nil)
+	st.FrozenFunds.AddFund(1, addr, &pubkey, st.Candidates.ID(pubkey), coin, amount, 0)
 
 	var tmAddr types.TmAddress
 	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())
@@ -380,7 +380,7 @@ func TestZeroStakePenalty(t *testing.T) {
 	st.Candidates.RecalculateStakes(0)
 
 	st.Candidates.SubStake(addr, pubkey, coin, amount)
-	st.FrozenFunds.AddFund(518400, addr, &pubkey, st.Candidates.ID(pubkey), coin, amount, nil)
+	st.FrozenFunds.AddFund(518400, addr, &pubkey, st.Candidates.ID(pubkey), coin, amount, 0)
 
 	var tmAddr types.TmAddress
 	copy(tmAddr[:], ed25519.PubKey(pubkey[:]).Address().Bytes())

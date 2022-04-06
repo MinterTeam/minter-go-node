@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
-	_ "github.com/MinterTeam/node-grpc-gateway/statik"
+	"github.com/MinterTeam/node-grpc-gateway/docs"
 	kit_log "github.com/go-kit/kit/log"
 	"github.com/gorilla/handlers"
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -15,12 +15,12 @@ import (
 	grpc_ctxtags "github.com/grpc-ecosystem/go-grpc-middleware/tags"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	"github.com/rakyll/statik/fs"
 	"github.com/tendermint/tendermint/libs/log"
 	"github.com/tmc/grpc-websocket-proxy/wsproxy"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -93,7 +93,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 		}),
 	)
 	opts := []grpc.DialOption{
-		grpc.WithInsecure(),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 		grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(1000000000)),
 	}
 	err = gw.RegisterApiServiceHandlerFromEndpoint(ctx, gwmux, addrGRPC, opts)
@@ -102,7 +102,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 	}
 
 	mux := http.NewServeMux()
-	openapi := "/v2/openapi-ui/"
+	const openapi = "/v2/openapi-ui/"
 	_ = serveOpenAPI(openapi, mux)
 	mux.HandleFunc("/v2/", func(writer http.ResponseWriter, request *http.Request) {
 		if request.URL.Path == "/v2/" {
@@ -146,14 +146,8 @@ func preflightHandler(w http.ResponseWriter, _ *http.Request) {
 func serveOpenAPI(prefix string, mux *http.ServeMux) error {
 	_ = mime.AddExtensionType(".svg", "image/svg+xml")
 
-	statikFS, err := fs.New()
-	if err != nil {
-		return err
-	}
-
 	// Expose files in static on <host>/v2/openapi-ui
-	fileServer := http.FileServer(statikFS)
-	mux.Handle(prefix, http.StripPrefix(prefix, fileServer))
+	mux.Handle(prefix, http.StripPrefix(prefix, http.FileServer(http.FS(docs.FS))))
 	return nil
 }
 

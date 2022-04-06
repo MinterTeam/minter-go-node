@@ -1,8 +1,10 @@
 package frozenfunds
 
 import (
+	"context"
 	"encoding/binary"
 	"fmt"
+	"math"
 	"math/big"
 	"sort"
 	"sync"
@@ -21,6 +23,7 @@ const mainPrefix = byte('f')
 type RFrozenFunds interface {
 	Export(state *types.AppState, height uint64)
 	GetFrozenFunds(height uint64) *Model
+	GetFrozenFundsAll(ctx context.Context, from, to uint64) []*Model
 }
 
 type FrozenFunds struct {
@@ -90,6 +93,9 @@ func (f *FrozenFunds) Commit(db *iavl.MutableTree, version int64) error {
 func (f *FrozenFunds) GetFrozenFunds(height uint64) *Model {
 	return f.get(height)
 }
+func (f *FrozenFunds) GetFrozenFundsAll(ctx context.Context, from, to uint64) []*Model {
+	return f.getFromTo(ctx, from, to)
+}
 
 func (f *FrozenFunds) PunishFrozenFundsWithID(fromHeight uint64, toHeight uint64, candidateID uint32) {
 	for cBlock := fromHeight; cBlock <= toHeight; cBlock++ {
@@ -153,6 +159,32 @@ func (f *FrozenFunds) GetOrNew(height uint64) *Model {
 	return ff
 }
 
+func (f *FrozenFunds) getFromTo(ctx context.Context, from, to uint64) (res []*Model) {
+	f.immutableTree().IterateRange(getPath(from), getPath(to), true, func(key []byte, value []byte) bool {
+		select {
+		case <-ctx.Done():
+			return true
+		default:
+		}
+
+		if len(value) == 0 {
+			return false
+		}
+		height := binary.BigEndian.Uint64(key[1:])
+		ff := &Model{}
+		if err := rlp.DecodeBytes(value, ff); err != nil {
+			panic(fmt.Sprintf("failed to decode frozen funds at height %d: %s", height, err))
+		}
+
+		ff.height = height
+
+		res = append(res, ff)
+		return false
+	})
+
+	return res
+}
+
 func (f *FrozenFunds) get(height uint64) *Model {
 	if ff := f.getFromMap(height); ff != nil {
 		return ff
@@ -198,7 +230,7 @@ func (f *FrozenFunds) getOrderedDirty() []uint64 {
 	return keys
 }
 
-func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey *types.Pubkey, candidateId uint32, coin types.CoinID, value *big.Int, moveToCandidate *uint32) {
+func (f *FrozenFunds) AddFund(height uint64, address types.Address, pubkey *types.Pubkey, candidateId uint32, coin types.CoinID, value *big.Int, moveToCandidate uint32) {
 	f.GetOrNew(height).addFund(address, pubkey, candidateId, coin, value, moveToCandidate)
 	f.bus.Checker().AddCoin(coin, value)
 }
@@ -217,24 +249,23 @@ func (f *FrozenFunds) Delete(height uint64) {
 }
 
 func (f *FrozenFunds) Export(state *types.AppState, height uint64) {
-	for i := height; i <= height+types.GetUnbondPeriodWithChain(types.ChainMainnet); i++ {
-		frozenFunds := f.get(i)
+
+	for _, frozenFunds := range f.GetFrozenFundsAll(context.Background(), height, math.MaxUint64) {
 		if frozenFunds == nil {
 			continue
 		}
 
-		frozenFunds.lock.RLock()
 		for _, frozenFund := range frozenFunds.List {
 			state.FrozenFunds = append(state.FrozenFunds, types.FrozenFund{
-				Height:       i,
-				Address:      frozenFund.Address,
-				CandidateKey: frozenFund.CandidateKey,
-				CandidateID:  uint64(frozenFund.CandidateID),
-				Coin:         uint64(frozenFund.Coin),
-				Value:        frozenFund.Value.String(),
+				Height:            frozenFunds.height,
+				Address:           frozenFund.Address,
+				CandidateKey:      frozenFund.CandidateKey,
+				CandidateID:       uint64(frozenFund.CandidateID),
+				Coin:              uint64(frozenFund.Coin),
+				Value:             frozenFund.Value.String(),
+				MoveToCandidateID: uint64(frozenFund.GetMoveToCandidateID()),
 			})
 		}
-		frozenFunds.lock.RUnlock()
 	}
 }
 

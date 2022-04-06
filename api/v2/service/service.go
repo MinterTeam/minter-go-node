@@ -37,7 +37,7 @@ func NewService(blockchain *minter.Blockchain, client *rpc.Local, node *tmNode.N
 		minterCfg:  minterCfg,
 		version:    version,
 		tmNode:     node,
-		decoderTx:  transaction.NewExecutor(transaction.GetData),
+		decoderTx:  transaction.NewExecutorV250(transaction.GetData),
 	}
 }
 

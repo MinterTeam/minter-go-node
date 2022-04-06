@@ -275,6 +275,15 @@ func (stake *stake) addValue(value *big.Int) {
 	stake.Value = big.NewInt(0).Add(stake.Value, value)
 }
 
+func (stake *stake) addBipValue(value *big.Int) {
+	stake.markDirty(stake.index)
+
+	stake.lock.Lock()
+	defer stake.lock.Unlock()
+
+	stake.BipValue = big.NewInt(0).Add(stake.BipValue, value)
+}
+
 func (stake *stake) subValue(value *big.Int) {
 	stake.markDirty(stake.index)
 

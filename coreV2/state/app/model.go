@@ -10,6 +10,9 @@ type Model struct {
 	CoinsCount   uint32
 	MaxGas       uint64
 
+	// forward compatible
+	Reward [][]byte `rlp:"tail"`
+
 	markDirty func()
 	mx        sync.RWMutex
 }
@@ -29,6 +32,26 @@ func (model *Model) setMaxGas(maxGas uint64) {
 		model.markDirty()
 	}
 	model.MaxGas = maxGas
+}
+
+func (model *Model) reward() (*big.Int, *big.Int) {
+	model.mx.RLock()
+	defer model.mx.RUnlock()
+
+	if len(model.Reward) == 0 {
+		return nil, nil
+	}
+
+	return new(big.Int).SetBytes(model.Reward[0]), new(big.Int).SetBytes(model.Reward[1])
+}
+
+func (model *Model) setReward(reward *big.Int, safeReward *big.Int) {
+	model.mx.Lock()
+	defer model.mx.Unlock()
+
+	model.Reward = [][]byte{reward.Bytes(), safeReward.Bytes()}
+
+	model.markDirty()
 }
 
 func (model *Model) getTotalSlashed() *big.Int {

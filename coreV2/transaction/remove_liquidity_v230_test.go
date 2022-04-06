@@ -70,7 +70,7 @@ func TestRemoveExchangeLiquidityTx_v230Ok(t *testing.T) {
 		}
 	}
 
-	_, _, coinID := cState.Swap.SwapPool(coin, coin1)
+	_, _, coinID := cState.Swapper().SwapPool(coin, coin1)
 	liquidityCoinID := cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()
 
 	{
@@ -218,7 +218,7 @@ func TestRemoveExchangeLiquidityTx_v230Bug(t *testing.T) {
 		}
 	}
 
-	_, _, coinID := cState.Swap.SwapPool(coin, coin1)
+	_, _, coinID := cState.Swapper().SwapPool(coin, coin1)
 	liquidityCoinID := cState.Coins.GetCoinBySymbol(LiquidityCoinSymbol(coinID), 0).ID()
 
 	{
@@ -368,7 +368,7 @@ func TestRemoveExchangeLiquidityTx_one(t *testing.T) {
 	}
 
 	{
-		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
+		_, _, coinID := cState.Swapper().SwapPool(coin, coin1)
 		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
@@ -523,7 +523,7 @@ func TestRemoveExchangeLiquidityTx_2(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
+		_, _, coinID := cState.Swapper().SwapPool(coin, coin1)
 		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,
@@ -678,7 +678,7 @@ func TestRemoveExchangeLiquidityTx_3(t *testing.T) {
 		t.Error(err)
 	}
 	{
-		_, _, coinID := cState.Swap.SwapPool(coin, coin1)
+		_, _, coinID := cState.Swapper().SwapPool(coin, coin1)
 		data := RemoveLiquidityV230{
 			Coin0:     coin,
 			Coin1:     coin1,

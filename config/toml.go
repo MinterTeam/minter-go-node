@@ -145,9 +145,9 @@ enable = {{ .StateSync.Enable }}
 # At least 2 available RPC servers.
 rpc_servers = [{{range $element := .StateSync.RPCServers}} "{{$element}}", {{end}}]
 
+## Use for update [curl -s http://{{index .StateSync.RPCServers 1}}/block | jq -r '.result.block.header.height + "\n" + .result.block_id.hash']
 # A trusted height
 trust_height = {{ .StateSync.TrustHeight }}
-
 # The block ID hash of the trusted height
 trust_hash = "{{ .StateSync.TrustHash }}"
 

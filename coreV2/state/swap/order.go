@@ -81,21 +81,28 @@ type ChangeDetailsWithOrders struct {
 	AmountOut           *big.Int
 	CommissionAmountIn  *big.Int
 	CommissionAmountOut *big.Int
+	AmountInBurned      *big.Int
 	Orders              []*Limit
 }
 
 func (c *ChangeDetailsWithOrders) MarshalJSON() ([]byte, error) {
+	var amountInBurned = "0"
+	if c.AmountInBurned != nil {
+		amountInBurned = c.AmountInBurned.String()
+	}
 	return json.Marshal(struct {
 		AmountIn            string   `json:"amount_in"`
 		AmountOut           string   `json:"amount_out"`
 		CommissionAmountIn  string   `json:"commission_amount_in"`
 		CommissionAmountOut string   `json:"commission_amount_out"`
+		AmountInBurned      string   `json:"amount_in_burned"`
 		Orders              []*Limit `json:"orders"`
 	}{
 		AmountIn:            c.AmountIn.String(),
 		AmountOut:           c.AmountOut.String(),
 		CommissionAmountIn:  c.CommissionAmountIn.String(),
 		CommissionAmountOut: c.CommissionAmountOut.String(),
+		AmountInBurned:      amountInBurned,
 		Orders:              c.Orders,
 	})
 }
@@ -315,7 +322,7 @@ func (p *Pair) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *big
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
 		if amountIn.Sign() == -1 {
-			log.Println(fmt.Sprint(amountIn, amountOut))
+			log.Println("wrong amountIn.Sign() == -1", pair.GetID(), fmt.Sprint(amountIn, amountOut))
 		}
 		if amountIn.Sign() == 0 {
 			return amountOut, orders
@@ -512,7 +519,7 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	var pair EditableChecker = p
 	for i := 0; true; i++ {
 		if amountOut.Sign() == -1 {
-			log.Println(fmt.Sprint(amountIn, amountOut))
+			log.Println("wrong amountOut.Sign() == -1", pair.GetID(), fmt.Sprint(amountIn, amountOut))
 		}
 		// todo: move check minAmountIn
 		if amountOut.Sign() == 0 {
@@ -608,13 +615,22 @@ func (p *Pair) calculateSellForBuyWithOrders(amount1Out *big.Int) (amountIn *big
 	}
 
 	amount0diff := pair.CalculateSellForBuy(amountOut)
-	if amount0diff != nil {
-		if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
-			fmt.Println(amount0diff, amountOut)
-			panic(err)
+	if amount0diff == nil {
+		r0, r1 := pair.AddLastSwapStep(big.NewInt(0), amountOut).Reserves()
+		if r0.Sign() < 1 || r1.Sign() < 1 {
+			return nil, nil
 		}
-		amountIn.Add(amountIn, amount0diff)
+
+		return amountIn, orders
 	}
+
+	if err := pair.CheckSwap(amount0diff, amountOut); err != nil {
+		fmt.Println(amount0diff, amountOut)
+		panic(err)
+	}
+
+	amountIn.Add(amountIn, amount0diff)
+
 	return amountIn, orders
 }
 
@@ -643,6 +659,26 @@ type Limit struct {
 	id           uint32
 
 	mu *sync.RWMutex
+}
+
+func (l *Limit) GetWantBuy() *big.Int {
+	return l.WantBuy
+}
+
+func (l *Limit) GetWantSell() *big.Int {
+	return l.WantSell
+}
+
+func (l *Limit) GetOwner() types.Address {
+	return l.Owner
+}
+
+func (l *Limit) GetIsBuy() bool {
+	return l.IsBuy
+}
+
+func (l *Limit) GetHeight() uint64 {
+	return l.Height
 }
 
 func (l *Limit) ID() uint32 {
@@ -724,6 +760,13 @@ func (p *Pair) getOrder(id uint32) *Limit {
 	return p.order(id)
 }
 
+func (p *Pair) getOrderInterface(id uint32) Limiter {
+	p.orders.mu.Lock()
+	defer p.orders.mu.Unlock()
+
+	return p.order(id)
+}
+
 func (p *Pair) order(id uint32) *Limit {
 	l, ok := p.orders.list[id]
 	if ok {
@@ -735,7 +778,7 @@ func (p *Pair) order(id uint32) *Limit {
 			return l
 		}
 
-		return l.Reverse()
+		return l.reverse()
 	}
 
 	l = p.loadOrder(id)
@@ -749,7 +792,7 @@ func (p *Pair) order(id uint32) *Limit {
 		return l
 	}
 
-	return l.Reverse()
+	return l.reverse()
 }
 
 func (p *Pair) GetOrders(ids []uint32) []*Limit {
@@ -788,14 +831,14 @@ func (l *Limit) sortPrice() *big.Float {
 	if l.isSorted() {
 		return l.Price()
 	}
-	return l.Reverse().Price()
+	return l.reverse().Price()
 }
 
 func (l *Limit) sortPriceRat() *big.Rat {
 	if l.isSorted() {
 		return l.PriceRat()
 	}
-	return l.Reverse().PriceRat()
+	return l.reverse().PriceRat()
 }
 
 func (l *Limit) OldSortPrice() *big.Float {
@@ -816,6 +859,26 @@ func (l *Limit) reCalcOldSortPrice() *big.Float {
 	return l.OldSortPrice()
 }
 
+func (l *Limit) reverse() *Limit {
+	if l == nil {
+		return nil
+	}
+
+	l.mu.RLock()
+	defer l.mu.RUnlock()
+
+	return &Limit{
+		PairKey:      l.PairKey.reverse(),
+		IsBuy:        !l.IsBuy,
+		WantBuy:      l.WantSell,
+		WantSell:     l.WantBuy,
+		Owner:        l.Owner,
+		Height:       l.Height,
+		oldSortPrice: l.oldSortPrice,
+		id:           l.id,
+		mu:           l.mu,
+	}
+}
 func (l *Limit) Reverse() *Limit {
 	if l == nil {
 		return nil
@@ -842,7 +905,7 @@ func (l *Limit) sort() *Limit {
 		return l
 	}
 
-	return l.Reverse()
+	return l.reverse()
 }
 
 func (l *Limit) isSorted() bool {
@@ -1034,7 +1097,7 @@ func (s *Swap) PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int) {
 
 func (s *Swap) removeLimitOrder(order *Limit) (types.CoinID, *big.Int) {
 	if !order.isSell() {
-		order = order.Reverse()
+		order = order.reverse()
 	}
 
 	pair := s.Pair(order.Coin0, order.Coin1)
@@ -1221,7 +1284,7 @@ func (s *Swap) loadBuyOrders(pair *Pair, fromOrder *Limit, limit int) []uint32 {
 		return false
 	})
 
-	if !has {
+	if !has || len(slice) < limit {
 		slice = append(slice, 0)
 	}
 
@@ -1760,4 +1823,18 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 	pair.orderSellByIndex(0)
 
 	return pair
+}
+
+type Limiter interface {
+	CmpOldRate() int
+	GetWantBuy() *big.Int
+	GetWantSell() *big.Int
+	GetOwner() types.Address
+	GetIsBuy() bool
+	GetHeight() uint64
+	ID() uint32
+	MarshalJSON() ([]byte, error)
+	Price() *big.Float
+	PriceRat() *big.Rat
+	Reverse() *Limit
 }

@@ -15,3 +15,6 @@ func NewBus(validators *Validators) *Bus {
 func (b *Bus) IsValidator(pubkey types.Pubkey) bool {
 	return b.validators.IsValidator(pubkey)
 }
+func (b *Bus) Count() int {
+	return b.validators.Count()
+}

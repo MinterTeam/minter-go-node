@@ -745,7 +745,7 @@ func TestBuyCoinTxBaseToCustomBaseCommission(t *testing.T) {
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.MulGasPrice(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		commissionInBaseCoin = cState.Swapper().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, commissionInBaseCoin)
 	estimatedSellCoinBalance.Sub(estimatedSellCoinBalance, formula.CalculatePurchaseAmount(initialVolume, initialReserve, crr, toBuy))
@@ -965,7 +965,7 @@ func TestBuyCoinTxBaseToCustomCustomCommission(t *testing.T) {
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.MulGasPrice(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		commissionInBaseCoin = cState.Swapper().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
 	commission := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, commissionInBaseCoin)
 
@@ -1064,7 +1064,7 @@ func TestBuyCoinTxCustomToBaseCustomCommission(t *testing.T) {
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.MulGasPrice(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		commissionInBaseCoin = cState.Swapper().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
 	coms := formula.CalculateSaleAmount(initialVolume, initialReserve, crr, commissionInBaseCoin)
 	shouldGive := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume, coms), big.NewInt(0).Sub(initialReserve, commissionInBaseCoin), crr, toBuy)
@@ -1147,7 +1147,7 @@ func TestBuyCoinTxCustomToCustomCustom1Commission(t *testing.T) {
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.MulGasPrice(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		commissionInBaseCoin = cState.Swapper().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
 	com := formula.CalculateSaleAmount(initialVolume1, initialReserve1, crr1, commissionInBaseCoin)
 	toSell := formula.CalculateSaleAmount(big.NewInt(0).Sub(initialVolume1, com), big.NewInt(0).Sub(initialReserve1, commissionInBaseCoin), crr1, toSellBaseCoin)
@@ -1245,7 +1245,7 @@ func TestBuyCoinTxCustomToCustomCustom2Commission(t *testing.T) {
 	commissions := cState.Commission.GetCommissions()
 	commissionInBaseCoin := tx.MulGasPrice(tx.Price(commissions))
 	if !commissions.Coin.IsBaseCoin() {
-		commissionInBaseCoin = cState.Swap.GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
+		commissionInBaseCoin = cState.Swapper().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuy(commissionInBaseCoin)
 	}
 
 	commission := formula.CalculateSaleAmount(initialVolume2, initialReserve2, crr2, commissionInBaseCoin)

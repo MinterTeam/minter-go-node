@@ -27,7 +27,23 @@ type AppState struct {
 	UsedChecks          []UsedCheck        `json:"used_checks,omitempty"`
 	MaxGas              uint64             `json:"max_gas"`
 	TotalSlashed        string             `json:"total_slashed"`
-	Version             string             `json:"version,omitempty"`
+
+	Emission   string      `json:"emission"`
+	PrevReward RewardPrice `json:"prev_reward"`
+
+	Version  string    `json:"version,omitempty"`
+	Versions []Version `json:"versions,omitempty"`
+}
+type Version struct {
+	Height uint64 `json:"height,omitempty"`
+	Name   string `json:"name,omitempty"`
+}
+type RewardPrice struct {
+	Time       uint64 `json:"time"`
+	AmountBIP  string `json:"amount_bip"`
+	AmountUSDT string `json:"amount_usdt"`
+	Off        bool   `json:"off"`
+	Reward     string `json:"reward"`
 }
 
 func (s *AppState) Verify() error {
@@ -321,7 +337,7 @@ type Waitlist struct {
 	Value       string  `json:"value"`
 }
 type Order struct {
-	IsSale  bool    `json:"is_sale"`
+	IsSale  bool    `json:"is_sale"` // true
 	Volume0 string  `json:"volume0"` // buy
 	Volume1 string  `json:"volume1"` // sell
 	ID      uint64  `json:"id"`
@@ -334,7 +350,7 @@ type Pool struct {
 	Reserve0 string  `json:"reserve0"`
 	Reserve1 string  `json:"reserve1"`
 	ID       uint64  `json:"id"`
-	Orders   []Order `json:"orders"`
+	Orders   []Order `json:"orders,omitempty"`
 }
 
 type Coin struct {
@@ -357,22 +373,23 @@ type DeletedCandidate struct {
 }
 
 type FrozenFund struct {
-	Height       uint64  `json:"height"`
-	Address      Address `json:"address"`
-	CandidateKey *Pubkey `json:"candidate_key,omitempty"`
-	CandidateID  uint64  `json:"candidate_id,omitempty"`
-	Coin         uint64  `json:"coin"`
-	Value        string  `json:"value"`
-	// MoveToCandidateID *uint64 `json:"move_to_candidate_id,omitempty"`
+	Height            uint64  `json:"height"`
+	Address           Address `json:"address"`
+	CandidateKey      *Pubkey `json:"candidate_key,omitempty"`
+	CandidateID       uint64  `json:"candidate_id,omitempty"`
+	Coin              uint64  `json:"coin"`
+	Value             string  `json:"value"`
+	MoveToCandidateID uint64  `json:"move_to_candidate_id,omitempty"`
 }
 
 type UsedCheck string
 
 type Account struct {
-	Address      Address   `json:"address"`
-	Balance      []Balance `json:"balance,omitempty"`
-	Nonce        uint64    `json:"nonce"`
-	MultisigData *Multisig `json:"multisig_data,omitempty"`
+	Address             Address   `json:"address"`
+	Balance             []Balance `json:"balance,omitempty"`
+	Nonce               uint64    `json:"nonce"`
+	MultisigData        *Multisig `json:"multisig_data,omitempty"`
+	LockStakeUntilBlock uint64    `json:"lock_stake_until_block"`
 }
 
 type Balance struct {
@@ -449,4 +466,7 @@ type Commission struct {
 	FailedTx                string `json:"failed_tx"`
 	AddLimitOrder           string `json:"add_limit_order"`
 	RemoveLimitOrder        string `json:"remove_limit_order"`
+	MoveStake               string `json:"move_stake"`
+	LockStake               string `json:"lock_stake"`
+	Lock                    string `json:"lock"`
 }

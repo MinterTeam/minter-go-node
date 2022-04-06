@@ -41,6 +41,8 @@ var RunNode = &cobra.Command{
 	},
 }
 
+var updateStakePeriod uint64 = 720
+
 func runNode(cmd *cobra.Command) error {
 	logger := log.NewLogger(cfg)
 
@@ -87,7 +89,7 @@ func runNode(cmd *cobra.Command) error {
 	if err != nil {
 		return err
 	}
-	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), 720, 0, logger.With("module", "node"))
+	app := minter.NewMinterBlockchain(storages, cfg, cmd.Context(), updateStakePeriod, 0, logger.With("module", "node"))
 
 	if cfg.SnapshotInterval > 0 || cfg.StateSync.Enable {
 		snapshotDB, err := storages.InitSnapshotLevelDB("data/snapshots/metadata", minter.GetDbOpts(cfg.StateMemAvailable))

@@ -699,7 +699,11 @@ func (c *Candidates) IsDelegatorStakeAllowed(address types.Address, pubkey types
 	c.lock.RLock()
 	defer c.lock.RUnlock()
 
-	if len(c.pubKeyIDs) < 4 {
+	//if len(c.pubKeyIDs) < 4 {
+	//	return false, false
+	//}
+
+	if c.bus.Validators().Count() < 4 {
 		return false, false
 	}
 
@@ -1369,7 +1373,16 @@ func (c *Candidates) PubKey(id uint32) types.Pubkey {
 
 	candidate, ok := c.list[id]
 	if !ok {
-		panic(fmt.Sprintf("candidate by ID %d not found", id))
+		c.muDeletedCandidates.Lock()
+		defer c.muDeletedCandidates.Unlock()
+
+		c.loadDeletedCandidates()
+		for pubkey, d := range c.deletedCandidates {
+			if d.ID == id {
+				return pubkey
+			}
+		}
+		return types.Pubkey{}
 	}
 
 	candidate.lock.RLock()
@@ -1478,6 +1491,7 @@ func (c *Candidates) loadDeletedCandidates() {
 	if len(c.deletedCandidates) != 0 {
 		return
 	}
+
 	c.deletedCandidates = make(map[types.Pubkey]*deletedID)
 	_, data := c.immutableTree().Get([]byte{deleteCandidatesPrefix})
 	if len(data) == 0 {

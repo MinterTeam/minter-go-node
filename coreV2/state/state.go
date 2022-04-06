@@ -3,6 +3,7 @@ package state
 import (
 	"encoding/hex"
 	"log"
+	"math/big"
 	"sync"
 
 	eventsdb "github.com/MinterTeam/minter-go-node/coreV2/events"
@@ -94,6 +95,9 @@ func (cs *CheckState) WaitList() waitlist.RWaitList {
 }
 
 func (cs *CheckState) Swap() swap.RSwap {
+	if cs.state.SwapV2 != nil {
+		return cs.state.SwapV2
+	}
 	return cs.state.Swap
 }
 
@@ -113,6 +117,7 @@ type State struct {
 	Checker     *checker.Checker
 	Waitlist    *waitlist.WaitList
 	Swap        *swap.Swap
+	SwapV2      *swap.SwapV2
 	Commission  *commission.Commission
 	Updates     *update.Update
 
@@ -127,6 +132,10 @@ type State struct {
 	InitialVersion int64
 }
 
+func (s *State) Bus() *bus.Bus {
+	return s.bus
+}
+
 func (s *State) isValue_State() {}
 
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64, initialVersion uint64) (*State, error) {
@@ -135,7 +144,28 @@ func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int,
 		return nil, err
 	}
 
-	state, err := newStateForTree(iavlTree.GetLastImmutable(), events, db, keepLastStates)
+	state, err := newStateForTree(iavlTree.GetLastImmutable(), events, db, keepLastStates) // todo
+	if err != nil {
+		return nil, err
+	}
+
+	state.tree = iavlTree
+	state.height = int64(height)
+	state.InitialVersion = int64(initialVersion)
+
+	state.Candidates.LoadCandidatesDeliver()
+	state.Candidates.LoadStakes()
+	state.Validators.LoadValidators()
+
+	return state, nil
+}
+func NewStateV3(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64, initialVersion uint64) (*State, error) {
+	iavlTree, err := tree.NewMutableTree(height, db, cacheSize, initialVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	state, err := newStateForTreeV2(iavlTree.GetLastImmutable(), events, db, keepLastStates) // todo
 	if err != nil {
 		return nil, err
 	}
@@ -158,6 +188,13 @@ func NewCheckStateAtHeight(height uint64, db db.DB) (*CheckState, error) {
 	}
 	return newCheckStateForTree(iavlTree, nil, db, 0)
 }
+func NewCheckStateAtHeightV3(height uint64, db db.DB) (*CheckState, error) {
+	iavlTree, err := tree.NewImmutableTree(height, db)
+	if err != nil {
+		return nil, err
+	}
+	return newCheckStateForTreeV2(iavlTree, nil, db, 0)
+}
 
 func (s *State) Tree() tree.MTree {
 	return s.tree
@@ -165,6 +202,37 @@ func (s *State) Tree() tree.MTree {
 
 func (s *State) Lock() {
 	s.lock.Lock()
+}
+
+func (s *State) GetSwap() interface {
+	Commit(db *iavl.MutableTree, version int64) error
+	SetImmutableTree(immutableTree *iavl.ImmutableTree)
+} {
+	if s.SwapV2 != nil {
+		return s.SwapV2
+	}
+	return s.Swap
+}
+
+func (s *State) Swapper() interface {
+	PairSellWithOrders(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32, *swap.ChangeDetailsWithOrders, []*swap.OrderDetail)
+	PairBuyWithOrders(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32, *swap.ChangeDetailsWithOrders, []*swap.OrderDetail)
+	PairAddOrder(coinWantBuy, coinWantSell types.CoinID, wantBuyAmount, wantSellAmount *big.Int, sender types.Address, block uint64) (uint32, uint32)
+	PairBuy(coin0, coin1 types.CoinID, maxAmount0In, amount1Out *big.Int) (*big.Int, *big.Int, uint32)
+	PairSell(coin0, coin1 types.CoinID, amount0In, minAmount1Out *big.Int) (*big.Int, *big.Int, uint32)
+	PairMint(coin0, coin1 types.CoinID, amount0, maxAmount1, totalSupply *big.Int) (*big.Int, *big.Int, *big.Int)
+	PairCreate(coin0, coin1 types.CoinID, amount0, amount1 *big.Int) (*big.Int, *big.Int, *big.Int, uint32)
+	PairBurn(coin0, coin1 types.CoinID, liquidity, minAmount0, minAmount1, totalSupply *big.Int) (*big.Int, *big.Int)
+	PairRemoveLimitOrder(id uint32) (types.CoinID, *big.Int)
+	ExpireOrders(beforeHeight uint64)
+	Import(state *types.AppState)
+	GetSwapper(coinA, coinB types.CoinID) swap.EditableChecker
+	SwapPool(coinA, coinB types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
+} {
+	if s.SwapV2 != nil {
+		return s.SwapV2
+	}
+	return s.Swap
 }
 
 func (s *State) Unlock() {
@@ -196,7 +264,7 @@ func (s *State) Commit() ([]byte, error) {
 		s.FrozenFunds,
 		s.Halts,
 		s.Waitlist,
-		s.Swap,
+		s.GetSwap(),
 		s.Commission,
 		s.Updates,
 	)
@@ -222,9 +290,11 @@ func (s *State) Import(state types.AppState, version string) error {
 	defer s.Checker.RemoveBaseCoin()
 
 	s.App.SetMaxGas(state.MaxGas)
+	s.App.SetCoinsCount(uint32(len(state.Coins)))
+
 	totalSlash := helpers.StringToBigInt(state.TotalSlashed)
 	s.App.SetTotalSlashed(totalSlash)
-	s.App.SetCoinsCount(uint32(len(state.Coins)))
+	s.Checker.AddCoin(types.GetBaseCoinID(), totalSlash)
 
 	for _, a := range state.Accounts {
 		if a.MultisigData != nil {
@@ -236,7 +306,9 @@ func (s *State) Import(state types.AppState, version string) error {
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
-
+		if a.LockStakeUntilBlock > 0 {
+			s.Accounts.SetLockStakeUntilBlock(a.Address, a.LockStakeUntilBlock)
+		}
 		for _, b := range a.Balance {
 			balance := helpers.StringToBigInt(b.Value)
 			coinID := types.CoinID(b.Coin)
@@ -310,10 +382,10 @@ func (s *State) Import(state types.AppState, version string) error {
 	for _, ff := range state.FrozenFunds {
 		coinID := types.CoinID(ff.Coin)
 		value := helpers.StringToBigInt(ff.Value)
-		s.FrozenFunds.AddFund(ff.Height, ff.Address, ff.CandidateKey, uint32(ff.CandidateID), coinID, value, nil)
+		s.FrozenFunds.AddFund(ff.Height, ff.Address, ff.CandidateKey, uint32(ff.CandidateID), coinID, value, uint32(ff.MoveToCandidateID))
 	}
 
-	s.Swap.Import(&state)
+	s.Swapper().Import(&state)
 
 	c := state.Commission
 	com := &commission.Price{
@@ -435,11 +507,17 @@ func (s *State) Import(state types.AppState, version string) error {
 		}
 	}
 
+	for _, vote := range state.UpdateVotes {
+		for _, pubkey := range vote.Votes {
+			s.Updates.AddVote(vote.Height, pubkey, vote.Version)
+		}
+	}
+
 	return nil
 }
 
 func (s *State) Export() types.AppState {
-	state, err := NewCheckStateAtHeight(uint64(s.tree.Version()), s.db)
+	state, err := NewCheckStateAtHeightV3(uint64(s.tree.Version()), s.db)
 	if err != nil {
 		log.Panicf("Create new state at height %d failed: %s", s.tree.Version(), err)
 	}
@@ -449,7 +527,7 @@ func (s *State) Export() types.AppState {
 
 // Only for tests
 func (s *State) ReloadFromDiskAndExport() types.AppState {
-	state, err := NewCheckStateAtHeight(uint64(s.tree.Version()), s.db)
+	state, err := NewCheckStateAtHeightV3(uint64(s.tree.Version()), s.db)
 	if err != nil {
 		log.Panicf("Create new state at height %d failed: %s", s.tree.Version(), err)
 	}
@@ -459,6 +537,15 @@ func (s *State) ReloadFromDiskAndExport() types.AppState {
 
 func newCheckStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
 	stateForTree, err := newStateForTree(immutableTree, events, db, keepLastStates)
+	if err != nil {
+		return nil, err
+	}
+
+	return NewCheckState(stateForTree), nil
+}
+
+func newCheckStateForTreeV2(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*CheckState, error) {
+	stateForTree, err := newStateForTreeV2(immutableTree, events, db, keepLastStates)
 	if err != nil {
 		return nil, err
 	}
@@ -508,6 +595,60 @@ func newStateForTree(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsD
 		Halts:       haltsState,
 		Waitlist:    waitlistState,
 		Swap:        pool,
+		Commission:  commission,
+		Updates:     update,
+
+		height:         immutableTree.Version(),
+		bus:            stateBus,
+		db:             db,
+		events:         events,
+		keepLastStates: keepLastStates,
+	}
+
+	return state, nil
+}
+func newStateForTreeV2(immutableTree *iavl.ImmutableTree, events eventsdb.IEventsDB, db db.DB, keepLastStates int64) (*State, error) {
+	stateBus := bus.NewBus()
+	stateBus.SetEvents(events)
+
+	stateChecker := checker.NewChecker(stateBus)
+
+	candidatesState := candidates.NewCandidates(stateBus, immutableTree)
+
+	validatorsState := validators.NewValidators(stateBus, immutableTree)
+
+	appState := app.NewApp(stateBus, immutableTree)
+
+	frozenFundsState := frozenfunds.NewFrozenFunds(stateBus, immutableTree)
+
+	accountsState := accounts.NewAccounts(stateBus, immutableTree)
+
+	coinsState := coins.NewCoins(stateBus, immutableTree)
+
+	checksState := checks.NewChecks(immutableTree)
+
+	haltsState := halts.NewHalts(stateBus, immutableTree)
+
+	waitlistState := waitlist.NewWaitList(stateBus, immutableTree)
+
+	poolV2 := swap.NewV2(stateBus, immutableTree)
+
+	commission := commission.NewCommission(immutableTree)
+
+	update := update.New(immutableTree)
+
+	state := &State{
+		Validators:  validatorsState,
+		App:         appState,
+		Candidates:  candidatesState,
+		FrozenFunds: frozenFundsState,
+		Accounts:    accountsState,
+		Coins:       coinsState,
+		Checks:      checksState,
+		Checker:     stateChecker,
+		Halts:       haltsState,
+		Waitlist:    waitlistState,
+		SwapV2:      poolV2,
 		Commission:  commission,
 		Updates:     update,
 

@@ -186,9 +186,9 @@ func TestValidators_SetValidators(t *testing.T) {
 	}
 }
 
-func TestValidators_PayRewards(t *testing.T) {
+func TestValidators_PayRewardsStake(t *testing.T) {
 	t.Parallel()
-	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 0)
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 1)
 	b := bus.NewBus()
 	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
 
@@ -225,23 +225,104 @@ func TestValidators_PayRewards(t *testing.T) {
 			BipValue: "1000000000000000000000",
 		},
 	}, nil)
-	candidatesS.RecalculateStakes(0)
+	candidatesS.RecalculateStakes(1)
 	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
 
-	validators.PayRewards()
+	validators.PayRewardsV3(0, 0)
+	candidatesS.RecalculateStakesV2(1)
 
-	if accs.GetBalance([20]byte{1}, 0).String() != "72" {
-		t.Fatal("delegate did not receive the award")
+	d1 := candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String()
+	if d1 != "1000000000000000000072" {
+		t.Fatal("delegate did not receive the award", d1)
 	}
-	if accs.GetBalance([20]byte{2}, 0).String() != "8" {
+	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{2}, 0).Value.String() != "8" {
 		t.Fatal("rewards_address did not receive the award")
 	}
+	{
 
-	if accs.GetBalance(dao.Address, 0).String() != "10" {
-		t.Fatal("dao_address did not receive the award")
+		if candidatesS.GetStakeOfAddress([32]byte{4}, dao.Address, 0).Value.String() != "10" {
+			t.Fatal("dao_address did not receive the award")
+		}
+		if candidatesS.GetStakeOfAddress([32]byte{4}, developers.Address, 0).Value.String() != "10" {
+			t.Fatal("developers_address did not receive the award")
+		}
 	}
-	if accs.GetBalance(developers.Address, 0).String() != "10" {
-		t.Fatal("developers_address did not receive the award")
+}
+func TestValidators_PayRewardsStakeAndUpdate(t *testing.T) {
+	t.Parallel()
+	mutableTree, _ := tree.NewMutableTree(0, db.NewMemDB(), 1024, 1)
+	b := bus.NewBus()
+	accs := accounts.NewAccounts(b, mutableTree.GetLastImmutable())
+
+	b.SetAccounts(accounts.NewBus(accs))
+	b.SetChecker(checker.NewChecker(b))
+	b.SetEvents(eventsdb.NewEventsStore(db.NewMemDB()))
+	appBus := app.NewApp(b, mutableTree.GetLastImmutable())
+	b.SetApp(appBus)
+	validators := NewValidators(b, mutableTree.GetLastImmutable())
+	newValidator := NewValidator(
+		[32]byte{4},
+		types.NewBitArray(ValidatorMaxAbsentWindow),
+		big.NewInt(1000000),
+		big.NewInt(10),
+		true,
+		true,
+		true,
+		b)
+	validators.SetValidators([]*Validator{newValidator})
+	validator := validators.GetByPublicKey([32]byte{4})
+	if validator == nil {
+		t.Fatal("validator not found")
+	}
+	validator.AddAccumReward(big.NewInt(90))
+	candidatesS := candidates.NewCandidates(b, mutableTree.GetLastImmutable())
+
+	candidatesS.Create([20]byte{1}, [20]byte{2}, [20]byte{3}, [32]byte{4}, 10, 0, 0)
+	candidatesS.SetOnline([32]byte{4})
+	candidatesS.SetStakes([32]byte{4}, []types.Stake{
+		{
+			Owner:    [20]byte{1},
+			Coin:     0,
+			Value:    "500000000000000000000",
+			BipValue: "500000000000000000000",
+		},
+	}, []types.Stake{{
+		Owner:    [20]byte{1},
+		Coin:     0,
+		Value:    "500000000000000000000",
+		BipValue: "500000000000000000000",
+	}})
+	candidatesS.RecalculateStakes(1)
+	validators.SetNewValidators(candidatesS.GetNewCandidates(1))
+
+	candidatesS.SetStakes([32]byte{4}, nil, []types.Stake{{
+		Owner:    [20]byte{1},
+		Coin:     0,
+		Value:    "500000000000000000000",
+		BipValue: "500000000000000000000",
+	}})
+
+	validators.PayRewardsV3(0, 0)
+	candidatesS.RecalculateStakesV2(1)
+
+	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String() != "1500000000000000000072" {
+		t.Fatal("delegate did not receive the award", candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).Value.String())
+	}
+	if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).BipValue.String() != "1500000000000000000072" {
+		t.Fatal("delegate did not receive the award", candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{1}, 0).BipValue.String())
+	}
+
+	{
+		if candidatesS.GetStakeOfAddress([32]byte{4}, [20]byte{2}, 0).Value.String() != "8" {
+			t.Fatal("rewards_address did not receive the award")
+		}
+
+		if candidatesS.GetStakeOfAddress([32]byte{4}, dao.Address, 0).Value.String() != "10" {
+			t.Fatal("dao_address did not receive the award")
+		}
+		if candidatesS.GetStakeOfAddress([32]byte{4}, developers.Address, 0).Value.String() != "10" {
+			t.Fatal("developers_address did not receive the award")
+		}
 	}
 }
 

@@ -23,7 +23,7 @@ const (
 )
 
 // CreateApp creates and returns new Blockchain instance
-func CreateApp(state types.AppState) *minter.Blockchain {
+func CreateApp(state types.AppState, initialHeightOmitempty ...int64) *minter.Blockchain {
 	jsonState, err := amino.MarshalJSON(state)
 	if err != nil {
 		panic(err)
@@ -38,11 +38,15 @@ func CreateApp(state types.AppState) *minter.Blockchain {
 	for _, validator := range state.Validators {
 		updates = append(updates, tmTypes.Ed25519ValidatorUpdate(validator.PubKey.Bytes(), 1))
 	}
+	initialHeight := int64(1)
+	if len(initialHeightOmitempty) == 1 {
+		initialHeight = initialHeightOmitempty[0]
+	}
 	app.InitChain(tmTypes.RequestInitChain{
 		Time:          time.Now(),
 		ChainId:       "test",
 		Validators:    updates,
-		InitialHeight: 1,
+		InitialHeight: initialHeight,
 		AppStateBytes: jsonState,
 	})
 
@@ -55,17 +59,23 @@ func SendCommit(app *minter.Blockchain) tmTypes.ResponseCommit {
 }
 
 // SendBeginBlock sends BeginBlock message to given Blockchain instance
-func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginBlock {
+func SendBeginBlock(app *minter.Blockchain, height int64, times ...time.Time) tmTypes.ResponseBeginBlock {
 	var voteInfos []tmTypes.VoteInfo
-	for _, validator := range app.CurrentState().Validators().GetValidators() {
+	validators := app.CurrentState().Validators().GetValidators()
+	for _, validator := range validators {
 		address := validator.GetAddress()
 		voteInfos = append(voteInfos, tmTypes.VoteInfo{
 			Validator: tmTypes.Validator{
 				Address: address[:],
-				Power:   0,
+				Power:   int64(100 / len(validators)),
 			},
 			SignedLastBlock: true,
 		})
+	}
+
+	var t time.Time
+	if len(times) == 1 {
+		t = times[0]
 	}
 	return app.BeginBlock(tmTypes.RequestBeginBlock{
 		Hash: nil,
@@ -73,7 +83,7 @@ func SendBeginBlock(app *minter.Blockchain, height int64) tmTypes.ResponseBeginB
 			Version:            version.Consensus{},
 			ChainID:            "",
 			Height:             height,
-			Time:               time.Time{},
+			Time:               t,
 			LastBlockId:        tmTypes1.BlockID{},
 			LastCommitHash:     nil,
 			DataHash:           nil,

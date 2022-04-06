@@ -79,7 +79,7 @@ func GetDataV1(txType TxType) (Data, bool) {
 }
 
 func GetData(txType TxType) (Data, bool) {
-	return GetDataV260(txType)
+	return GetDataV3(txType)
 }
 
 func GetDataV260(txType TxType) (Data, bool) {
@@ -106,6 +106,22 @@ func GetDataV260(txType TxType) (Data, bool) {
 		return &RemoveLimitOrderData{}, true
 	default:
 		return GetDataV250(txType)
+	}
+}
+func GetDataV3(txType TxType) (Data, bool) {
+	switch txType {
+	case TypeUnbond:
+		return &UnbondDataV3{}, true
+	case TypeLockStake:
+		return &LockStakeData{}, true
+	case TypeMoveStake:
+		return &MoveStakeData{}, true
+	case TypeVoteCommission:
+		return &VoteCommissionDataV3{}, true
+	case TypeLock:
+		return &LockData{}, true
+	default:
+		return GetDataV260(txType)
 	}
 }
 func GetDataV250(txType TxType) (Data, bool) {

@@ -129,7 +129,7 @@ func (data UnbondDataV260) Run(tx *Transaction, context state.Interface, rewardP
 				detailsCom *swap.ChangeDetailsWithOrders
 				ownersCom  []*swap.OrderDetail
 			)
-			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swap.PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
+			commission, commissionInBaseCoin, poolIDCom, detailsCom, ownersCom = deliverState.Swapper().PairSellWithOrders(tx.CommissionCoin(), types.GetBaseCoinID(), commission, big.NewInt(0))
 			tagsCom = &tagPoolChange{
 				PoolID:   poolIDCom,
 				CoinIn:   tx.CommissionCoin(),
@@ -159,7 +159,7 @@ func (data UnbondDataV260) Run(tx *Transaction, context state.Interface, rewardP
 			deliverState.Candidates.SubStake(sender, data.PubKey, data.Coin, data.Value)
 		}
 
-		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, nil)
+		deliverState.FrozenFunds.AddFund(unbondAtBlock, sender, &data.PubKey, deliverState.Candidates.ID(data.PubKey), data.Coin, data.Value, 0)
 		deliverState.Accounts.SetNonce(sender, tx.Nonce)
 
 		tags = []abcTypes.EventAttribute{

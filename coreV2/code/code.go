@@ -28,6 +28,7 @@ const (
 	VoteExpired                  uint32 = 120
 	VoteAlreadyExists            uint32 = 121
 	WrongUpdateVersionName       uint32 = 122
+	WrongDueHeight               uint32 = 123
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200
@@ -62,6 +63,8 @@ const (
 	PeriodLimitReached    uint32 = 413
 	CandidateJailed       uint32 = 414
 	TooBigStake           uint32 = 415
+	UnbondBlocked         uint32 = 416
+	EqualPubKey           uint32 = 417
 
 	// check
 	CheckInvalidLock uint32 = 501
@@ -910,5 +913,29 @@ func NewWrongOrderVolume(v0, v1 string) *wrongOrderVolume {
 		Code:    strconv.Itoa(int(WrongOrderVolume)),
 		Volume0: v0,
 		Volume1: v1,
+	}
+}
+
+type unbondBlocked struct {
+	Code               string `json:"code,omitempty"`
+	BlockedUntilHeight string `json:"blocked_until_height"`
+}
+
+func NewUnbondBlocked(height string) *unbondBlocked {
+	return &unbondBlocked{
+		Code:               strconv.Itoa(int(UnbondBlocked)),
+		BlockedUntilHeight: height,
+	}
+}
+
+type equalPubKey struct {
+	Code      string `json:"code,omitempty"`
+	PublicKey string `json:"public_key"`
+}
+
+func NewEqualPubKey(pubKey string) *equalPubKey {
+	return &equalPubKey{
+		Code:      strconv.Itoa(int(EqualPubKey)),
+		PublicKey: pubKey,
 	}
 }

@@ -79,5 +79,8 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		FailedTx:                price.FailedTxPrice().String(),
 		AddLimitOrder:           price.AddLimitOrderPrice().String(),
 		RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
+		MoveStake:               price.MoveStakePrice().String(),
+		LockStake:               price.LockStakePrice().String(),
+		Lock:                    price.LockPrice().String(),
 	}
 }

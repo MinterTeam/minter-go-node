@@ -337,7 +337,7 @@ func TestAccounts_Export(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	valid := "[{\"address\":\"Mx0400000000000000000000000000000000000000\",\"balance\":[{\"coin\":0,\"value\":\"1000\"},{\"coin\":1,\"value\":\"1001\"}],\"nonce\":0,\"multisig_data\":{\"weights\":[1,1,2],\"threshold\":2,\"addresses\":[\"Mx0100000000000000000000000000000000000000\",\"Mx0200000000000000000000000000000000000000\",\"Mx0300000000000000000000000000000000000000\"]}}]"
+	valid := "[{\"address\":\"Mx0400000000000000000000000000000000000000\",\"balance\":[{\"coin\":0,\"value\":\"1000\"},{\"coin\":1,\"value\":\"1001\"}],\"nonce\":0,\"multisig_data\":{\"weights\":[1,1,2],\"threshold\":2,\"addresses\":[\"Mx0100000000000000000000000000000000000000\",\"Mx0200000000000000000000000000000000000000\",\"Mx0300000000000000000000000000000000000000\"]},\"lock_stake_until_block\":0}]"
 	if string(bytes) != valid {
 		t.Log(string(bytes))
 		t.Log(valid)

@@ -128,6 +128,9 @@ func (c *Commission) Export(state *types.AppState) {
 					FailedTx:                p.FailedTxPrice().String(),
 					AddLimitOrder:           p.AddLimitOrderPrice().String(),
 					RemoveLimitOrder:        p.RemoveLimitOrderPrice().String(),
+					MoveStake:               p.MoveStakePrice().String(),
+					LockStake:               p.LockStakePrice().String(),
+					Lock:                    p.LockPrice().String(),
 				},
 			})
 		}
@@ -183,6 +186,9 @@ func (c *Commission) Export(state *types.AppState) {
 		FailedTx:                current.FailedTxPrice().String(),
 		AddLimitOrder:           current.AddLimitOrderPrice().String(),
 		RemoveLimitOrder:        current.RemoveLimitOrderPrice().String(),
+		MoveStake:               current.MoveStakePrice().String(),
+		LockStake:               current.LockStakePrice().String(),
+		Lock:                    current.LockPrice().String(),
 	}
 }
 
