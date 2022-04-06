@@ -11,6 +11,20 @@ func TestIEventsDB(t *testing.T) {
 	store := NewEventsStore(db.NewMemDB())
 
 	{
+		event := &StakeMoveEvent{
+			Address:           types.HexToAddress("Mx04bea23efb744dc93b4fda4c20bf4a21c6e195f1"),
+			Amount:            "111497225000000000000",
+			Coin:              123,
+			CandidatePubKey:   types.HexToPubkey("Mp9e13f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f58c6"),
+			ToCandidatePubKey: types.HexToPubkey("Mp0003f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f5000"),
+		}
+		store.AddEvent(event)
+	}
+	err := store.CommitEvents(123)
+	if err != nil {
+		t.Fatal(err)
+	}
+	{
 		event := &RewardEvent{
 			Role:            RoleDevelopers.String(),
 			Address:         types.HexToAddress("Mx04bea23efb744dc93b4fda4c20bf4a21c6e195f1"),
@@ -28,7 +42,7 @@ func TestIEventsDB(t *testing.T) {
 		}
 		store.AddEvent(event)
 	}
-	err := store.CommitEvents(12)
+	err = store.CommitEvents(12)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,6 +182,28 @@ func TestIEventsDB(t *testing.T) {
 	}
 	if loadEvents[0].(*SlashEvent).Coin != 10 {
 		t.Fatal("invalid Coin")
+	}
+
+	loadEvents = store.LoadEvents(123)
+
+	if len(loadEvents) != 1 {
+		t.Fatal("count of events not equal 1")
+	}
+
+	if loadEvents[0].Type() != TypeStakeMoveEvent {
+		t.Fatal("invalid event type")
+	}
+	if loadEvents[0].(*StakeMoveEvent).Amount != "111497225000000000000" {
+		t.Fatal("invalid Amount")
+	}
+	if loadEvents[0].(*StakeMoveEvent).Address.String() != "Mx04bea23efb744dc93b4fda4c20bf4a21c6e195f1" {
+		t.Fatal("invalid Address")
+	}
+	if loadEvents[0].(*StakeMoveEvent).CandidatePubKey.String() != "Mp9e13f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f58c6" {
+		t.Fatal("invalid PubKey")
+	}
+	if loadEvents[0].(*StakeMoveEvent).ToCandidatePubKey.String() != "Mp0003f2f5468dd782b316444fbd66595e13dba7d7bd3efa1becd50b42045f5000" {
+		t.Fatal("invalid ToPubKey")
 	}
 }
 

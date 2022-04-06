@@ -26,6 +26,7 @@ const (
 const (
 	// BasecoinID is an ID of a base coin
 	BasecoinID = 0
+	USDTID     = 1993
 )
 
 var (

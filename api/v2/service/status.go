@@ -29,6 +29,7 @@ func (s *Service) Status(ctx context.Context, _ *empty.Empty) (*pb.StatusRespons
 		LatestBlockTime:   result.SyncInfo.LatestBlockTime.Format(time.RFC3339Nano),
 		KeepLastStates:    uint64(s.minterCfg.BaseConfig.KeepLastStates),
 		TotalSlashed:      cState.App().GetTotalSlashed().String(),
+		CurrentEmission:   s.blockchain.GetEmission().String(),
 		CatchingUp:        result.SyncInfo.CatchingUp,
 		PublicKey:         fmt.Sprintf("Mp%x", result.ValidatorInfo.PubKey.Bytes()[:]),
 		NodeId:            string(result.NodeInfo.ID()),

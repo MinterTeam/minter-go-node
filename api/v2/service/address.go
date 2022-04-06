@@ -148,6 +148,7 @@ func (s *Service) Address(ctx context.Context, req *pb.AddressRequest) (*pb.Addr
 	res.TransactionCount = cState.Accounts().GetNonce(address)
 
 	res.Multisig = s.getMultisig(cState.Accounts().GetAccount(address))
+	res.LockedStakeUntilBlock = cState.Accounts().GetLockStakeUntilBlock(address)
 
 	return &res, nil
 }

@@ -42,7 +42,6 @@ func (c *Checker) AddCoin(coin types.CoinID, value *big.Int, msg ...string) {
 func (c *Checker) AddCoinVolume(coin types.CoinID, value *big.Int) {
 	c.lock.Lock()
 	defer c.lock.Unlock()
-
 	cValue, exists := c.volumeDelta[coin]
 
 	if !exists {

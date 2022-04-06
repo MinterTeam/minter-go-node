@@ -2,6 +2,7 @@ package swap
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -27,6 +28,10 @@ const minimumLiquidity = 1000
 const commission = 2
 
 type EditableChecker interface {
+	Coin0() types.CoinID
+	Coin1() types.CoinID
+	GetPairKey() PairKey
+
 	IsSorted() bool
 	IsOrderAlreadyUsed(id uint32) bool
 	GetOrder(id uint32) *Limit
@@ -63,6 +68,10 @@ type RSwap interface {
 	// Deprecated
 	// ExportV1(state *types.AppState, id types.CoinID, value *big.Int, bipValue *big.Int) *big.Int
 
+	GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade
+	GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade
+
+	SwapPools(context.Context) []EditableChecker
 	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
 	SwapPool(coin0, coin1 types.CoinID) (reserve0, reserve1 *big.Int, id uint32)
@@ -74,6 +83,7 @@ type RSwap interface {
 	PairCalculateSellForBuy(coin0, coin1 types.CoinID, amount1Out *big.Int) (amount0In *big.Int, err error)
 }
 
+// Deprecated
 type Swap struct {
 	muPairs       sync.RWMutex
 	pairs         map[PairKey]*Pair
@@ -90,6 +100,124 @@ type Swap struct {
 
 	bus *bus.Bus
 	db  atomic.Value
+
+	muLoadPools sync.Mutex
+	loadedPools bool
+
+	trader trader
+}
+
+func (s *Swap) GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade {
+	pairs := s.swapPools(ctx)
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	return s.trader.GetBestTradeExactIn(ctx,
+		pairs,
+		types.CoinID(outId),
+		NewTokenAmount(types.CoinID(inId), inAmount),
+		maxHops,
+	)
+}
+func (s *Swap) GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade {
+	pairs := s.swapPools(ctx)
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	return s.trader.GetBestTradeExactOut(ctx,
+		pairs,
+		types.CoinID(inId),
+		NewTokenAmount(types.CoinID(outId), outAmount),
+		maxHops,
+	)
+}
+
+func (s *Swap) swapPools(ctx context.Context) []EditableChecker {
+	s.loadPools()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	pools := make([]EditableChecker, 0, len(s.pairs))
+
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
+	}
+
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
+
+	return pools
+}
+func (s *Swap) SwapPools(ctx context.Context) []EditableChecker {
+	s.loadPools()
+
+	select {
+	case <-ctx.Done():
+		return nil
+	default:
+	}
+
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	pools := make([]EditableChecker, 0, len(s.pairs))
+
+	for _, pair := range s.pairs {
+		if pair == nil {
+			continue
+		}
+		pools = append(pools, pair)
+
+		select {
+		case <-ctx.Done():
+			return pools
+		default:
+		}
+	}
+
+	//sort.SliceStable(pools, func(i, j int) bool {
+	//	return pools[i].GetID() < pools[j].GetID()
+	//})
+
+	return pools
+}
+
+func (s *Swap) loadPools() {
+	s.muLoadPools.Lock()
+	defer s.muLoadPools.Unlock()
+
+	if s.loadedPools {
+		return
+	}
+
+	s.immutableTree().IterateRange([]byte{mainPrefix, pairDataPrefix}, []byte{mainPrefix, pairDataPrefix + 1}, true, func(key []byte, value []byte) bool {
+		if len(key) < 10 {
+			return false
+		}
+		coin0 := types.BytesToCoinID(key[2:6])
+		coin1 := types.BytesToCoinID(key[6:10])
+		_ = s.Pair(coin0, coin1)
+
+		return false
+	})
+
+	s.loadedPools = true
 }
 
 func (s *Swap) ExpireOrders(beforeHeight uint64) {
@@ -165,7 +293,7 @@ func (s *Swap) getOrderedDirtyOrderPairs() []PairKey {
 func New(bus *bus.Bus, db *iavl.ImmutableTree) *Swap {
 	immutableTree := atomic.Value{}
 	immutableTree.Store(db)
-	return &Swap{pairs: map[PairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[PairKey]struct{}{}, dirtiesOrders: map[PairKey]struct{}{}}
+	return &Swap{trader: &traderV2{}, pairs: map[PairKey]*Pair{}, bus: bus, db: immutableTree, dirties: map[PairKey]struct{}{}, dirtiesOrders: map[PairKey]struct{}{}}
 }
 
 func (s *Swap) immutableTree() *iavl.ImmutableTree {
@@ -246,7 +374,7 @@ func (s *Swap) Import(state *types.AppState) {
 			}
 
 			pair0.addOrderWithID(v0, v1, order.Owner, uint32(order.ID), order.Height)
-			s.bus.Checker().AddCoin(pair0.Coin1, v1)
+			s.bus.Checker().AddCoin(pair0.Coin1(), v1)
 		}
 	}
 	if state.NextOrderID > 1 {
@@ -310,6 +438,17 @@ func (p *Pair) CheckSwap(amount0In, amount1Out *big.Int) error {
 func (p *Pair) Exists() bool {
 	return p != nil
 }
+
+func (p *Pair) GetPairKey() PairKey {
+	return p.PairKey
+}
+func (p *Pair) Coin0() types.CoinID {
+	return p.PairKey.Coin0
+}
+func (p *Pair) Coin1() types.CoinID {
+	return p.PairKey.Coin1
+}
+
 func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 	reserve0, reserve1 := p.Reserves()
 	return &Pair{
@@ -547,14 +686,16 @@ func (s *Swap) Commit(db *iavl.MutableTree, version int64) error {
 		if lenB > 10 {
 			pair.buyOrders.ids = pair.buyOrders.ids[:10:10]
 		}
-		//pair.buyOrders.ids = nil
+		//	pair.loadedBuyOrders.ids = nil
+		//	pair.buyOrders.ids = nil
 
 		lenS := len(pair.sellOrders.ids)
 		pair.loadedSellOrders.ids = pair.sellOrders.ids[:lenS:lenS]
 		if lenS > 10 {
 			pair.sellOrders.ids = pair.sellOrders.ids[:10:10]
 		}
-		//pair.sellOrders.ids = nil
+		//	pair.loadedSellOrders.ids = nil
+		//	pair.sellOrders.ids = nil
 
 		pair.dirtyOrders.mu.Lock()
 		pair.dirtyOrders.list = make(map[uint32]struct{})

@@ -21,6 +21,10 @@ import (
 
 type mockValisators struct{}
 
+func (m mockValisators) Count() int {
+	return 0
+}
+
 func (m mockValisators) IsValidator(pubkey types.Pubkey) bool {
 	return false
 }
@@ -60,7 +64,12 @@ func TestCandidates_DeleteCandidate(t *testing.T) {
 		if candidates.GetCandidate([32]byte{4}) != nil {
 			t.Fatal("candidate exist")
 		}
+		t.Log(candidates.deletedCandidates)
 	}
+
+	var se types.AppState
+	NewCandidates(b, mutableTree.GetLastImmutable()).Export(&se)
+	t.Log(se.DeletedCandidates)
 }
 func TestCandidates_Create_oneCandidate(t *testing.T) {
 	t.Parallel()

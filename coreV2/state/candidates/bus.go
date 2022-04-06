@@ -15,12 +15,12 @@ func NewBus(candidates *Candidates) *Bus {
 }
 
 // GetStakes returns list of stakes of candidate with given public key
-func (b *Bus) GetStakes(pubkey types.Pubkey) []bus.Stake {
+func (b *Bus) GetStakes(pubkey types.Pubkey) []*bus.Stake {
 	stakes := b.candidates.GetStakes(pubkey)
-	var result []bus.Stake
+	var result []*bus.Stake
 
 	for _, stake := range stakes {
-		result = append(result, bus.Stake{
+		result = append(result, &bus.Stake{
 			Owner:    stake.Owner,
 			Value:    big.NewInt(0).Set(stake.Value),
 			Coin:     stake.Coin,
@@ -56,6 +56,15 @@ func (b *Bus) GetCandidate(pubkey types.Pubkey) *bus.Candidate {
 		ControlAddress: candidate.ControlAddress,
 		Commission:     candidate.Commission,
 		Status:         candidate.Status,
+		AddUpdate: func(id types.CoinID, value, bipValue *big.Int, address types.Address) {
+			candidate.addUpdate(&stake{
+				Owner:    address,
+				Coin:     id,
+				Value:    big.NewInt(0).Set(value),
+				BipValue: big.NewInt(0).Set(bipValue),
+			})
+			return
+		},
 	}
 }
 
