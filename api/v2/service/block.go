@@ -221,7 +221,7 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 		case pb.BlockField_size:
 			response.Size = uint64(block.Block.Size())
 		case pb.BlockField_block_reward:
-			if h := s.blockchain.GetVersionHeight(minter.V3); req.Height < h {
+			if h := s.blockchain.GetVersionHeight(minter.V3); h == 0 || req.Height < h {
 				response.BlockReward = wrapperspb.String(s.rewards.GetRewardForBlock(uint64(height)).String())
 				continue
 			}
