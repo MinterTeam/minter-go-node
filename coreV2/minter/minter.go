@@ -178,7 +178,9 @@ func (blockchain *Blockchain) GetVersionHeight(v string) uint64 {
 func (blockchain *Blockchain) GetEmission() *big.Int {
 	emission := blockchain.appDB.Emission()
 	if emission == nil || emission.Sign() != 1 {
-		return blockchain.rewardsCounter.GetBeforeBlock(blockchain.Height())
+		// todo:
+		//return blockchain.rewardsCounter.GetBeforeBlock(blockchain.Height())
+		return big.NewInt(0)
 	}
 
 	return emission
