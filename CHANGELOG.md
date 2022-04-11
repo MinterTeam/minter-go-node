@@ -1,5 +1,13 @@
 # Changelog
 
+## [v3.0.1](https://github.com/MinterTeam/minter-go-node/tree/v3.0.1)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.0.0...v3.0.1)
+
+### Fixed
+
+- API `/block` and `/blocks` for older versions.
+
 ## [v3.0.0](https://github.com/MinterTeam/minter-go-node/tree/v3.0.0)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v2.6.1...v3.0.0)
