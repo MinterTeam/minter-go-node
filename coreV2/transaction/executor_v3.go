@@ -44,6 +44,14 @@ func (e *ExecutorV3) RunTx(context state.Interface, rawTx []byte, rewardPool *bi
 		}
 	}
 
+	if tx.Type == TypeLockStake && currentBlock <= 10197360 {
+		return Response{
+			Code: code.Unavailable,
+			Log:  "LockStake available from block 10197360 ",
+			Info: EncodeError(code.NewCustomCode(code.Unavailable)),
+		}
+	}
+
 	if tx.ChainID != types.CurrentChainID {
 		return Response{
 			Code: code.WrongChainID,

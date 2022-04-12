@@ -289,6 +289,7 @@ func (s *State) Commit() ([]byte, error) {
 func (s *State) Import(state types.AppState, version string) error {
 	defer s.Checker.RemoveBaseCoin()
 
+	s.App.SetReward(helpers.StringToBigInt(state.PrevReward.Reward), helpers.StringToBigInt(state.PrevReward.Reward))
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetCoinsCount(uint32(len(state.Coins)))
 

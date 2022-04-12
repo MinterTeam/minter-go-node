@@ -2,7 +2,7 @@ package version
 
 // Version components
 const (
-	AppVer = 7
+	AppVer = 8
 )
 
 var (
