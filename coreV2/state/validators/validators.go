@@ -3,6 +3,7 @@ package validators
 import (
 	"bytes"
 	"fmt"
+	"log"
 	"sort"
 	"sync"
 	"sync/atomic"
@@ -460,27 +461,55 @@ func (v *Validators) PayRewardsV3(height uint64, period int64) (moreRewards *big
 
 			safeRewardVariable := big.NewInt(0).Set(reward)
 			if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
+				var logging bool
+				if height == 10198800 && stake.Owner.Compare(types.HexToAddress("Mx88e1b5bb28953e9bedfced88af32b09f8e255eda")) == 0 && validator.PubKey.Equals(types.HexToPubkey("Mpf64c5956078cd8e5db5b3e7ccfc4e2f9b596fa3801eb3dbfef691623df972279")) {
+					logging = true
+				}
+				if logging {
+					log.Println("reward", big.NewInt(0).Div(reward, big.NewInt(1e18)))
+				}
+
 				safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 				safeRewards.Mul(safeRewards, stake.BipValue)
 				safeRewards.Div(safeRewards, validator.GetTotalBipStake())
 				safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
 				safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
 				safeRewards.Mul(safeRewards, big.NewInt(3))
+				safeRewards.Div(safeRewards, big.NewInt(100))
+
+				if logging {
+					log.Println("safeRewards", big.NewInt(0).Div(safeRewards, big.NewInt(1e18)))
+				}
 
 				calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
 				calcRewards.Mul(calcRewards, stake.BipValue)
 				calcRewards.Div(calcRewards, validator.GetTotalBipStake())
 				calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
 				calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+				calcRewards.Div(calcRewards, big.NewInt(100))
+
+				if logging {
+					log.Println("calcRewards", big.NewInt(0).Div(calcRewards, big.NewInt(1e18)))
+				}
 
 				feeRewards := big.NewInt(0).Sub(reward, calcRewards)
+				if logging {
+					log.Println("feeRewards", big.NewInt(0).Div(feeRewards, big.NewInt(1)))
+				}
 
 				safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
+				if logging {
+					log.Println("safeRewardVariable", big.NewInt(0).Div(safeRewardVariable, big.NewInt(1e18)))
+				}
 				if safeRewardVariable.Sign() < 1 {
 					continue
 				}
 
 				moreRewards.Add(moreRewards, new(big.Int).Sub(safeRewardVariable, reward))
+
+				if logging {
+					panic("x3")
+				}
 			}
 
 			if safeRewardVariable.Sign() < 1 {
