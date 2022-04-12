@@ -1018,7 +1018,7 @@ func getTestGenesis(pv *privval.FilePV, home string, initialState int64) func() 
 		validators, candidates := makeTestValidatorsAndCandidates([]string{string(pv.Key.PubKey.Bytes()[:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
-			Version:      v250,
+			Version:      V3,
 			TotalSlashed: "0",
 			Accounts: []types.Account{
 				{

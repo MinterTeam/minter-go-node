@@ -212,7 +212,7 @@ func (e *ExecutorV250) RunTx(context state.Interface, rawTx []byte, rewardPool *
 	}
 
 	if !isCheck && response.Code != 0 {
-		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTxPrice(), big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), commissions.PayloadByte))
+		commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTx, big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), commissions.PayloadByte))
 		commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 
 		if !commissions.Coin.IsBaseCoin() {

@@ -392,36 +392,36 @@ const totalPairIDPrefix = 'i'
 const totalOrdersIDPrefix = 'n'
 
 type pairData struct {
-	*sync.RWMutex // todo: mu *sync.RWMutex
-	Reserve0      *big.Int
-	Reserve1      *big.Int
-	ID            *uint32
-	markDirty     func()
+	mu        *sync.RWMutex
+	Reserve0  *big.Int
+	Reserve1  *big.Int
+	ID        *uint32
+	markDirty func()
 }
 
 func (pd *pairData) Reserves() (reserve0 *big.Int, reserve1 *big.Int) {
-	pd.RLock()
-	defer pd.RUnlock()
+	pd.mu.RLock()
+	defer pd.mu.RUnlock()
 	return new(big.Int).Set(pd.Reserve0), new(big.Int).Set(pd.Reserve1)
 }
 
 func (pd *pairData) Price() *big.Float {
-	pd.RLock()
-	defer pd.RUnlock()
+	pd.mu.RLock()
+	defer pd.mu.RUnlock()
 
 	return CalcPriceSell(pd.Reserve0, pd.Reserve1)
 }
 
 func (pd *pairData) PriceRat() *big.Rat {
-	pd.RLock()
-	defer pd.RUnlock()
+	pd.mu.RLock()
+	defer pd.mu.RUnlock()
 
 	return CalcPriceSellRat(pd.Reserve0, pd.Reserve1)
 }
 
 func (pd *pairData) reverse() *pairData {
 	return &pairData{
-		RWMutex:   pd.RWMutex,
+		mu:        pd.mu,
 		Reserve0:  pd.Reserve1,
 		Reserve1:  pd.Reserve0,
 		ID:        pd.ID,
@@ -455,7 +455,7 @@ func (p *Pair) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker {
 		lockOrders: &sync.Mutex{},
 		PairKey:    p.PairKey,
 		pairData: &pairData{
-			RWMutex:   &sync.RWMutex{},
+			mu:        &sync.RWMutex{},
 			Reserve0:  reserve0.Add(reserve0, amount0In),
 			Reserve1:  reserve1.Sub(reserve1, amount1Out),
 			ID:        p.ID,
@@ -953,7 +953,7 @@ func (s *Swap) addPair(key PairKey) *Pair {
 		lockOrders: &sync.Mutex{},
 		PairKey:    key,
 		pairData: &pairData{
-			RWMutex:   &sync.RWMutex{},
+			mu:        &sync.RWMutex{},
 			Reserve0:  big.NewInt(0),
 			Reserve1:  big.NewInt(0),
 			ID:        new(uint32),
@@ -1280,16 +1280,16 @@ func (p *Pair) checkSwap(amount0In, amount1In, amount0Out, amount1Out *big.Int) 
 func (p *Pair) update(amount0, amount1 *big.Int) {
 	p.markDirty()
 
-	p.pairData.Lock()
-	defer p.pairData.Unlock()
+	p.pairData.mu.Lock()
+	defer p.pairData.mu.Unlock()
 
 	p.Reserve0.Add(p.Reserve0, amount0)
 	p.Reserve1.Add(p.Reserve1, amount1)
 }
 
 func (p *Pair) Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int) {
-	p.pairData.RLock()
-	defer p.pairData.RUnlock()
+	p.pairData.mu.RLock()
+	defer p.pairData.mu.RUnlock()
 	amount0 = new(big.Int).Div(new(big.Int).Mul(liquidity, p.Reserve0), totalSupply)
 	amount1 = new(big.Int).Div(new(big.Int).Mul(liquidity, p.Reserve1), totalSupply)
 	return amount0, amount1

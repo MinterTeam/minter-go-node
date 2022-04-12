@@ -75,7 +75,7 @@ func (data AddLimitOrderData) String() string {
 }
 
 func (data AddLimitOrderData) CommissionData(price *commission.Price) *big.Int {
-	return price.AddLimitOrderPrice()
+	return price.AddLimitOrder
 }
 
 func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {

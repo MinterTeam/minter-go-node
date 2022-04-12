@@ -289,6 +289,7 @@ func (s *State) Commit() ([]byte, error) {
 func (s *State) Import(state types.AppState, version string) error {
 	defer s.Checker.RemoveBaseCoin()
 
+	s.App.SetReward(helpers.StringToBigInt(state.PrevReward.Reward), helpers.StringToBigInt(state.PrevReward.Reward))
 	s.App.SetMaxGas(state.MaxGas)
 	s.App.SetCoinsCount(uint32(len(state.Coins)))
 
@@ -306,9 +307,9 @@ func (s *State) Import(state types.AppState, version string) error {
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
-		if a.LockStakeUntilBlock > 0 {
-			s.Accounts.SetLockStakeUntilBlock(a.Address, a.LockStakeUntilBlock)
-		}
+		//if a.LockStakeUntilBlock > 0 {
+		s.Accounts.SetLockStakeUntilBlock(a.Address, a.LockStakeUntilBlock)
+		//}
 		for _, b := range a.Balance {
 			balance := helpers.StringToBigInt(b.Value)
 			coinID := types.CoinID(b.Coin)
@@ -360,11 +361,7 @@ func (s *State) Import(state types.AppState, version string) error {
 		s.Candidates.SetDeletedCandidates(state.DeletedCandidates)
 	}
 
-	if version == "" {
-		s.Candidates.RecalculateStakes(uint64(s.height)) // RecalculateStakesV2
-	} else {
-		s.Candidates.RecalculateStakesV2(uint64(s.height))
-	}
+	s.Candidates.RecalculateStakesV2(uint64(s.height))
 
 	for _, w := range state.Waitlist {
 		value := helpers.StringToBigInt(w.Value)
@@ -432,17 +429,22 @@ func (s *State) Import(state types.AppState, version string) error {
 		MintToken:               helpers.StringToBigInt(c.MintToken),
 		VoteCommission:          helpers.StringToBigInt(c.VoteCommission),
 		VoteUpdate:              helpers.StringToBigInt(c.VoteUpdate),
-		More:                    nil,
+		FailedTx:                helpers.StringToBigInt(c.FailedTx),
+		AddLimitOrder:           helpers.StringToBigInt(c.AddLimitOrder),
+		RemoveLimitOrder:        helpers.StringToBigInt(c.RemoveLimitOrder),
+		MoveStake:               helpers.StringToBigInt(c.MoveStake),
+		LockStake:               helpers.StringToBigInt(c.LockStake),
+		Lock:                    helpers.StringToBigInt(c.Lock),
 	}
 
-	if c.FailedTx != "" &&
-		c.AddLimitOrder != "" &&
-		c.RemoveLimitOrder != "" {
-		com.More = append(com.More,
-			helpers.StringToBigInt(c.FailedTx),
-			helpers.StringToBigInt(c.AddLimitOrder),
-			helpers.StringToBigInt(c.RemoveLimitOrder))
-	}
+	//if c.FailedTx != "" &&
+	//	c.AddLimitOrder != "" &&
+	//	c.RemoveLimitOrder != "" {
+	//	com.More = append(com.More,
+	//		helpers.StringToBigInt(c.FailedTx),
+	//		helpers.StringToBigInt(c.AddLimitOrder),
+	//		helpers.StringToBigInt(c.RemoveLimitOrder))
+	//}
 
 	s.Commission.SetNewCommissions(com.Encode())
 
@@ -492,16 +494,22 @@ func (s *State) Import(state types.AppState, version string) error {
 			MintToken:               helpers.StringToBigInt(vc.MintToken),
 			VoteCommission:          helpers.StringToBigInt(vc.VoteCommission),
 			VoteUpdate:              helpers.StringToBigInt(vc.VoteUpdate),
+			FailedTx:                helpers.StringToBigInt(vc.FailedTx),
+			AddLimitOrder:           helpers.StringToBigInt(vc.AddLimitOrder),
+			RemoveLimitOrder:        helpers.StringToBigInt(vc.RemoveLimitOrder),
+			MoveStake:               helpers.StringToBigInt(vc.MoveStake),
+			LockStake:               helpers.StringToBigInt(vc.LockStake),
+			Lock:                    helpers.StringToBigInt(vc.Lock),
 			More:                    nil,
 		}
-		if vc.FailedTx != "" &&
-			vc.AddLimitOrder != "" &&
-			vc.RemoveLimitOrder != "" {
-			voteCom.More = append(com.More,
-				helpers.StringToBigInt(vc.FailedTx),
-				helpers.StringToBigInt(vc.AddLimitOrder),
-				helpers.StringToBigInt(vc.RemoveLimitOrder))
-		}
+		//if vc.FailedTx != "" &&
+		//	vc.AddLimitOrder != "" &&
+		//	vc.RemoveLimitOrder != "" {
+		//	voteCom.More = append(com.More,
+		//		helpers.StringToBigInt(vc.FailedTx),
+		//		helpers.StringToBigInt(vc.AddLimitOrder),
+		//		helpers.StringToBigInt(vc.RemoveLimitOrder))
+		//}
 		for _, pubkey := range vote.Votes {
 			s.Commission.AddVote(vote.Height, pubkey, voteCom.Encode())
 		}

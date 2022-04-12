@@ -32,7 +32,7 @@ func (data LockStakeData) String() string {
 }
 
 func (data LockStakeData) CommissionData(price *commission.Price) *big.Int {
-	return price.LockStakePrice()
+	return price.LockStake
 }
 
 func (data LockStakeData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {

@@ -341,7 +341,7 @@ func (p *PairV2) AddLastSwapStep(amount0In, amount1Out *big.Int) EditableChecker
 		lockOrders: &sync.Mutex{},
 		PairKey:    p.PairKey,
 		pairData: &pairData{
-			RWMutex:   &sync.RWMutex{},
+			mu:        &sync.RWMutex{},
 			Reserve0:  reserve0.Add(reserve0, amount0In),
 			Reserve1:  reserve1.Sub(reserve1, amount1Out),
 			ID:        p.ID,
@@ -729,7 +729,7 @@ func (s *SwapV2) addPair(key PairKey) *PairV2 {
 		lockOrders: &sync.Mutex{},
 		PairKey:    key,
 		pairData: &pairData{
-			RWMutex:   &sync.RWMutex{},
+			mu:        &sync.RWMutex{},
 			Reserve0:  big.NewInt(0),
 			Reserve1:  big.NewInt(0),
 			ID:        new(uint32),
@@ -1034,16 +1034,16 @@ func (p *PairV2) checkSwap(amount0In, amount1In, amount0Out, amount1Out *big.Int
 func (p *PairV2) update(amount0, amount1 *big.Int) {
 	p.markDirty()
 
-	p.pairData.Lock()
-	defer p.pairData.Unlock()
+	p.pairData.mu.Lock()
+	defer p.pairData.mu.Unlock()
 
 	p.Reserve0.Add(p.Reserve0, amount0)
 	p.Reserve1.Add(p.Reserve1, amount1)
 }
 
 func (p *PairV2) Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amount1 *big.Int) {
-	p.pairData.RLock()
-	defer p.pairData.RUnlock()
+	p.pairData.mu.RLock()
+	defer p.pairData.mu.RUnlock()
 	amount0 = new(big.Int).Div(new(big.Int).Mul(liquidity, p.Reserve0), totalSupply)
 	amount1 = new(big.Int).Div(new(big.Int).Mul(liquidity, p.Reserve1), totalSupply)
 	return amount0, amount1

@@ -53,7 +53,14 @@ type Price struct {
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
 
-	// FailedTx, AddLimitOrder, RemoveLimitOrder *big.Int
+	FailedTx         *big.Int
+	AddLimitOrder    *big.Int
+	RemoveLimitOrder *big.Int
+
+	MoveStake *big.Int
+	LockStake *big.Int
+	Lock      *big.Int
+
 	More []*big.Int `rlp:"tail"`
 }
 
@@ -65,47 +72,48 @@ func (d *Price) Encode() []byte {
 	return bytes
 }
 
-func (d *Price) FailedTxPrice() *big.Int {
-	if len(d.More) > 0 {
-		return d.More[0]
-	}
-	return d.Send
-}
-
-func (d *Price) AddLimitOrderPrice() *big.Int {
-	if len(d.More) > 1 {
-		return d.More[1]
-	}
-	return d.CreateSwapPool
-}
-
-func (d *Price) RemoveLimitOrderPrice() *big.Int {
-	if len(d.More) > 2 {
-		return d.More[2]
-	}
-	return d.RemoveLiquidity
-}
-
-func (d *Price) MoveStakePrice() *big.Int {
-	if len(d.More) > 3 {
-		return d.More[3]
-	}
-	return d.Unbond
-}
-
-func (d *Price) LockStakePrice() *big.Int {
-	if len(d.More) > 4 {
-		return d.More[4]
-	}
-	return d.Unbond
-}
-
-func (d *Price) LockPrice() *big.Int {
-	if len(d.More) > 5 {
-		return d.More[5]
-	}
-	return d.Send
-}
+//
+//func (d *Price) FailedTxPrice() *big.Int {
+//	if len(d.More) > 0 {
+//		return d.More[0]
+//	}
+//	return d.Send
+//}
+//
+//func (d *Price) AddLimitOrderPrice() *big.Int {
+//	if len(d.More) > 1 {
+//		return d.More[1]
+//	}
+//	return d.CreateSwapPool
+//}
+//
+//func (d *Price) RemoveLimitOrderPrice() *big.Int {
+//	if len(d.More) > 2 {
+//		return d.More[2]
+//	}
+//	return d.RemoveLiquidity
+//}
+//
+//func (d *Price) MoveStakePrice() *big.Int {
+//	if len(d.More) > 3 {
+//		return d.More[3]
+//	}
+//	return d.Unbond
+//}
+//
+//func (d *Price) LockStakePrice() *big.Int {
+//	if len(d.More) > 4 {
+//		return d.More[4]
+//	}
+//	return d.Unbond
+//}
+//
+//func (d *Price) LockPrice() *big.Int {
+//	if len(d.More) > 5 {
+//		return d.More[5]
+//	}
+//	return d.Send
+//}
 
 func Decode(s string) *Price {
 	var p Price

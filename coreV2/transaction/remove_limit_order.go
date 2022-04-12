@@ -34,7 +34,7 @@ func (data RemoveLimitOrderData) String() string {
 }
 
 func (data RemoveLimitOrderData) CommissionData(price *commission.Price) *big.Int {
-	return price.RemoveLimitOrderPrice()
+	return price.RemoveLimitOrder
 }
 
 func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
