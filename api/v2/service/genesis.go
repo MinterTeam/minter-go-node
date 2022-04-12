@@ -85,6 +85,9 @@ func (s *Service) Genesis(ctx context.Context, _ *empty.Empty) (*pb.GenesisRespo
 			Validator: &pb.GenesisResponse_ConsensusParams_Validator{
 				PubKeyTypes: result.Genesis.ConsensusParams.Validator.PubKeyTypes,
 			},
+			Version: &pb.GenesisResponse_ConsensusParams_Version{
+				AppVersion: result.Genesis.ConsensusParams.Version.AppVersion,
+			},
 		},
 		AppHash:  result.Genesis.AppHash.String(),
 		AppState: &appState,
