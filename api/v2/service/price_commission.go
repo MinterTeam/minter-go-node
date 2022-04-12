@@ -76,11 +76,11 @@ func priceCommissionResponse(price *commission.Price, coin *coins.Model) *pb.Pri
 		BurnToken:               price.BurnToken.String(),
 		VoteCommission:          price.VoteCommission.String(),
 		VoteUpdate:              price.VoteUpdate.String(),
-		FailedTx:                price.FailedTxPrice().String(),
-		AddLimitOrder:           price.AddLimitOrderPrice().String(),
-		RemoveLimitOrder:        price.RemoveLimitOrderPrice().String(),
-		MoveStake:               price.MoveStakePrice().String(),
-		LockStake:               price.LockStakePrice().String(),
-		Lock:                    price.LockPrice().String(),
+		FailedTx:                price.FailedTx.String(),
+		AddLimitOrder:           price.AddLimitOrder.String(),
+		RemoveLimitOrder:        price.RemoveLimitOrder.String(),
+		MoveStake:               price.MoveStake.String(),
+		LockStake:               price.LockStake.String(),
+		Lock:                    price.Lock.String(),
 	}
 }

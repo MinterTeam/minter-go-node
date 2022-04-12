@@ -307,9 +307,9 @@ func (s *State) Import(state types.AppState, version string) error {
 		}
 
 		s.Accounts.SetNonce(a.Address, a.Nonce)
-		if a.LockStakeUntilBlock > 0 {
-			s.Accounts.SetLockStakeUntilBlock(a.Address, a.LockStakeUntilBlock)
-		}
+		//if a.LockStakeUntilBlock > 0 {
+		s.Accounts.SetLockStakeUntilBlock(a.Address, a.LockStakeUntilBlock)
+		//}
 		for _, b := range a.Balance {
 			balance := helpers.StringToBigInt(b.Value)
 			coinID := types.CoinID(b.Coin)
@@ -361,11 +361,7 @@ func (s *State) Import(state types.AppState, version string) error {
 		s.Candidates.SetDeletedCandidates(state.DeletedCandidates)
 	}
 
-	if version == "" {
-		s.Candidates.RecalculateStakes(uint64(s.height)) // RecalculateStakesV2
-	} else {
-		s.Candidates.RecalculateStakesV2(uint64(s.height))
-	}
+	s.Candidates.RecalculateStakesV2(uint64(s.height))
 
 	for _, w := range state.Waitlist {
 		value := helpers.StringToBigInt(w.Value)
@@ -433,7 +429,6 @@ func (s *State) Import(state types.AppState, version string) error {
 		MintToken:               helpers.StringToBigInt(c.MintToken),
 		VoteCommission:          helpers.StringToBigInt(c.VoteCommission),
 		VoteUpdate:              helpers.StringToBigInt(c.VoteUpdate),
-		More:                    nil,
 	}
 
 	if c.FailedTx != "" &&
