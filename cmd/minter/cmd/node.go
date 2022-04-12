@@ -281,6 +281,7 @@ func getGenesis(genDocFile string) func() (doc *tmTypes.GenesisDoc, e error) {
 		if len(doc.AppHash) == 0 {
 			doc.AppHash = nil
 		}
+		doc.ConsensusParams.Version.AppVersion = 8
 		docCache = doc
 		return doc, err
 	}

@@ -185,19 +185,11 @@ func (blockchain *Blockchain) GetEmission() *big.Int {
 // GetStateForHeight returns immutable state of Minter Blockchain for given height
 func (blockchain *Blockchain) GetStateForHeight(height uint64) (*state.CheckState, error) {
 	if height > 0 {
-		if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h { // todo
-			s, err := state.NewCheckStateAtHeightV3(height, blockchain.storages.StateDB())
-			if err != nil {
-				return nil, err
-			}
-			return s, nil
-		} else {
-			s, err := state.NewCheckStateAtHeight(height, blockchain.storages.StateDB())
-			if err != nil {
-				return nil, err
-			}
-			return s, nil
+		s, err := state.NewCheckStateAtHeightV3(height, blockchain.storages.StateDB())
+		if err != nil {
+			return nil, err
 		}
+		return s, nil
 	}
 	return blockchain.CurrentState(), nil
 }
