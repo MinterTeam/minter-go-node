@@ -429,16 +429,22 @@ func (s *State) Import(state types.AppState, version string) error {
 		MintToken:               helpers.StringToBigInt(c.MintToken),
 		VoteCommission:          helpers.StringToBigInt(c.VoteCommission),
 		VoteUpdate:              helpers.StringToBigInt(c.VoteUpdate),
+		FailedTx:                helpers.StringToBigInt(c.FailedTx),
+		AddLimitOrder:           helpers.StringToBigInt(c.AddLimitOrder),
+		RemoveLimitOrder:        helpers.StringToBigInt(c.RemoveLimitOrder),
+		MoveStake:               helpers.StringToBigInt(c.MoveStake),
+		LockStake:               helpers.StringToBigInt(c.LockStake),
+		Lock:                    helpers.StringToBigInt(c.Lock),
 	}
 
-	if c.FailedTx != "" &&
-		c.AddLimitOrder != "" &&
-		c.RemoveLimitOrder != "" {
-		com.More = append(com.More,
-			helpers.StringToBigInt(c.FailedTx),
-			helpers.StringToBigInt(c.AddLimitOrder),
-			helpers.StringToBigInt(c.RemoveLimitOrder))
-	}
+	//if c.FailedTx != "" &&
+	//	c.AddLimitOrder != "" &&
+	//	c.RemoveLimitOrder != "" {
+	//	com.More = append(com.More,
+	//		helpers.StringToBigInt(c.FailedTx),
+	//		helpers.StringToBigInt(c.AddLimitOrder),
+	//		helpers.StringToBigInt(c.RemoveLimitOrder))
+	//}
 
 	s.Commission.SetNewCommissions(com.Encode())
 
@@ -488,16 +494,22 @@ func (s *State) Import(state types.AppState, version string) error {
 			MintToken:               helpers.StringToBigInt(vc.MintToken),
 			VoteCommission:          helpers.StringToBigInt(vc.VoteCommission),
 			VoteUpdate:              helpers.StringToBigInt(vc.VoteUpdate),
+			FailedTx:                helpers.StringToBigInt(vc.FailedTx),
+			AddLimitOrder:           helpers.StringToBigInt(vc.AddLimitOrder),
+			RemoveLimitOrder:        helpers.StringToBigInt(vc.RemoveLimitOrder),
+			MoveStake:               helpers.StringToBigInt(vc.MoveStake),
+			LockStake:               helpers.StringToBigInt(vc.LockStake),
+			Lock:                    helpers.StringToBigInt(vc.Lock),
 			More:                    nil,
 		}
-		if vc.FailedTx != "" &&
-			vc.AddLimitOrder != "" &&
-			vc.RemoveLimitOrder != "" {
-			voteCom.More = append(com.More,
-				helpers.StringToBigInt(vc.FailedTx),
-				helpers.StringToBigInt(vc.AddLimitOrder),
-				helpers.StringToBigInt(vc.RemoveLimitOrder))
-		}
+		//if vc.FailedTx != "" &&
+		//	vc.AddLimitOrder != "" &&
+		//	vc.RemoveLimitOrder != "" {
+		//	voteCom.More = append(com.More,
+		//		helpers.StringToBigInt(vc.FailedTx),
+		//		helpers.StringToBigInt(vc.AddLimitOrder),
+		//		helpers.StringToBigInt(vc.RemoveLimitOrder))
+		//}
 		for _, pubkey := range vote.Votes {
 			s.Commission.AddVote(vote.Height, pubkey, voteCom.Encode())
 		}
