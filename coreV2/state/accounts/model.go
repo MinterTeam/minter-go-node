@@ -14,7 +14,7 @@ type Model struct {
 	MultisigData Multisig
 
 	// forward compatible
-	LockStakeUntilBlock []uint64 `rlp:"tail"`
+	LockStakeUntilBlock uint64
 
 	address  types.Address
 	coins    []types.CoinID
@@ -187,18 +187,14 @@ func (model *Model) getLockStakeUntilBlock() uint64 {
 	model.lock.RLock()
 	defer model.lock.RUnlock()
 
-	if len(model.LockStakeUntilBlock) == 0 {
-		return 0
-	}
-
-	return model.LockStakeUntilBlock[0]
+	return model.LockStakeUntilBlock
 }
 
 func (model *Model) setLockStakeUntilBlock(h uint64) {
 	model.lock.Lock()
 	defer model.lock.Unlock()
 
-	model.LockStakeUntilBlock = []uint64{h}
+	model.LockStakeUntilBlock = h
 
 	model.isDirty = true
 	model.markDirty(model.address)

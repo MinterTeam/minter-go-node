@@ -429,15 +429,11 @@ func (a *Accounts) Export(state *types.AppState) {
 			return balance[i].Coin < balance[j].Coin
 		})
 
-		var lockStakeUntilBlock uint64
-		if len(account.LockStakeUntilBlock) > 0 {
-			lockStakeUntilBlock = account.LockStakeUntilBlock[0]
-		}
 		acc := types.Account{
 			Address:             account.address,
 			Balance:             balance,
 			Nonce:               account.Nonce,
-			LockStakeUntilBlock: lockStakeUntilBlock,
+			LockStakeUntilBlock: account.LockStakeUntilBlock,
 		}
 
 		if account.IsMultisig() {

@@ -136,7 +136,6 @@ func (a *App) getOrNew() *Model {
 			TotalSlashed: big.NewInt(0),
 			CoinsCount:   0,
 			MaxGas:       0,
-			Reward:       nil,
 			markDirty:    a.markDirty,
 		}
 		a.mx.Lock()
