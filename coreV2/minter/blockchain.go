@@ -431,13 +431,13 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
 		if emission == nil {
-			emission = blockchain.rewardsCounter.GetBeforeBlock(height - 1)
-			blockchain.appDB.SetEmission(emission)
-		}
-		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
+			blockchain.appDB.SetEmission(blockchain.rewardsCounter.GetBeforeBlock(height - 1))
+			reward = blockchain.rewardsCounter.GetRewardForBlock(height)
+		} else if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			reward, _ = blockchain.stateDeliver.App.Reward()
 			heightIsMaxIfIssueIsOverOrNotDynamic = height
 		}
+
 	} else if h == height {
 		blockchain.appDB.SetEmission(blockchain.rewardsCounter.GetBeforeBlock(height))
 	} else {
