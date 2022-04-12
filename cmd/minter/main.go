@@ -35,7 +35,7 @@ func main() {
 	rootCmd.PersistentFlags().Bool("testnet", false, "use \"true\" for testnet, mainnet is default")
 	rootCmd.PersistentFlags().Bool("pprof", false, "enable pprof")
 	rootCmd.PersistentFlags().String("pprof-addr", "0.0.0.0:6060", "pprof listen addr")
-	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v2.0/genesis.json", "path with the genesis file to download")
+	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v3.0.3/genesis.json", "path with the genesis file to download")
 	rootCmd.PersistentFlags().String("persistent-peers", "", "")
 	rootCmd.PersistentFlags().Bool("state-sync", false, "enable state sync snapshots")
 

@@ -325,7 +325,7 @@ type Candidate struct {
 
 type Stake struct {
 	Owner    Address `json:"owner"`
-	Coin     uint64  `json:"coin"`
+	Coin     uint64  `json:"coin,omitempty"`
 	Value    string  `json:"value"`
 	BipValue string  `json:"bip_value"`
 }
@@ -345,8 +345,8 @@ type Order struct {
 	Height  uint64  `json:"height"`
 }
 type Pool struct {
-	Coin0    uint64  `json:"coin0"`
-	Coin1    uint64  `json:"coin1"`
+	Coin0    uint64  `json:"coin0,omitempty"`
+	Coin1    uint64  `json:"coin1,omitempty"`
 	Reserve0 string  `json:"reserve0"`
 	Reserve1 string  `json:"reserve1"`
 	ID       uint64  `json:"id"`
@@ -389,11 +389,11 @@ type Account struct {
 	Balance             []Balance `json:"balance,omitempty"`
 	Nonce               uint64    `json:"nonce"`
 	MultisigData        *Multisig `json:"multisig_data,omitempty"`
-	LockStakeUntilBlock uint64    `json:"lock_stake_until_block"`
+	LockStakeUntilBlock uint64    `json:"lock_stake_until_block,omitempty"`
 }
 
 type Balance struct {
-	Coin  uint64 `json:"coin"`
+	Coin  uint64 `json:"coin,omitempty"`
 	Value string `json:"value"`
 }
 

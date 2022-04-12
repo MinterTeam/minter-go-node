@@ -29,6 +29,7 @@ const (
 	VoteAlreadyExists            uint32 = 121
 	WrongUpdateVersionName       uint32 = 122
 	WrongDueHeight               uint32 = 123
+	Unavailable                  uint32 = 124
 
 	// coin creation
 	CoinHasNotReserve uint32 = 200

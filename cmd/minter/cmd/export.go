@@ -3,6 +3,8 @@ package cmd
 import (
 	"crypto/sha256"
 	"encoding/json"
+	"github.com/MinterTeam/minter-go-node/coreV2/minter"
+	"github.com/MinterTeam/minter-go-node/coreV2/rewards"
 	"github.com/MinterTeam/minter-go-node/version"
 	"github.com/tendermint/go-amino"
 	"io"
@@ -88,16 +90,19 @@ func export(cmd *cobra.Command, args []string) error {
 	}
 	log.Printf("Verify state OK\n")
 
-	appState.Version = db.GetVersionName(height)
-	versions := db.GetVersions()
-	for _, v := range versions {
-		appState.Versions = append(appState.Versions, mtypes.Version{
-			Height: v.Height,
-			Name:   v.Name,
-		})
-	}
+	appState.Version = minter.V3
+	//versions := db.GetVersions()
+	//for _, v := range versions {
+	//	appState.Versions = append(appState.Versions, mtypes.Version{
+	//		Height: v.Height,
+	//		Name:   v.Name,
+	//	})
+	//}
 
-	appState.Emission = db.Emission().String()
+	//appState.Emission = db.Emission().String()
+	appState.Emission = rewards.NewReward().GetBeforeBlock(height).String()
+	reserve0, reserve1 := currentState.Swap().GetSwapper(0, 1993).Reserves()
+	db.UpdatePrice(time.Unix(0, int64(genesisTime)).UTC(), reserve0, reserve1)
 	t, r0, r1, reward, off := db.GetPrice()
 	appState.PrevReward = mtypes.RewardPrice{
 		Time:       uint64(t.UTC().UnixNano()),

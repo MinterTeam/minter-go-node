@@ -43,7 +43,7 @@ func (data LockData) String() string {
 }
 
 func (data LockData) CommissionData(price *commission.Price) *big.Int {
-	return price.LockPrice()
+	return price.Lock
 }
 
 func (data LockData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {

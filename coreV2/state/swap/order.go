@@ -1746,7 +1746,7 @@ func (p *Pair) AddLastSwapStepWithOrders(amount0In, amount1Out *big.Int, buy boo
 		lockOrders: &sync.Mutex{},
 		PairKey:    p.PairKey,
 		pairData: &pairData{
-			RWMutex:   &sync.RWMutex{},
+			mu:        &sync.RWMutex{},
 			Reserve0:  reserve0,
 			Reserve1:  reserve1,
 			ID:        p.ID,

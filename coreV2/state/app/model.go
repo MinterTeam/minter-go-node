@@ -11,7 +11,8 @@ type Model struct {
 	MaxGas       uint64
 
 	// forward compatible
-	Reward [][]byte `rlp:"tail"`
+	Reward0    []byte
+	RewardSafe []byte
 
 	markDirty func()
 	mx        sync.RWMutex
@@ -38,18 +39,15 @@ func (model *Model) reward() (*big.Int, *big.Int) {
 	model.mx.RLock()
 	defer model.mx.RUnlock()
 
-	if len(model.Reward) == 0 {
-		return nil, nil
-	}
-
-	return new(big.Int).SetBytes(model.Reward[0]), new(big.Int).SetBytes(model.Reward[1])
+	return new(big.Int).SetBytes(model.Reward0), new(big.Int).SetBytes(model.RewardSafe)
 }
 
 func (model *Model) setReward(reward *big.Int, safeReward *big.Int) {
 	model.mx.Lock()
 	defer model.mx.Unlock()
 
-	model.Reward = [][]byte{reward.Bytes(), safeReward.Bytes()}
+	model.Reward0 = reward.Bytes()
+	model.RewardSafe = safeReward.Bytes()
 
 	model.markDirty()
 }

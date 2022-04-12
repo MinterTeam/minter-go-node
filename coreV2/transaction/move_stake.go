@@ -101,7 +101,7 @@ func (data MoveStakeData) String() string {
 }
 
 func (data MoveStakeData) CommissionData(price *commission.Price) *big.Int {
-	return price.MoveStakePrice()
+	return price.MoveStake
 }
 
 func (data MoveStakeData) Run(tx *Transaction, context state.Interface, rewardPool *big.Int, currentBlock uint64, price *big.Int) Response {
