@@ -431,7 +431,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
 		if emission == nil {
-			blockchain.appDB.SetEmission(blockchain.rewardsCounter.GetBeforeBlock(height))
+			blockchain.appDB.SetEmission(blockchain.rewardsCounter.GetBeforeBlock(height - 1))
 		}
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			reward, _ = blockchain.stateDeliver.App.Reward()
