@@ -1,5 +1,13 @@
 # Changelog
 
+## [v3.0.2](https://github.com/MinterTeam/minter-go-node/tree/v3.0.2)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.0.1...v3.0.2)
+
+### Fixed
+
+- Initial emission
+
 ## [v3.0.1](https://github.com/MinterTeam/minter-go-node/tree/v3.0.1)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.0.0...v3.0.1)
