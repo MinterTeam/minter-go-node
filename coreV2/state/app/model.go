@@ -47,7 +47,7 @@ func (model *Model) setReward(reward *big.Int, safeReward *big.Int) {
 	defer model.mx.Unlock()
 
 	model.Reward0 = reward.Bytes()
-	model.Reward0 = safeReward.Bytes()
+	model.RewardSafe = safeReward.Bytes()
 
 	model.markDirty()
 }
