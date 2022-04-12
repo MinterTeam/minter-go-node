@@ -430,6 +430,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	var heightIsMaxIfIssueIsOverOrNotDynamic uint64 = math.MaxUint64
 	if h := blockchain.appDB.GetVersionHeight(V3); h > 0 && height > h {
 		emission := blockchain.appDB.Emission()
+		if emission == nil {
+			blockchain.appDB.SetEmission(blockchain.rewardsCounter.GetBeforeBlock(height))
+		}
 		if emission.Cmp(blockchain.rewardsCounter.TotalEmissionBig()) == -1 {
 			reward, _ = blockchain.stateDeliver.App.Reward()
 			heightIsMaxIfIssueIsOverOrNotDynamic = height
