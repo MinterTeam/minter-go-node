@@ -1,5 +1,14 @@
 # Changelog
 
+## [v3.1.0](https://github.com/MinterTeam/minter-go-node/tree/v3.1.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.0.3...v3.1.0)
+
+### Fixed
+
+- Accrual of blocked rewards
+- `state-sync` default config params
+
 ## [v3.0.3](https://github.com/MinterTeam/minter-go-node/tree/v3.0.2)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.0.0...v3.0.2)
