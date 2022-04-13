@@ -12,6 +12,7 @@ type Candidates interface {
 	SetOffline(types.Pubkey)
 	GetCandidate(types.Pubkey) *Candidate
 	GetCandidateByTendermintAddress(types.TmAddress) *Candidate
+	TotalStakes() *big.Int
 }
 
 type Stake struct {

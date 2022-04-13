@@ -509,23 +509,32 @@ func (v *Validators) PayRewardsV4(height uint64, period int64) (moreRewards *big
 				safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 				safeRewards.Mul(safeRewards, stake.BipValue)
 				safeRewards.Mul(safeRewards, big.NewInt(3))
-				safeRewards.Mul(safeRewards, validator.GetAccumReward())
-				safeRewards.Div(safeRewards, validator.GetTotalBipStake())
-				safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
-				safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-				safeRewards.Div(safeRewards, totalAccumRewards)
+				if validator.GetAccumReward().Sign() == 1 {
+					safeRewards.Mul(safeRewards, validator.GetAccumReward())
+					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
 
-				calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
-				calcRewards.Mul(calcRewards, stake.BipValue)
-				calcRewards.Mul(calcRewards, validator.GetAccumReward())
-				calcRewards.Div(calcRewards, validator.GetTotalBipStake())
-				calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
-				calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-				calcRewards.Div(calcRewards, totalAccumRewards)
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+					safeRewards.Div(safeRewards, totalAccumRewards)
 
-				feeRewards := big.NewInt(0).Sub(reward, calcRewards)
+					calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
+					calcRewards.Mul(calcRewards, stake.BipValue)
+					calcRewards.Mul(calcRewards, validator.GetAccumReward())
+					calcRewards.Div(calcRewards, validator.GetTotalBipStake())
+					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+					calcRewards.Div(calcRewards, totalAccumRewards)
 
-				safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
+					feeRewards := big.NewInt(0).Sub(reward, calcRewards)
+					safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
+				} else {
+					safeRewards.Div(safeRewards, v.bus.Candidates().TotalStakes())
+
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
+
+					safeRewardVariable.Set(safeRewards)
+				}
 
 				if safeRewardVariable.Sign() < 1 {
 					continue
