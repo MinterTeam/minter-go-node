@@ -204,10 +204,10 @@ func (blockchain *Blockchain) initState() {
 	blockchain.grace = upgrades.NewGrace()
 	blockchain.grace.AddGracePeriods(upgrades.NewGracePeriod(initialHeight, initialHeight+120, true))
 
-	//for _, v := range blockchain.UpdateVersions() {
-	//	blockchain.grace.AddGracePeriods(graceForUpdate(v.Height))
-	//	blockchain.executor = GetExecutor(v.Name)
-	//}
+	for _, v := range blockchain.UpdateVersions() {
+		blockchain.grace.AddGracePeriods(graceForUpdate(v.Height))
+		blockchain.executor = GetExecutor(v.Name)
+	}
 
 }
 
