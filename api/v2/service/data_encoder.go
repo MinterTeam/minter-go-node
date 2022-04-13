@@ -451,12 +451,12 @@ func priceCommissionData(d *transaction.VoteCommissionDataV3, coin *coins.Model)
 		BurnToken:               d.BurnToken.String(),
 		VoteCommission:          d.VoteCommission.String(),
 		VoteUpdate:              d.VoteUpdate.String(),
-		FailedTx:                d.FailedTxPrice().String(),
-		AddLimitOrder:           d.AddLimitOrderPrice().String(),
-		RemoveLimitOrder:        d.RemoveLimitOrderPrice().String(),
-		MoveStake:               d.MoveStakePrice().String(),
-		LockStake:               d.LockStakePrice().String(),
-		Lock:                    d.LockPrice().String(),
+		FailedTx:                d.FailedTx.String(),
+		AddLimitOrder:           d.AddLimitOrder.String(),
+		RemoveLimitOrder:        d.RemoveLimitOrder.String(),
+		MoveStake:               d.MoveStake.String(),
+		LockStake:               d.LockStake.String(),
+		Lock:                    d.Lock.String(),
 	}
 }
 

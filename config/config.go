@@ -78,8 +78,8 @@ func DefaultConfig() *Config {
 	//cfg.StateSync.RPCServers = []string{"sync-test.minter.network:26657", "sync104.minter.su:26657", "state-test.minter.network:26657"}
 	cfg.StateSync.RPCServers = []string{"state-test.minter.network:26657", "sync-test.minter.network:26657", "sync101.minter.su:26657"}
 
-	cfg.StateSync.TrustHeight = 9718108
-	cfg.StateSync.TrustHash = "39AE80DD60C8A93308E39ABE0AB0E0622498C9CACE9F5F2A39082929AC1E159B"
+	cfg.StateSync.TrustHeight = 10197600
+	cfg.StateSync.TrustHash = "BE035F6C00320FBB76D8B3C427891A03D46B3443A9E4309D777ABC4EAB4FDFCC"
 	cfg.StateSync.TrustPeriod = time.Hour * 8760
 
 	return cfg

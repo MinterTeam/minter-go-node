@@ -60,53 +60,13 @@ type VoteCommissionDataV3 struct {
 	BurnToken               *big.Int
 	VoteCommission          *big.Int
 	VoteUpdate              *big.Int
+	FailedTx                *big.Int
+	AddLimitOrder           *big.Int
+	RemoveLimitOrder        *big.Int
+	MoveStake               *big.Int
+	LockStake               *big.Int
+	Lock                    *big.Int
 	More                    []*big.Int `rlp:"tail"`
-	//FailedTX                *big.Int
-	//AddLimitOrder           *big.Int
-	//RemoveLimitOrder        *big.Int
-	//MoveStake               *big.Int
-	//LockStake               *big.Int
-	//Lock               *big.Int
-
-}
-
-func (data *VoteCommissionDataV3) FailedTxPrice() *big.Int {
-	if len(data.More) > 0 {
-		return data.More[0]
-	}
-	return big.NewInt(0)
-}
-
-func (data *VoteCommissionDataV3) AddLimitOrderPrice() *big.Int {
-	if len(data.More) > 1 {
-		return data.More[1]
-	}
-	return big.NewInt(0)
-}
-
-func (data *VoteCommissionDataV3) RemoveLimitOrderPrice() *big.Int {
-	if len(data.More) > 2 {
-		return data.More[2]
-	}
-	return big.NewInt(0)
-}
-func (data *VoteCommissionDataV3) MoveStakePrice() *big.Int {
-	if len(data.More) > 3 {
-		return data.More[3]
-	}
-	return big.NewInt(0)
-}
-func (data *VoteCommissionDataV3) LockStakePrice() *big.Int {
-	if len(data.More) > 4 {
-		return data.More[4]
-	}
-	return big.NewInt(0)
-}
-func (data *VoteCommissionDataV3) LockPrice() *big.Int {
-	if len(data.More) > 5 {
-		return data.More[5]
-	}
-	return big.NewInt(0)
 }
 
 func (data VoteCommissionDataV3) TxType() TxType {
@@ -121,7 +81,7 @@ func (data VoteCommissionDataV3) GetPubKey() types.Pubkey {
 }
 
 func (data VoteCommissionDataV3) basicCheck(tx *Transaction, context *state.CheckState, block uint64) *Response {
-	if len(data.More) != 6 {
+	if len(data.More) != 0 {
 		return &Response{
 			Code: code.DecodeError,
 			Log:  "More or less parameters than expected",
@@ -295,6 +255,12 @@ func (data VoteCommissionDataV3) price() *commission.Price {
 		MintToken:               data.MintToken,
 		VoteCommission:          data.VoteCommission,
 		VoteUpdate:              data.VoteUpdate,
+		FailedTx:                data.FailedTx,
+		AddLimitOrder:           data.AddLimitOrder,
+		RemoveLimitOrder:        data.RemoveLimitOrder,
+		MoveStake:               data.MoveStake,
+		LockStake:               data.LockStake,
+		Lock:                    data.Lock,
 		More:                    data.More,
 	}
 }

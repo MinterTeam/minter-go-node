@@ -144,7 +144,8 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		expiredOrdersPeriod:             expiredOrdersPeriod,
 		stopOk:                          make(chan struct{}),
 		knownUpdates: map[string]struct{}{
-			V3: {}, // tokenomics
+			V3:   {}, // tokenomics
+			V310: {}, // hotfix
 		},
 		executor: GetExecutor(V3),
 	}
@@ -174,7 +175,8 @@ func GetExecutor(v string) transaction.ExecutorTx {
 }
 
 const ( // known update versions
-	V3 = "v300" // tokenomics
+	V3   = "v300" // tokenomics
+	V310 = "v310" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
@@ -445,9 +447,15 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	// pay rewards
 	var moreRewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
-		moreRewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
-		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
-		blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
+		if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
+			moreRewards = blockchain.stateDeliver.Validators.PayRewardsV4(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
+			blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
+			blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
+		} else {
+			moreRewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
+			blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
+			blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
+		}
 	}
 
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {
