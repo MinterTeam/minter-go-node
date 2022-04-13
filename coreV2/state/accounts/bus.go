@@ -20,3 +20,9 @@ func (b *Bus) AddBalance(address types.Address, coin types.CoinID, value *big.In
 func (b *Bus) IsX3Mining(address types.Address, height uint64) bool {
 	return b.accounts.IsX3Mining(address, height)
 }
+func (b *Bus) GetLockStakeUntilBlock(address types.Address) (height uint64) {
+	return b.accounts.GetLockStakeUntilBlock(address)
+}
+func (b *Bus) GetBalance(address types.Address, coin types.CoinID) *big.Int {
+	return b.accounts.GetBalance(address, coin)
+}
