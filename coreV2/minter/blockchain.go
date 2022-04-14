@@ -283,8 +283,6 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		blockchain.stateDeliver.App.SetReward(big.NewInt(0), big.NewInt(0))
 	}
 
-	//}
-
 	blockchain.StatisticData().PushStartBlock(&statistics.StartRequest{Height: int64(height), Now: time.Now(), HeaderTime: req.Header.Time})
 
 	// compute max gas
