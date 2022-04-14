@@ -526,7 +526,7 @@ func (v *Validators) PayRewardsV4(height uint64, period int64) (moreRewards *big
 
 			safeRewardVariable := big.NewInt(0).Set(reward)
 			if validator.bus.Accounts().IsX3Mining(stake.Owner, height) {
-				if totalAccumRewards.Sign() == 1 {
+				if totalAccumRewards.Sign() == 1 && validator.GetAccumReward().Sign() == 1 {
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Mul(safeRewards, big.NewInt(3))
@@ -546,7 +546,7 @@ func (v *Validators) PayRewardsV4(height uint64, period int64) (moreRewards *big
 
 					feeRewards := big.NewInt(0).Sub(reward, calcRewards)
 					safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
-				} else {
+				} else if totalAccumRewards.Sign() != 1 && validator.GetAccumReward().Sign() != 1 {
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Mul(safeRewards, big.NewInt(3))
