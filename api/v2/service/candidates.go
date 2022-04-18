@@ -14,8 +14,17 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	if req.Height != 0 {
 		cState.Candidates().LoadCandidates()
+		cState.Validators().LoadValidators()
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	candidates := cState.Candidates().GetCandidates()
@@ -46,8 +55,12 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 			cState.Candidates().LoadStakesOfCandidate(candidate.PubKey)
 		}
 
-		responseCandidate := makeResponseCandidate(cState, candidate, req.IncludeStakes, req.NotShowStakes)
+		responseCandidate := s.makeResponseCandidate(ctx, cState, candidate, req.IncludeStakes, req.NotShowStakes)
 		responseCandidate.Validator = isValidator
+
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
 
 		response.Candidates = append(response.Candidates, responseCandidate)
 	}
