@@ -20,6 +20,9 @@ func (s *Service) CoinInfo(ctx context.Context, req *pb.CoinInfoRequest) (*pb.Co
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if coinLen := len(req.Symbol); coinLen == 0 || req.Symbol[coinLen-1] == '-' {
+		return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.Symbol, "")))
+	}
 	coin := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.Symbol), types.GetVersionFromSymbol(req.Symbol))
 	if coin == nil {
 		return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.Symbol, "")))
