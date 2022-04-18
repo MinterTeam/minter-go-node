@@ -73,6 +73,10 @@ func (b *Bus) SetOffline(pubkey types.Pubkey) {
 	b.candidates.SetOffline(pubkey)
 }
 
+func (b *Bus) TotalStakes() *big.Int {
+	return b.candidates.TotalStakes()
+}
+
 // GetCandidateByTendermintAddress finds and returns candidate with given tendermint-address
 func (b *Bus) GetCandidateByTendermintAddress(tmAddress types.TmAddress) *bus.Candidate {
 	candidate := b.candidates.GetCandidateByTendermintAddress(tmAddress)

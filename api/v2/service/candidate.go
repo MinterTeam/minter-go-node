@@ -32,8 +32,17 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
 	if req.Height != 0 {
 		cState.Candidates().LoadCandidates()
+		cState.Validators().LoadValidators()
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	candidate := cState.Candidates().GetCandidate(pubkey)
@@ -45,15 +54,23 @@ func (s *Service) Candidate(ctx context.Context, req *pb.CandidateRequest) (*pb.
 		cState.Candidates().LoadStakesOfCandidate(pubkey)
 	}
 
-	result := makeResponseCandidate(cState, candidate, true, req.NotShowStakes)
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	result := s.makeResponseCandidate(ctx, cState, candidate, true, req.NotShowStakes)
 	if cState.Validators().GetByPublicKey(candidate.PubKey) != nil {
 		result.Validator = true
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	return result, nil
 }
 
-func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, includeStakes, NotShowStakes bool) *pb.CandidateResponse {
+func (s *Service) makeResponseCandidate(ctx context.Context, state *state.CheckState, c *candidates.Candidate, includeStakes, NotShowStakes bool) *pb.CandidateResponse {
 	candidate := &pb.CandidateResponse{
 		RewardAddress:  c.RewardAddress.String(),
 		OwnerAddress:   c.OwnerAddress.String(),
@@ -75,6 +92,10 @@ func makeResponseCandidate(state *state.CheckState, c *candidates.Candidate, inc
 			candidate.Stakes = make([]*pb.CandidateResponse_Stake, 0, usedSlots)
 		}
 		for i, stake := range stakes {
+			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+				return candidate
+			}
+
 			if !NotShowStakes {
 				candidate.Stakes = append(candidate.Stakes, &pb.CandidateResponse_Stake{
 					Owner: stake.Owner.String(),

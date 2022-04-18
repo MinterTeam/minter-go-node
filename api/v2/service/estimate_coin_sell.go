@@ -35,6 +35,9 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 
 	var coinToBuy types.CoinID
 	if req.GetCoinToBuy() != "" {
+		if coinLen := len(req.GetCoinToBuy()); coinLen == 0 || req.GetCoinToBuy()[coinLen-1] == '-' {
+			return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToBuy(), "")))
+		}
 		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToBuy()), types.GetVersionFromSymbol(req.GetCoinToBuy()))
 		if symbol == nil {
 			return nil, s.createError(status.New(codes.NotFound, "Coin to buy not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToBuy(), "")))
@@ -49,6 +52,9 @@ func (s *Service) EstimateCoinSell(ctx context.Context, req *pb.EstimateCoinSell
 
 	var coinToSell types.CoinID
 	if req.GetCoinToSell() != "" {
+		if coinLen := len(req.GetCoinToSell()); coinLen == 0 || req.GetCoinToSell()[coinLen-1] == '-' {
+			return nil, s.createError(status.New(codes.NotFound, "Coin not found"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
+		}
 		symbol := cState.Coins().GetCoinBySymbol(types.StrToCoinBaseSymbol(req.GetCoinToSell()), types.GetVersionFromSymbol(req.GetCoinToSell()))
 		if symbol == nil {
 			return nil, s.createError(status.New(codes.NotFound, "Coin to sell not exists"), transaction.EncodeError(code.NewCoinNotExists(req.GetCoinToSell(), "")))
