@@ -173,13 +173,14 @@ func CreateAddress() (types.Address, *ecdsa.PrivateKey) {
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState() types.AppState {
 	return types.AppState{
-		Version:             "v260",
 		Note:                "",
 		Validators:          nil,
 		Candidates:          nil,
 		BlockListCandidates: nil,
+		DeletedCandidates:   nil,
 		Waitlist:            nil,
 		Pools:               nil,
+		NextOrderID:         0,
 		Accounts:            nil,
 		Coins:               nil,
 		FrozenFunds:         nil,
@@ -231,11 +232,24 @@ func DefaultAppState() types.AppState {
 			FailedTx:                "10000000000000000",
 			AddLimitOrder:           "100000000000000000",
 			RemoveLimitOrder:        "100000000000000000",
+			MoveStake:               "100000000000000000",
+			LockStake:               "100000000000000000",
+			Lock:                    "100000000000000000",
 		},
 		CommissionVotes: nil,
 		UpdateVotes:     nil,
 		UsedChecks:      nil,
 		MaxGas:          0,
 		TotalSlashed:    "0",
+		Emission:        "9999",
+		PrevReward: types.RewardPrice{
+			Time:       0,
+			AmountBIP:  "350",
+			AmountUSDT: "1",
+			Off:        false,
+			Reward:     "74000000000000000000",
+		},
+		Version:  "v300",
+		Versions: nil,
 	}
 }

@@ -1,5 +1,13 @@
 # Changelog
 
+## [v3.2.0](https://github.com/MinterTeam/minter-go-node/tree/v3.2.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.1.1...v3.2.0)
+
+### Fixed
+
+- Smooth increase in rewards after the fall
+
 ## [v3.1.1](https://github.com/MinterTeam/minter-go-node/tree/v3.1.1)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.1.0...v3.1.1)

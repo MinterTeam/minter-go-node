@@ -177,6 +177,7 @@ func GetExecutor(v string) transaction.ExecutorTx {
 const ( // known update versions
 	V3   = "v300" // tokenomics
 	V310 = "v310" // hotfix
+	V320 = "v320" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
@@ -275,7 +276,11 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		t, _, _, _, _ := blockchain.appDB.GetPrice()
 		if height%blockchain.updateStakesAndPayRewardsPeriod == 1 && (t.IsZero() || (req.Header.Time.Hour() >= 12 && req.Header.Time.Hour() <= 14) && req.Header.Time.Sub(t) > 3*time.Hour) {
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-			newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
+			funcUpdatePrice := blockchain.appDB.UpdatePriceBug
+			if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
+				funcUpdatePrice = blockchain.appDB.UpdatePriceFix
+			}
+			newRewards, safeReward := funcUpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
 			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueLockedStakeRewards: new(big.Int).Mul(safeReward, big.NewInt(3)).String()})
 		}

@@ -102,7 +102,7 @@ func export(cmd *cobra.Command, args []string) error {
 	//appState.Emission = db.Emission().String()
 	appState.Emission = rewards.NewReward().GetBeforeBlock(height).String()
 	reserve0, reserve1 := currentState.Swap().GetSwapper(0, 1993).Reserves()
-	db.UpdatePrice(time.Unix(0, int64(genesisTime)).UTC(), reserve0, reserve1)
+	db.UpdatePriceBug(time.Unix(0, int64(genesisTime)).UTC(), reserve0, reserve1)
 	t, r0, r1, reward, off := db.GetPrice()
 	appState.PrevReward = mtypes.RewardPrice{
 		Time:       uint64(t.UTC().UnixNano()),
