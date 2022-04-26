@@ -7,6 +7,7 @@
 ### Fixed
 
 - Smooth increase in rewards after the fall
+- Accruals for DAOs and developers, taking into account blocked stakes
 
 ## [v3.1.1](https://github.com/MinterTeam/minter-go-node/tree/v3.1.1)
 
