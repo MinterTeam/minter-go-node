@@ -491,9 +491,6 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 			ForCoin:         0,
 		})
 
-		DAOx3rewards := big.NewInt(0)
-		DEVx3rewards := big.NewInt(0)
-
 		stakes := v.bus.Candidates().GetStakes(validator.PubKey)
 		for _, stake := range stakes {
 			if stake.BipValue.Sign() == 0 {
@@ -516,14 +513,11 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					safeRewards.Mul(safeRewards, validator.GetAccumReward())
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
 
-					taxDAO := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
-					taxDEV := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
+					taxDAOx3 := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
+					taxDEVx3 := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
 
-					DAOx3rewards.Add(DAOx3rewards, taxDAO)
-					DEVx3rewards.Add(DEVx3rewards, taxDEV)
-
-					safeRewards.Sub(safeRewards, taxDAO)
-					safeRewards.Sub(safeRewards, taxDEV)
+					safeRewards.Sub(safeRewards, taxDAOx3)
+					safeRewards.Sub(safeRewards, taxDEVx3)
 					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
 					safeRewards.Div(safeRewards, totalAccumRewards)
 
@@ -531,9 +525,23 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					calcRewards.Mul(calcRewards, stake.BipValue)
 					calcRewards.Mul(calcRewards, validator.GetAccumReward())
 					calcRewards.Div(calcRewards, validator.GetTotalBipStake())
+
+					taxDAO := big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
+					taxDEV := big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
+
+					calcRewards.Sub(calcRewards, taxDAO)
+					calcRewards.Sub(calcRewards, taxDEV)
 					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
 					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
 					calcRewards.Div(calcRewards, totalAccumRewards)
+
+					diffDAO := big.NewInt(0).Sub(taxDAOx3, taxDAO)
+					diffDEV := big.NewInt(0).Sub(taxDAOx3, taxDEV)
+					DAOReward.Add(DAOReward, diffDAO)
+					DevelopersReward.Add(DevelopersReward, diffDEV)
+
+					moreRewards.Add(moreRewards, diffDAO)
+					moreRewards.Add(moreRewards, diffDEV)
 
 					feeRewards := big.NewInt(0).Sub(reward, calcRewards)
 					safeRewardVariable.Set(big.NewInt(0).Add(safeRewards, feeRewards))
@@ -545,8 +553,8 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					taxDAO := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
 					taxDEV := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
 
-					DAOx3rewards.Add(DAOx3rewards, taxDAO)
-					DEVx3rewards.Add(DEVx3rewards, taxDEV)
+					DAOReward.Add(DAOReward, taxDAO)
+					DAOReward.Add(DAOReward, taxDEV)
 
 					safeRewards.Sub(safeRewards, taxDAO)
 					safeRewards.Sub(safeRewards, taxDEV)
@@ -580,14 +588,6 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 			})
 		}
 
-		if diffDAO := big.NewInt(0).Sub(DAOx3rewards, DAOReward); diffDAO.Sign() == 1 {
-			DAOReward.Set(DAOx3rewards)
-			moreRewards.Add(moreRewards, diffDAO)
-		}
-		if diffDEV := big.NewInt(0).Sub(DEVx3rewards, DevelopersReward); diffDEV.Sign() == 1 {
-			DevelopersReward.Set(DEVx3rewards)
-			moreRewards.Add(moreRewards, diffDEV)
-		}
 		{
 			candidate.AddUpdate(types.GetBaseCoinID(), DAOReward, DAOReward, dao.Address)
 			v.bus.Checker().AddCoin(types.GetBaseCoinID(), DAOReward)
