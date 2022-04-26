@@ -554,7 +554,9 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					taxDEV := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
 
 					DAOReward.Add(DAOReward, taxDAO)
-					DAOReward.Add(DAOReward, taxDEV)
+					DevelopersReward.Add(DevelopersReward, taxDEV)
+					moreRewards.Add(moreRewards, taxDAO)
+					moreRewards.Add(moreRewards, taxDEV)
 
 					safeRewards.Sub(safeRewards, taxDAO)
 					safeRewards.Sub(safeRewards, taxDEV)
