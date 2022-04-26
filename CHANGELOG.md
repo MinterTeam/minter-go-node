@@ -16,7 +16,7 @@
 ### Fixed
 
 - Find coins with last symbol `-`
-- Accrual of rewards x3 with `GetAccumReward == 0`
+- Accrual of rewards x3 with candidate's `AccumReward` is 0
 
 ## [v3.1.0](https://github.com/MinterTeam/minter-go-node/tree/v3.1.0)
 
