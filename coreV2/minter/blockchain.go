@@ -146,6 +146,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		knownUpdates: map[string]struct{}{
 			V3:   {}, // tokenomics
 			V310: {}, // hotfix
+			V320: {},
 		},
 		executor: GetExecutor(V3),
 	}
@@ -177,6 +178,7 @@ func GetExecutor(v string) transaction.ExecutorTx {
 const ( // known update versions
 	V3   = "v300" // tokenomics
 	V310 = "v310" // hotfix
+	V320 = "v320" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
@@ -275,7 +277,11 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 		t, _, _, _, _ := blockchain.appDB.GetPrice()
 		if height%blockchain.updateStakesAndPayRewardsPeriod == 1 && (t.IsZero() || (req.Header.Time.Hour() >= 12 && req.Header.Time.Hour() <= 14) && req.Header.Time.Sub(t) > 3*time.Hour) {
 			reserve0, reserve1 := blockchain.stateCheck.Swap().GetSwapper(0, types.USDTID).Reserves()
-			newRewards, safeReward := blockchain.appDB.UpdatePrice(req.Header.Time, reserve0, reserve1)
+			funcUpdatePrice := blockchain.appDB.UpdatePriceBug
+			if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
+				funcUpdatePrice = blockchain.appDB.UpdatePriceFix
+			}
+			newRewards, safeReward := funcUpdatePrice(req.Header.Time, reserve0, reserve1)
 			blockchain.stateDeliver.App.SetReward(newRewards, safeReward)
 			blockchain.eventsDB.AddEvent(&eventsdb.UpdatedBlockRewardEvent{Value: newRewards.String(), ValueLockedStakeRewards: new(big.Int).Mul(safeReward, big.NewInt(3)).String()})
 		}
@@ -445,15 +451,17 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	// pay rewards
 	var moreRewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
-		if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
-			moreRewards = blockchain.stateDeliver.Validators.PayRewardsV4(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
-			blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
-			blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
-		} else {
-			moreRewards = blockchain.stateDeliver.Validators.PayRewardsV3(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
-			blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
-			blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
+		PayRewards := blockchain.stateDeliver.Validators.PayRewardsV3
+		if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
+			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5
+		} else if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
+			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV4
 		}
+
+		moreRewards = PayRewards(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
+		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
+		blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
+
 	}
 
 	if heightIsMaxIfIssueIsOverOrNotDynamic != math.MaxUint64 {

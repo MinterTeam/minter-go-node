@@ -246,7 +246,7 @@ func TestReward_Update_Down(t *testing.T) {
 			Balance: []types.Balance{
 				{
 					Coin:  uint64(types.GetBaseCoinID()),
-					Value: helpers.StringToBigInt("1000000000100000000000000000").String(),
+					Value: helpers.StringToBigInt("1000000000300000000000000000").String(),
 				},
 			},
 			Nonce:        0,
@@ -373,11 +373,15 @@ func TestReward_Update_Down(t *testing.T) {
 	SendCommit(app)
 	SendBeginBlock(app, 14, time.Unix(1646308803, 0).UTC()) // send BeginBlock
 	{
-		//tx := CreateTx(app, address, transaction.TypeSend, transaction.SendData{}, types.USDTID)
-		//response := SendTx(app, SignTx(pk, tx)) // compose and send tx
-		//if response.Code != code.OK {
-		//	t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
-		//}
+		tx := CreateTx(app, address, transaction.TypeSellSwapPool, transaction.SellSwapPoolDataV260{
+			Coins:             []types.CoinID{0, types.USDTID},
+			ValueToSell:       helpers.StringToBigInt("100000000000000000"),
+			MinimumValueToBuy: helpers.StringToBigInt("1"),
+		}, 0)
+		response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+		if response.Code != code.OK {
+			t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
+		}
 	}
 	SendEndBlock(app, 14) // send EndBlock
 	SendCommit(app)       // send Commit
@@ -389,6 +393,12 @@ func TestReward_Update_Down(t *testing.T) {
 	t.Log(app.GetEventsDB().LoadEvents(14)[2])
 	t.Log(app.GetEventsDB().LoadEvents(14)[3])
 	//t.Log(app.GetEventsDB().LoadEvents(14)[4])
+	t.Log(app.CurrentState().App().Reward())
+
+	SendBeginBlock(app, 15, time.Unix(1650628838, 0).UTC()) // send BeginBlock
+	SendEndBlock(app, 15)                                   // send EndBlock
+	SendCommit(app)
+
 	t.Log(app.CurrentState().App().Reward())
 }
 
