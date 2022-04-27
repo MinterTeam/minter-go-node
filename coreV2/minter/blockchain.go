@@ -146,6 +146,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 		knownUpdates: map[string]struct{}{
 			V3:   {}, // tokenomics
 			V310: {}, // hotfix
+			V320: {},
 		},
 		executor: GetExecutor(V3),
 	}
