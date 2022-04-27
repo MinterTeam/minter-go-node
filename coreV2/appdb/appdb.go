@@ -447,7 +447,51 @@ type TimePrice struct {
 	Last   *big.Int
 }
 
-func (appDB *AppDB) UpdatePrice(t time.Time, r0, r1 *big.Int) (reward, safeReward *big.Int) {
+func (appDB *AppDB) UpdatePriceFix(t time.Time, r0, r1 *big.Int) (reward, safeReward *big.Int) {
+	tOld, reserve0, reserve1, last, off := appDB.GetPrice()
+
+	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
+	// Price ^ (1/4) * 350
+	priceCount, _ := new(big.Float).Mul(new(big.Float).Mul(math.Pow(new(big.Float).SetRat(fNew), big.NewFloat(0.25)), big.NewFloat(350)), big.NewFloat(1e18)).Int(nil)
+	if tOld.IsZero() {
+		appDB.SetPrice(t, r0, r1, priceCount, false)
+		return new(big.Int).Set(priceCount), new(big.Int).Set(priceCount)
+	}
+
+	defer func() { appDB.SetPrice(t, r0, r1, last, off) }()
+
+	fOld := big.NewRat(1, 1).SetFrac(reserve1, reserve0)
+
+	rat := new(big.Rat).Mul(new(big.Rat).Quo(new(big.Rat).Sub(fNew, fOld), fOld), new(big.Rat).SetInt64(100))
+	diff := big.NewInt(0).Div(rat.Num(), rat.Denom())
+
+	if diff.Cmp(big.NewInt(-10)) != 1 {
+		last.SetInt64(0)
+		off = true
+		return last, new(big.Int).Set(priceCount)
+	}
+
+	if off && last.Cmp(priceCount) == -1 {
+		last.Add(last, big.NewInt(5e18))
+		last.Add(last, big.NewInt(5e18))
+		burn := big.NewInt(0).Sub(priceCount, last)
+		if burn.Sign() != 1 {
+			last.Set(priceCount)
+			off = false
+			return new(big.Int).Set(last), new(big.Int).Set(priceCount)
+		}
+		return new(big.Int).Set(last), new(big.Int).Set(priceCount)
+	}
+
+	off = false
+	last.Set(priceCount)
+
+	return new(big.Int).Set(last), new(big.Int).Set(priceCount)
+}
+
+// UpdatePriceBug
+// Deprecated
+func (appDB *AppDB) UpdatePriceBug(t time.Time, r0, r1 *big.Int) (reward, safeReward *big.Int) {
 	tOld, reserve0, reserve1, last, off := appDB.GetPrice()
 
 	fNew := big.NewRat(1, 1).SetFrac(r1, r0)
