@@ -512,6 +512,7 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					safeRewards.Mul(safeRewards, big.NewInt(3))
 					safeRewards.Mul(safeRewards, validator.GetAccumReward())
 					safeRewards.Div(safeRewards, validator.GetTotalBipStake())
+					safeRewards.Div(safeRewards, totalAccumRewards)
 
 					taxDAOx3 := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
 					taxDEVx3 := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
@@ -519,12 +520,12 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					safeRewards.Sub(safeRewards, taxDAOx3)
 					safeRewards.Sub(safeRewards, taxDEVx3)
 					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-					safeRewards.Div(safeRewards, totalAccumRewards)
 
 					calcRewards := big.NewInt(0).Mul(calcReward, big.NewInt(period))
 					calcRewards.Mul(calcRewards, stake.BipValue)
 					calcRewards.Mul(calcRewards, validator.GetAccumReward())
 					calcRewards.Div(calcRewards, validator.GetTotalBipStake())
+					calcRewards.Div(calcRewards, totalAccumRewards)
 
 					taxDAO := big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
 					taxDEV := big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
@@ -533,7 +534,6 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					calcRewards.Sub(calcRewards, taxDEV)
 					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
 					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-					calcRewards.Div(calcRewards, totalAccumRewards)
 
 					diffDAO := big.NewInt(0).Sub(taxDAOx3, taxDAO)
 					diffDEV := big.NewInt(0).Sub(taxDAOx3, taxDEV)
@@ -549,6 +549,7 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					safeRewards := big.NewInt(0).Mul(safeReward, big.NewInt(period))
 					safeRewards.Mul(safeRewards, stake.BipValue)
 					safeRewards.Mul(safeRewards, big.NewInt(3))
+					safeRewards.Div(safeRewards, totalStakes)
 
 					taxDAO := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(developers.Commission))), big.NewInt(100))
 					taxDEV := big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(dao.Commission))), big.NewInt(100))
@@ -562,7 +563,6 @@ func (v *Validators) PayRewardsV5(height uint64, period int64) (moreRewards *big
 					safeRewards.Sub(safeRewards, taxDEV)
 
 					safeRewards.Sub(safeRewards, big.NewInt(0).Div(big.NewInt(0).Mul(safeRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
-					safeRewards.Div(safeRewards, totalStakes)
 
 					safeRewardVariable.Set(safeRewards)
 				}
