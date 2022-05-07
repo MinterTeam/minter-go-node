@@ -43,8 +43,8 @@ func DefaultConfig() *Config {
 		"bab220855eb9625ea547f1ef1d11692c60a7a406@138.201.28.219:26656"
 
 	cfg.P2P.PersistentPeers =
-		"bac66d7240caca750dfb78a1ebb0a82a7a5ba898@state-test.minter.network:26656," +
-			"5b877dcc33c780bf9ae9dfde9070c055832b72b5@sync-test.minter.network:26656," +
+		"2e34b2bbadeffb0a75214af2a914d9990d7f954d@state-test.minter.network:26656," +
+			"d694da084a87ac5ce86f31fb48e1efdc711d9cc1@sync-test.minter.network:26656," +
 			"ddda6ce2626e6da6055bb32ebece2907c7997d3f@sync104.minter.su:26656," +
 			"7e1c0be4cfbc99a7b81cb5566a3eb9832fff542f@sync101.minter.su:26656"
 
