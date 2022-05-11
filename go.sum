@@ -85,8 +85,8 @@ github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jB
 github.com/Microsoft/go-winio v0.5.0/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
 github.com/Microsoft/go-winio v0.5.1 h1:aPJp2QD7OOrhO5tQXqQoGSJc+DjDtWTGLOmNyAm6FgY=
 github.com/Microsoft/go-winio v0.5.1/go.mod h1:JPGBdM1cNvN/6ISo+n8V5iA4v8pBzdOpzfwIujj1a84=
-github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220413090743-53ffbb191668 h1:uqMIMMMXAYs6Vrlw0oX0UaN3DrlWh4iGVm3QahAxZbc=
-github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220413090743-53ffbb191668/go.mod h1:aXWn+ewPqPGbnHbKEZzNik3motgWpFkT7LFTcBWvlHI=
+github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220511110553-8e89c773113f h1:CeFKcVffOlbBdQTDsZ7qhRXGaDFQy2xAu0sfF4d47c4=
+github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220511110553-8e89c773113f/go.mod h1:aXWn+ewPqPGbnHbKEZzNik3motgWpFkT7LFTcBWvlHI=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5 h1:TngWCqHvy9oXAN6lEVMRuU21PR1EtLVZJmdB18Gu3Rw=
 github.com/Nvveen/Gotty v0.0.0-20120604004816-cd527374f1e5/go.mod h1:lmUJ/7eu/Q8D7ML55dXQrVaamCz2vxCfdQBasLZfHKk=
 github.com/OneOfOne/xxhash v1.2.2 h1:KMrpdQIwFcEqXDklaen+P1axHaj9BSKzvpUUfnHldSE=

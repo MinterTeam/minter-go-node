@@ -23,6 +23,7 @@ type RWaitList interface {
 
 	Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item
 	GetByAddress(address types.Address) *Model
+	GetAll() []*Model
 	GetByAddressAndPubKey(address types.Address, pubkey types.Pubkey) []*Item
 	Export(state *types.AppState)
 }
@@ -161,6 +162,22 @@ func (wl *WaitList) Commit(db *iavl.MutableTree, version int64) error {
 
 func (wl *WaitList) GetByAddress(address types.Address) *Model {
 	return wl.get(address)
+}
+func (wl *WaitList) GetAll() (waitlists []*Model) {
+	wl.immutableTree().IterateRange([]byte{mainPrefix}, []byte{mainPrefix + 1}, true, func(key []byte, value []byte) bool {
+		address := types.BytesToAddress(key[1:])
+
+		model := &Model{address: address}
+		if err := rlp.DecodeBytes(value, model); err != nil {
+			panic(fmt.Sprintf("failed to decode waitlists for address %s: %s", address.String(), err))
+		}
+
+		waitlists = append(waitlists, model)
+
+		return false
+	})
+
+	return waitlists
 }
 
 func (wl *WaitList) Get(address types.Address, pubkey types.Pubkey, coin types.CoinID) *Item {
