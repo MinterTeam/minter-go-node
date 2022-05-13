@@ -454,8 +454,8 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	var moreRewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		PayRewards := blockchain.stateDeliver.Validators.PayRewardsV3
-		if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
-			if height < h+blockchain.updateStakesAndPayRewardsPeriod {
+		if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h || types.CurrentChainID == types.ChainTestnet {
+			if height < h+blockchain.updateStakesAndPayRewardsPeriod && types.CurrentChainID == types.ChainMainnet {
 				excess := blockchain.stateDeliver.Candidates.FixStakesAfter10509400()
 				blockchain.appDB.SetEmission(big.NewInt(0).Sub(blockchain.appDB.Emission(), excess))
 				log.Println("fixEmission", blockchain.appDB.Emission())
