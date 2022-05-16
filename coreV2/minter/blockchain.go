@@ -454,18 +454,29 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	var moreRewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		PayRewards := blockchain.stateDeliver.Validators.PayRewardsV3
-		if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h || types.CurrentChainID == types.ChainTestnet {
-			if height < h+blockchain.updateStakesAndPayRewardsPeriod && types.CurrentChainID == types.ChainMainnet {
-				excess := blockchain.stateDeliver.Candidates.FixStakesAfter10509400()
-				blockchain.appDB.SetEmission(big.NewInt(0).Sub(blockchain.appDB.Emission(), excess))
-				log.Println("fixEmission", blockchain.appDB.Emission())
+		if types.CurrentChainID == types.ChainTestnet {
+			if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix
+			} else if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix
+			} else if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV4
 			}
-			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix
-		} else if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
-			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Bug
-		} else if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
-			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV4
+		} else {
+			if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
+				if height < h+blockchain.updateStakesAndPayRewardsPeriod {
+					excess := blockchain.stateDeliver.Candidates.FixStakesAfter10509400()
+					blockchain.appDB.SetEmission(big.NewInt(0).Sub(blockchain.appDB.Emission(), excess))
+					log.Println("fixEmission", blockchain.appDB.Emission())
+				}
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix
+			} else if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Bug
+			} else if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV4
+			}
 		}
+
 		moreRewards = PayRewards(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
 		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
 		blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)
