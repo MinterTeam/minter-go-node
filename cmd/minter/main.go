@@ -28,6 +28,7 @@ func main() {
 		cmd.VerifyGenesis,
 		cmd.Version,
 		cmd.ExportCommand,
+		cmd.LoadLastEventsCommand,
 	)
 
 	rootCmd.PersistentFlags().String("home-dir", "", "base dir (default is $HOME/.minter)")
