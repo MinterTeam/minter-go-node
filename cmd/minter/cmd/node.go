@@ -108,6 +108,20 @@ func runNode(cmd *cobra.Command) error {
 	// start TM node
 	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
 
+	isOnlyApiMode, err := cmd.Flags().GetBool("only-api-mode")
+	if err != nil {
+		return err
+	}
+
+	if isOnlyApiMode {
+		logger.With("module", "node").Info("Started only API")
+	} else {
+		if err = node.Start(); err != nil {
+			logger.Error("failed to start node", "err", err)
+			return err
+		}
+		logger.With("module", "node").Info("Started node", "node", node.Switch().NodeInfo())
+	}
 	client := app.RpcClient()
 
 	if !cfg.ValidatorMode {
@@ -242,13 +256,6 @@ func startTendermintNode(app *minter.Blockchain, cfg *tmCfg.Config, logger tmLog
 	}
 
 	app.SetTmNode(node)
-
-	if err = node.Start(); err != nil {
-		logger.Error("failed to start node", "err", err)
-		os.Exit(1)
-	}
-
-	logger.Info("Started node", "nodeInfo", node.Switch().NodeInfo())
 
 	return node
 }

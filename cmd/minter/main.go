@@ -40,6 +40,8 @@ func main() {
 	rootCmd.PersistentFlags().String("persistent-peers", "", "")
 	rootCmd.PersistentFlags().Bool("state-sync", false, "enable state sync snapshots")
 
+	cmd.RunNode.PersistentFlags().Bool("only-api-mode", false, "enable API only")
+
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")
 	cmd.ExportCommand.Flags().String("chain-id", "", "export chain id")
