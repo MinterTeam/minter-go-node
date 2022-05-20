@@ -23,13 +23,17 @@ import (
 	"github.com/tendermint/tendermint/privval"
 	"github.com/tendermint/tendermint/proxy"
 	rpc "github.com/tendermint/tendermint/rpc/client/local"
+	sm "github.com/tendermint/tendermint/state"
+	"github.com/tendermint/tendermint/store"
 	tmTypes "github.com/tendermint/tendermint/types"
 	"io"
 	"net/http"
 	_ "net/http/pprof" // nolint: gosec // securely exposed on separate, optional port
 	"net/url"
 	"os"
+	"reflect"
 	"syscall"
+	"unsafe"
 )
 
 // RunNode is the command that allows the CLI to start a node.
@@ -113,8 +117,39 @@ func runNode(cmd *cobra.Command) error {
 	var node *tmNode.Node
 	if isOnlyApiMode {
 		tmConfig.StateSync.Enable = true
-		node = startTendermintNode(app, tmConfig, logger, storages.GetMinterHome()+"/mock")
-		logger.With("module", "node").Info("Started only API")
+		blockStoreDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "blockstore", Config: tmConfig})
+		if err != nil {
+			panic(err)
+		}
+		blockStore := store.NewBlockStore(blockStoreDB)
+
+		stateDB, err := tmNode.DefaultDBProvider(&tmNode.DBContext{ID: "state", Config: tmConfig})
+		if err != nil {
+			panic(err)
+		}
+		stateStore := sm.NewStore(stateDB)
+
+		tmConfig.DBBackend = "memdb"
+		node = startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
+
+		{
+			member := reflect.ValueOf(node).Elem().FieldByName("blockStore")
+			ptrToY := unsafe.Pointer(member.UnsafeAddr())
+			realPtrToY := (**store.BlockStore)(ptrToY)
+			*realPtrToY = blockStore
+		}
+
+		{
+			member := reflect.ValueOf(node).Elem().FieldByName("stateStore")
+			ptrToY := unsafe.Pointer(member.UnsafeAddr())
+			realPtrToY := (*sm.Store)(ptrToY)
+			*realPtrToY = stateStore
+		}
+		err = node.ConfigureRPC()
+		if err != nil {
+			panic(err)
+		}
+		logger.With("module", "node").Info("Started only API", "last_height", blockStore.Height())
 	} else { // start TM node
 		node = startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
 		if err = node.Start(); err != nil {
