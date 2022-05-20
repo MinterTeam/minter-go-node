@@ -105,17 +105,18 @@ func runNode(cmd *cobra.Command) error {
 		app.SetSnapshotStore(snapshotStore, cfg.SnapshotInterval, cfg.SnapshotKeepRecent)
 	}
 
-	// start TM node
-	node := startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
-
 	isOnlyApiMode, err := cmd.Flags().GetBool("only-api-mode")
 	if err != nil {
 		return err
 	}
 
+	var node *tmNode.Node
 	if isOnlyApiMode {
+		tmConfig.StateSync.Enable = true
+		node = startTendermintNode(app, tmConfig, logger, storages.GetMinterHome()+"/mock")
 		logger.With("module", "node").Info("Started only API")
-	} else {
+	} else { // start TM node
+		node = startTendermintNode(app, tmConfig, logger, storages.GetMinterHome())
 		if err = node.Start(); err != nil {
 			logger.Error("failed to start node", "err", err)
 			return err
@@ -124,7 +125,7 @@ func runNode(cmd *cobra.Command) error {
 	}
 	client := app.RpcClient()
 
-	if !cfg.ValidatorMode {
+	if !cfg.ValidatorMode || isOnlyApiMode {
 		runAPI(logger, app, client, node, app.RewardCounter())
 	}
 
