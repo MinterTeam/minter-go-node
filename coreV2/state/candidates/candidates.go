@@ -263,7 +263,7 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 
 		sort.Slice(deletedCandidates, func(i, j int) bool {
 			if deletedCandidates[i].ID == deletedCandidates[j].ID {
-				return deletedCandidates[i].PubKey.String() < deletedCandidates[j].PubKey.String()
+				return deletedCandidates[i].PubKey.String() > deletedCandidates[j].PubKey.String()
 			}
 			return deletedCandidates[i].ID < deletedCandidates[j].ID
 		})
@@ -1143,7 +1143,7 @@ func (c *Candidates) Export(state *types.AppState) {
 	}
 	sort.SliceStable(state.DeletedCandidates, func(i, j int) bool {
 		if state.DeletedCandidates[i].ID == state.DeletedCandidates[j].ID {
-			return state.DeletedCandidates[i].PubKey.String() < state.DeletedCandidates[j].PubKey.String()
+			return state.DeletedCandidates[i].PubKey.String() > state.DeletedCandidates[j].PubKey.String()
 		}
 		return state.DeletedCandidates[i].ID < state.DeletedCandidates[j].ID
 	})
@@ -1162,7 +1162,7 @@ func (c *Candidates) DeletedCandidates() (result []*deletedID) {
 	}
 	sort.SliceStable(result, func(i, j int) bool {
 		if result[i].ID == result[j].ID {
-			return result[i].PubKey.String() < result[j].PubKey.String()
+			return result[i].PubKey.String() > result[j].PubKey.String()
 		}
 		return result[i].ID < result[j].ID
 	})
