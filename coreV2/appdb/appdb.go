@@ -407,11 +407,12 @@ func (appDB *AppDB) SetEmission(emission *big.Int) {
 	appDB.mu.Lock()
 	defer appDB.mu.Unlock()
 
+	appDB.isDirtyEmission = true
 	appDB.emission = emission
 }
 
 func (appDB *AppDB) SaveEmission() {
-	if appDB.isDirtyPrice == false {
+	if appDB.isDirtyEmission == false {
 		return
 	}
 
