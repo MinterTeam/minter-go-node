@@ -30,6 +30,17 @@ func (s *Service) Candidates(ctx context.Context, req *pb.CandidatesRequest) (*p
 	candidates := cState.Candidates().GetCandidates()
 
 	response := &pb.CandidatesResponse{}
+	if req.Status == pb.CandidatesRequest_all || req.Status == pb.CandidatesRequest_deleted {
+		for _, dc := range cState.Candidates().DeletedCandidates() {
+			response.Deleted = append(response.Deleted, &pb.CandidatesResponse_Deleted{
+				Id:        uint64(dc.ID),
+				PublicKey: dc.PubKey.String(),
+			})
+		}
+	}
+	if req.Status == pb.CandidatesRequest_deleted {
+		return response, nil
+	}
 	for _, candidate := range candidates {
 
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
