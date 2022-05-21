@@ -415,6 +415,7 @@ func (appDB *AppDB) SaveEmission() {
 	if appDB.isDirtyEmission == false {
 		return
 	}
+	appDB.isDirtyEmission = false
 
 	appDB.WG.Wait()
 	if err := appDB.db.Set([]byte(emissionPath), appDB.emission.Bytes()); err != nil {
@@ -554,6 +555,7 @@ func (appDB *AppDB) SavePrice() {
 	if appDB.isDirtyPrice == false {
 		return
 	}
+	appDB.isDirtyPrice = false
 
 	appDB.WG.Wait()
 
