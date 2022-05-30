@@ -14,7 +14,7 @@ func TestFailedTxPayCommission(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
 		Name:         "aaa",
@@ -104,7 +104,7 @@ func TestFailedTxPayCommission_customPriceCoin(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -198,7 +198,7 @@ func TestFailedTxPayCommission_customPriceCoinAndPayBaseCoin_lessAvailable(t *te
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -292,7 +292,7 @@ func TestFailedTxPayCommission_customPriceCoinAndPayBaseCoin_lessAvailable_withG
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -386,7 +386,7 @@ func TestFailedTxPayCommission_customPriceCoinAndPayBaseCoin_withGasPrice(t *tes
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -479,7 +479,7 @@ func TestFailedTxPayCommission_customPriceCoinAndPayBaseCoin(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -572,7 +572,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionToken(t *testin
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -702,7 +702,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionToken_withGasPr
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -832,7 +832,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionToken_withGasPr
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -962,7 +962,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionBancorReserveCo
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -1075,7 +1075,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionBancorReserveCo
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -1188,7 +1188,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionBancorReserveCo
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,
@@ -1311,7 +1311,7 @@ func TestFailedTxPayCommission_customPriceCoinAndCustomCommissionBancorReserveCo
 
 	state := DefaultAppState() // generate default state
 
-	state.Version = "v250"
+	state.Version = "v300"
 
 	state.Coins = append(state.Coins, types.Coin{
 		ID:           1,

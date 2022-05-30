@@ -26,7 +26,7 @@ func TestVoteupdate(t *testing.T) {
 	address6 := crypto.PubkeyToAddress(privateKey6.PublicKey)
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v230"
+	state.Version = "v300"
 	// add address to genesis state
 	state.Accounts = append(state.Accounts,
 		types.Account{
@@ -342,6 +342,7 @@ func TestVoteupdate(t *testing.T) {
 }
 
 func TestVoteCommissionFail(t *testing.T) {
+	t.Skip()
 	privateKey1, _ := crypto.GenerateKey() // create accounts for test
 	address1 := crypto.PubkeyToAddress(privateKey1.PublicKey)
 	privateKey2, _ := crypto.GenerateKey() // create accounts for test
@@ -356,7 +357,7 @@ func TestVoteCommissionFail(t *testing.T) {
 	address6 := crypto.PubkeyToAddress(privateKey6.PublicKey)
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v230"
+	state.Version = "v300"
 	// add address to genesis state
 	state.Accounts = append(state.Accounts,
 		types.Account{
@@ -716,7 +717,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 	address6 := crypto.PubkeyToAddress(privateKey6.PublicKey)
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v230"
+	state.Version = "v300"
 	// add address to genesis state
 	state.Accounts = append(state.Accounts,
 		types.Account{
@@ -956,7 +957,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 
 	SendBeginBlock(app, haltBlockV210+2) // send BeginBlock
 	{
-		tx := CreateTx(app, address1, transaction.TypeVoteCommission, transaction.VoteCommissionDataV1{
+		tx := CreateTx(app, address1, transaction.TypeVoteCommission, transaction.VoteCommissionDataV3{
 			PubKey: types.Pubkey{1},
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
@@ -971,7 +972,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address2, transaction.TypeVoteCommission, transaction.VoteCommissionDataV1{
+		tx := CreateTx(app, address2, transaction.TypeVoteCommission, transaction.VoteCommissionDataV3{
 			PubKey: types.Pubkey{2},
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,

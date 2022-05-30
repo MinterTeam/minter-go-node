@@ -91,8 +91,8 @@ func TestLock_Emission(t *testing.T) {
 	SendEndBlock(app, initialHeight)   // send EndBlock
 	SendCommit(app)                    // send Commit
 
-	if _, ok := app.CurrentState().Swap().(*swap.Swap); !ok {
-		t.Error("swap required v1")
+	if _, ok := app.CurrentState().Swap().(*swap.SwapV2); !ok {
+		t.Error("swap required v2")
 	}
 
 	SendBeginBlock(app, initialHeight+1) // send BeginBlock

@@ -53,7 +53,7 @@ func TestReward_Simple(t *testing.T) {
 			Votes: []types.Pubkey{
 				[32]byte{1},
 			},
-			Version: "v300",
+			Version: "v310",
 		},
 	}
 	state.Coins = []types.Coin{
@@ -97,7 +97,7 @@ func TestReward_Simple(t *testing.T) {
 	SendCommit(app)         // send Commit
 
 	t.Log(app.UpdateVersions()[1])
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	//t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.CurrentState().App().Reward())
 }
 

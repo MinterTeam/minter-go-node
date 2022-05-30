@@ -72,6 +72,12 @@ var (
 		MintToken:               helpers.StringToBigInt("100000000000000000"),
 		VoteCommission:          helpers.StringToBigInt("1000000000000000000"),
 		VoteUpdate:              helpers.StringToBigInt("1000000000000000000"),
+		FailedTx:                helpers.StringToBigInt("10000000000000000"),
+		AddLimitOrder:           helpers.StringToBigInt("10000000000000000"),
+		RemoveLimitOrder:        helpers.StringToBigInt("10000000000000000"),
+		MoveStake:               helpers.StringToBigInt("10000000000000000"),
+		LockStake:               helpers.StringToBigInt("10000000000000000"),
+		Lock:                    helpers.StringToBigInt("10000000000000000"),
 		More:                    nil,
 	}
 )
