@@ -100,6 +100,14 @@ type Blockchain struct {
 	wgSnapshot         sync.WaitGroup
 }
 
+func (blockchain *Blockchain) UpdateStakesAndPayRewardsPeriod() uint64 {
+	return blockchain.updateStakesAndPayRewardsPeriod
+}
+
+func (blockchain *Blockchain) ExpiredOrdersPeriod() uint64 {
+	return blockchain.expiredOrdersPeriod
+}
+
 func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
 	return blockchain.rewards
 }
@@ -201,7 +209,11 @@ func (blockchain *Blockchain) initState() {
 	}
 	blockchain.appDB.SetState(stateDeliver.Tree())
 
-	atomic.StoreUint64(&blockchain.height, currentHeight)
+	height := currentHeight
+	if height == 0 {
+		height = initialHeight
+	}
+	atomic.StoreUint64(&blockchain.height, height)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
@@ -328,7 +340,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	versionName := blockchain.appDB.GetVersionName(height)
 	if _, ok := blockchain.knownUpdates[versionName]; !ok {
-		log.Printf("Update your node binary to the latest version: %s", versionName)
+		log.Printf("Update your node binary to the latest version: %s, height: %d", versionName, height)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}

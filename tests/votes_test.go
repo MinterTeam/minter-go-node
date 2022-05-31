@@ -987,7 +987,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address3, transaction.TypeVoteCommission, transaction.VoteCommissionDataV1{
+		tx := CreateTx(app, address3, transaction.TypeVoteCommission, transaction.VoteCommissionDataV3{
 			PubKey: types.Pubkey{3},
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
@@ -1007,7 +1007,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 	SendBeginBlock(app, haltBlockV210+3) // send BeginBlock
 
 	{
-		tx := CreateTx(app, address5, transaction.TypeVoteCommission, transaction.VoteCommissionDataV1{
+		tx := CreateTx(app, address5, transaction.TypeVoteCommission, transaction.VoteCommissionDataV3{
 			PubKey: types.Pubkey{5},
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
@@ -1022,7 +1022,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 		}
 	}
 	{
-		tx := CreateTx(app, address6, transaction.TypeVoteCommission, transaction.VoteCommissionDataV1{
+		tx := CreateTx(app, address6, transaction.TypeVoteCommission, transaction.VoteCommissionDataV3{
 			PubKey: types.Pubkey{6},
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
@@ -1038,7 +1038,7 @@ func TestVoteCommissionOKUpdateVersion(t *testing.T) {
 	}
 
 	{ // Diff
-		tx := CreateTx(app, address4, transaction.TypeVoteCommission, transaction.VoteCommissionDataV1{
+		tx := CreateTx(app, address4, transaction.TypeVoteCommission, transaction.VoteCommissionDataV3{
 			PubKey: types.Pubkey{4},
 			Coin:   types.GetBaseCoinID(),
 			Height: haltBlockV210 + 4,
