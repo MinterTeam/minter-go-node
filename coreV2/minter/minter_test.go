@@ -417,7 +417,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
-	t.Skip("todo")
+	//t.Skip("todo")
 	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
 	defer cancel() // unexpected call to os.Exit(0) during test
 	data := transaction.SetHaltBlockData{

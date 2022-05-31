@@ -1,68 +1,135 @@
 package tests
 
 import (
-	"math/big"
-	"testing"
-
+	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/helpers"
+	"math"
+	"math/big"
+	"testing"
 )
 
+type diffBalance struct {
+	Coin  types.CoinID
+	Value *big.Int
+}
+
+func TestEditBalance(t *testing.T) {
+	sender := CreateAddress() // create account for test
+
+	helper := NewHelper(DefaultAppState(sender.address))
+
+	var transactions []func() (transaction.Transaction, []*diffBalance)
+
+	for _, coin := range []types.CoinID{types.BasecoinID, types.USDTID} {
+		coin := coin
+		{
+			recipient := CreateAddress()
+			value := big.NewInt(1)
+			transactions = append(transactions, func() (transaction.Transaction, []*diffBalance) {
+				return helper.CreateTx(sender.privateKey, transaction.SendData{
+						Coin:  coin,
+						To:    recipient.address,
+						Value: value,
+					}, types.USDTID), []*diffBalance{{
+						Coin:  coin,
+						Value: value}}
+			})
+		}
+		{
+			value := big.NewInt(1)
+			transactions = append(transactions, func() (transaction.Transaction, []*diffBalance) {
+				return helper.CreateTx(sender.privateKey, transaction.LockData{
+						DueBlock: math.MaxUint32,
+						Coin:     coin,
+						Value:    value,
+					}, types.USDTID), []*diffBalance{{
+						Coin:  coin,
+						Value: value}}
+			})
+		}
+	}
+
+	for _, txFunc := range transactions {
+		tx, diffs := txFunc()
+		t.Run(fmt.Sprintf("TxType=%s,%#v", tx.Type, tx.GetDecodedData()), func(t *testing.T) {
+			testBalance(t, helper, tx, diffs)
+		})
+	}
+}
+func testBalance(t *testing.T, helper *Helper, tx transaction.Transaction, diffs []*diffBalance) {
+	sender, _ := tx.Sender()
+
+	initialCommissionCoinBalance := helper.app.CurrentState().Accounts().GetBalance(sender, tx.CommissionCoin())
+
+	var initialBalances []*big.Int
+	for _, diff := range diffs {
+		initialBalances = append(initialBalances, helper.app.CurrentState().Accounts().GetBalance(sender, diff.Coin))
+	}
+
+	_, results := helper.NextBlock(tx)
+
+	for _, resp := range results {
+		if resp.Code != code.OK {
+			t.Fatalf("Response code is not OK: %d, %s", resp.Code, resp.Log)
+		}
+	}
+
+	var checkedCommissionCoin bool
+	for i, diff := range diffs {
+		newBalance := big.NewInt(0).Sub(initialBalances[i], diff.Value)
+		if diff.Coin == tx.CommissionCoin() {
+			if tx.CommissionCoin() != types.USDTID {
+				panic("unimplemented test commission coin not equal USDT")
+			}
+			checkedCommissionCoin = true
+			newBalance.Sub(newBalance, tx.MulGasPrice(tx.Price(helper.app.CurrentState().Commission().GetCommissions())))
+		}
+		if newBalance.String() != helper.app.CurrentState().Accounts().GetBalance(sender, diff.Coin).String() {
+			t.Errorf("error sender CoinID-%d balance", diff.Coin)
+		}
+	}
+
+	if !checkedCommissionCoin {
+		if big.NewInt(0).Sub(initialCommissionCoinBalance, tx.Price(helper.app.CurrentState().Commission().GetCommissions())).String() != helper.app.CurrentState().Accounts().GetBalance(sender, tx.CommissionCoin()).String() {
+			t.Error("error sender usd balance")
+		}
+	}
+
+}
+
 func TestSend(t *testing.T) {
-	address, pk := CreateAddress() // create account for test
+	sender := CreateAddress() // create account for test
 
-	state := DefaultAppState() // generate default state
+	helper := NewHelper(DefaultAppState(sender.address))
 
-	// add address to genesis state
-	state.Accounts = append(state.Accounts, types.Account{
-		Address: address,
-		Balance: []types.Balance{
-			{
-				Coin:  uint64(types.GetBaseCoinID()),
-				Value: helpers.StringToBigInt("100000000000000000000").String(),
-			},
-		},
-		Nonce:        0,
-		MultisigData: nil,
-	})
+	initialBIPBalance := helper.app.CurrentState().Accounts().GetBalance(sender.address, 0)
+	initialUSDTBalance := helper.app.CurrentState().Accounts().GetBalance(sender.address, types.USDTID)
 
-	app := CreateApp(state) // create application
-	SendBeginBlock(app, 1)  // send BeginBlock
-
-	recipient, _ := CreateAddress() // generate recipient
+	recipient := CreateAddress() // generate recipient
 	value := big.NewInt(1)
-
-	tx := CreateTx(app, address, transaction.TypeSend, transaction.SendData{
+	tx := helper.CreateTx(sender.privateKey, transaction.SendData{
 		Coin:  types.GetBaseCoinID(),
-		To:    recipient,
+		To:    recipient.address,
 		Value: value,
-	}, 0)
+	}, types.USDTID)
 
-	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
+	_, results := helper.NextBlock(tx)
 
-	// check that result is OK
-	if response.Code != code.OK {
-		t.Fatalf("Response code is not OK: %s, %d", response.Log, response.Code)
-	}
-
-	SendEndBlock(app, 1) // send EndBlock
-	SendCommit(app)      // send Commit
-
-	// check recipient's balance
-	{
-		balance := app.CurrentState().Accounts().GetBalance(recipient, types.GetBaseCoinID())
-		if balance.Cmp(value) != 0 {
-			t.Fatalf("Recipient balance is not correct. Expected %s, got %s", value, balance)
+	for _, resp := range results {
+		if resp.Code != code.OK {
+			t.Fatalf("Response code is not OK: %d, %s", resp.Code, resp.Log)
 		}
 	}
 
-	// check sender's balance
-	{
-		balance := app.CurrentState().Accounts().GetBalance(address, types.GetBaseCoinID())
-		if balance.String() != "99989999999999999999" {
-			t.Fatalf("Recipient balance is not correct. Expected %s, got %s", "98999999999999999999", balance)
-		}
+	if big.NewInt(0).Sub(initialUSDTBalance, helper.app.CurrentState().Commission().GetCommissions().Send).String() != helper.app.CurrentState().Accounts().GetBalance(sender.address, types.USDTID).String() {
+		t.Fatalf("error sender usd balance")
+	}
+	if big.NewInt(0).Sub(initialBIPBalance, value).String() != helper.app.CurrentState().Accounts().GetBalance(sender.address, 0).String() {
+		t.Fatalf("error sender bip balance")
+	}
+	if value.String() != helper.app.CurrentState().Accounts().GetBalance(recipient.address, 0).String() {
+		t.Fatalf("error recipient bip balance")
 	}
 }

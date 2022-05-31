@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -102,6 +102,7 @@ func TestReward_Simple(t *testing.T) {
 }
 
 func TestReward_X3Cmp(t *testing.T) {
+	t.Skip("move to tests_new")
 	state := DefaultAppState() // generate default state
 
 	stake := helpers.BipToPip(big.NewInt(10_000))

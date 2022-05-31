@@ -162,6 +162,19 @@ func (h *Helper) CreateTx(pk *ecdsa.PrivateKey, data transaction.Data, gas types
 		panic(err)
 	}
 
+	d, ok := transaction.GetData(data.TxType())
+	if !ok {
+		panic(fmt.Sprintf("tx type %x is not registered", tx.Type))
+	}
+
+	err = rlp.DecodeBytes(tx.Data, d)
+
+	if err != nil {
+		panic(err)
+	}
+
+	tx.SetDecodedData(d)
+
 	return tx
 }
 

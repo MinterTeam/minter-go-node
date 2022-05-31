@@ -100,6 +100,10 @@ type Blockchain struct {
 	wgSnapshot         sync.WaitGroup
 }
 
+func (blockchain *Blockchain) Executor() transaction.ExecutorTx {
+	return blockchain.executor
+}
+
 func (blockchain *Blockchain) UpdateStakesAndPayRewardsPeriod() uint64 {
 	return blockchain.updateStakesAndPayRewardsPeriod
 }

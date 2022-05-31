@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -126,7 +126,7 @@ func TestLockTx(t *testing.T) {
 		Balance: []types.Balance{
 			{
 				Coin:  uint64(types.GetBaseCoinID()),
-				Value: helpers.StringToBigInt("100010000000000000000").String(),
+				Value: helpers.StringToBigInt("100100000000000000000").String(),
 			},
 		},
 		Nonce:        0,
