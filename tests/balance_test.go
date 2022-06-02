@@ -66,7 +66,7 @@ func TestEditBalance(t *testing.T) {
 						Coin:  types.GetBaseCoinID(),
 						Value: value}, {
 						Coin:  types.USDTID,
-						Value: big.NewInt(0).Neg(big.NewInt(997001999999999)),
+						Value: big.NewInt(0).Neg(big.NewInt(997001999999999 - 7950111)),
 					}}, "sell0"
 			})
 		}
@@ -81,7 +81,7 @@ func TestEditBalance(t *testing.T) {
 						Coin:  types.USDTID,
 						Value: value}, {
 						Coin:  types.GetBaseCoinID(),
-						Value: big.NewInt(0).Neg(big.NewInt(997001999999998806)),
+						Value: big.NewInt(0).Neg(big.NewInt(997001999999998806 - 11930146541)),
 					}}, "sell1993"
 			})
 		}
@@ -94,7 +94,7 @@ func TestEditBalance(t *testing.T) {
 						MaximumValueToSell: big.NewInt(2e18),
 					}, types.USDTID), []*diffBalance{{
 						Coin:  types.GetBaseCoinID(),
-						Value: big.NewInt(1003007015031063931)}, {
+						Value: big.NewInt(1003007015031063931 + 8028065413)}, {
 						Coin:  types.USDTID,
 						Value: big.NewInt(0).Neg(value),
 					}}, "buy1993"
@@ -109,7 +109,7 @@ func TestEditBalance(t *testing.T) {
 						MaximumValueToSell: big.NewInt(2e18),
 					}, types.USDTID), []*diffBalance{{
 						Coin:  types.GetBaseCoinID(),
-						Value: big.NewInt(1003007015031063931)}, {
+						Value: big.NewInt(1003007015031063931 + 8028065413)}, {
 						Coin:  types.USDTID,
 						Value: big.NewInt(0).Neg(value),
 					}}, "buy1993"
@@ -124,7 +124,7 @@ func TestEditBalance(t *testing.T) {
 						MaximumValueToSell: big.NewInt(2e15),
 					}, types.USDTID), []*diffBalance{{
 						Coin:  types.USDTID,
-						Value: big.NewInt(1003007015031066)}, {
+						Value: big.NewInt(1003007015031066 + 12032073)}, {
 						Coin:  types.GetBaseCoinID(),
 						Value: big.NewInt(0).Neg(value),
 					}}, "buy0"

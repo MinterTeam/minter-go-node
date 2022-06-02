@@ -4,6 +4,7 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"github.com/MinterTeam/minter-go-node/helpers"
 	"math/big"
 	"sort"
 	"time"
@@ -33,7 +34,20 @@ func CreateAppDefault(state types.AppState) *minter.Blockchain {
 	return CreateApp(state, updateStakePeriod, expiredOrdersPeriod, 999)
 }
 
-func CreateApp(state types.AppState, updateStakePeriod, expiredOrdersPeriod uint64, initialHeightOmitempty int64) *minter.Blockchain {
+func CreateApp(state types.AppState, updateStakePeriod, expiredOrdersPeriod uint64, initialHeightOmitempty uint64) *minter.Blockchain {
+
+	var lastUpdateHeight uint64
+	var votes []types.UpdateVote
+	for i, vote := range state.UpdateVotes {
+		lastUpdateHeight = initialHeightOmitempty + uint64(i) + 2
+		votes = append(votes, types.UpdateVote{
+			Height:  lastUpdateHeight,
+			Votes:   vote.Votes,
+			Version: vote.Version,
+		})
+	}
+	state.UpdateVotes = votes
+
 	jsonState, err := amino.MarshalJSON(state)
 	if err != nil {
 		panic(err)
@@ -52,9 +66,15 @@ func CreateApp(state types.AppState, updateStakePeriod, expiredOrdersPeriod uint
 		Time:          time.Unix(0, 0),
 		ChainId:       "test1",
 		Validators:    updates,
-		InitialHeight: initialHeightOmitempty,
+		InitialHeight: int64(initialHeightOmitempty),
 		AppStateBytes: jsonState,
 	})
+
+	for i := initialHeightOmitempty; i < lastUpdateHeight+1; i++ {
+		SendBeginBlock(app, time.Unix(int64(lastUpdateHeight), 0))
+		SendEndBlock(app)
+		SendCommit(app)
+	}
 
 	return app
 }
@@ -199,6 +219,8 @@ func CreateAddress() *User {
 	return &User{crypto.PubkeyToAddress(pk.PublicKey), pk}
 }
 
+var initialBIPStake = helpers.StringToBigInt("1000000000000000000000000000000000")
+
 // DefaultAppState returns new AppState with some predefined values
 func DefaultAppState(addresses ...types.Address) types.AppState {
 	var accounts = make([]types.Account, 0, len(addresses))
@@ -210,20 +232,20 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 			Address: addr,
 			Balance: []types.Balance{{
 				Coin:  0,
-				Value: "1000000000000000000000000000000000",
+				Value: "100000000000000000000000000",
 			}, {
 				Coin:  1,
-				Value: "1000000000000000000000000000000",
+				Value: "100000000000000000000000",
 			}, {
 				Coin:  types.USDTID,
-				Value: "1000000000000000000000000000000",
+				Value: "100000000000000000000000",
 			}},
 			Nonce:               0,
 			MultisigData:        nil,
 			LockStakeUntilBlock: 0,
 		})
 		validators = append(validators, types.Validator{
-			TotalBipStake: "2000000000000000000000000000000000",
+			TotalBipStake: "200000000000000000000000000",
 			PubKey:        getValidatorAddress(i),
 			AccumReward:   "0",
 			AbsentTimes:   types.NewBitArray(24),
@@ -233,30 +255,44 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 			RewardAddress:  getRewardAddress(i),
 			OwnerAddress:   addr,
 			ControlAddress: addr,
-			TotalBipStake:  "2000000000000000000000000000000000",
+			TotalBipStake:  "200000000000000000000000000",
 			PubKey:         getValidatorAddress(i),
 			Commission:     10,
 			Stakes: []types.Stake{{
 				Owner:    addr,
 				Coin:     0,
-				Value:    "1000000000000000000000000000000000",
-				BipValue: "1000000000000000000000000000000000",
+				Value:    initialBIPStake.String(),
+				BipValue: initialBIPStake.String(),
 			}, {
 				Owner:    getCustomAddress(i),
 				Coin:     0,
-				Value:    "1000000000000000000000000000000000",
-				BipValue: "1000000000000000000000000000000000",
+				Value:    "100000000000000000000000000",
+				BipValue: "100000000000000000000000000",
 			}},
+			//Updates: nil,
 			Updates: []types.Stake{{
 				Owner:    addr,
 				Coin:     0,
-				Value:    "500000000000000000000000000000000",
-				BipValue: "500000000000000000000000000000000",
+				Value:    "50000000000000000000000000",
+				BipValue: "50000000000000000000000000",
 			}},
 			Status:                   2,
 			JailedUntil:              0,
 			LastEditCommissionHeight: 0,
 		})
+	}
+
+	var votes []types.UpdateVote
+	for _, v := range []string{minter.V310, minter.V320, minter.V330, minter.V340} {
+		vote := types.UpdateVote{
+			Height:  0,
+			Votes:   nil,
+			Version: v,
+		}
+		for i := range addresses {
+			vote.Votes = append(vote.Votes, getValidatorAddress(i))
+		}
+		votes = append(votes, vote)
 	}
 
 	return types.AppState{
@@ -269,8 +305,8 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 		Pools: []types.Pool{{
 			Coin0:    0,
 			Coin1:    types.USDTID,
-			Reserve0: "1000000000000000000000000000000000",
-			Reserve1: "1000000000000000000000000000000",
+			Reserve0: "100000000000000000000000000",
+			Reserve1: "100000000000000000000000",
 			ID:       1,
 			Orders:   nil,
 		}},
@@ -281,9 +317,9 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 				ID:           1,
 				Name:         "Reserve Coin 1",
 				Symbol:       types.StrToCoinSymbol("COIN1RES"),
-				Volume:       fmt.Sprintf("%d000000000000000000000000000000", len(accounts)),
+				Volume:       fmt.Sprintf("%d00000000000000000000000", len(accounts)),
 				Crr:          50,
-				Reserve:      "1000000000000000000000000000",
+				Reserve:      "100000000000000000000",
 				MaxSupply:    coins.MaxCoinSupply().String(),
 				Version:      0,
 				OwnerAddress: &types.Address{},
@@ -294,7 +330,7 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 				ID:           types.USDTID,
 				Name:         "USDT Eth",
 				Symbol:       types.StrToCoinSymbol("USDTE"),
-				Volume:       fmt.Sprintf("%d000000000000000000000000000000", len(accounts)+1),
+				Volume:       fmt.Sprintf("%d00000000000000000000000", len(accounts)+1),
 				Crr:          0,
 				Reserve:      "0",
 				MaxSupply:    coins.MaxCoinSupply().String(),
@@ -358,7 +394,7 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 			Lock:                    "200000000000000",
 		},
 		CommissionVotes: nil,
-		UpdateVotes:     nil,
+		UpdateVotes:     votes,
 		UsedChecks:      nil,
 		MaxGas:          0,
 		TotalSlashed:    "0",

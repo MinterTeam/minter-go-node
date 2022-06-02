@@ -170,6 +170,9 @@ func (blockchain *Blockchain) UpdateVersions() []*appdb.Version {
 func (blockchain *Blockchain) GetVersionHeight(v string) uint64 {
 	return blockchain.appDB.GetVersionHeight(v)
 }
+func (blockchain *Blockchain) GetVersionName(h uint64) string {
+	return blockchain.appDB.GetVersionName(h)
+}
 
 func (blockchain *Blockchain) GetEmission() *big.Int {
 	emission := blockchain.appDB.Emission()

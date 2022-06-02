@@ -14,7 +14,7 @@ import (
 func TestUpdate(t *testing.T) {
 	for _, valCount := range []int{1, 4, 20, 50, 70} {
 		t.Run(fmt.Sprintf("%dvals", valCount), func(t *testing.T) {
-			testUpdate(t, valCount, minter.V310, minter.V320, minter.V330)
+			testUpdate(t, valCount, minter.V310, minter.V320, minter.V330, minter.V340)
 		})
 	}
 }
@@ -28,7 +28,9 @@ func testUpdate(t *testing.T, valCount int, versions ...string) {
 		addresses = append(addresses, voter.address)
 	}
 
-	helper := NewHelper(DefaultAppState(addresses...))
+	state := DefaultAppState(addresses...)
+	state.UpdateVotes = nil
+	helper := NewHelper(state)
 
 	for _, version := range versions {
 		t.Run(version, func(t *testing.T) {
@@ -51,7 +53,7 @@ func testUpdate(t *testing.T, valCount int, versions ...string) {
 			}
 
 			updatedHeight := height
-			for h := uint64(0); h <= updatedHeight+1; h, _ = helper.NextBlock() {
+			for h := uint64(0); h <= updatedHeight+2; h, _ = helper.NextBlock() {
 			}
 
 			var updated bool

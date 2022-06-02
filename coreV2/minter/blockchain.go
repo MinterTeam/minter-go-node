@@ -160,6 +160,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			V310: {}, // hotfix
 			V320: {},
 			V330: {},
+			V340: {},
 		},
 		executor: GetExecutor(V3),
 	}
@@ -193,6 +194,7 @@ const ( // known update versions
 	V310 = "v310" // hotfix
 	V320 = "v320" // hotfix
 	V330 = "v330" // hotfix
+	V340 = "v340" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
@@ -471,7 +473,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		PayRewards := blockchain.stateDeliver.Validators.PayRewardsV3
 		if types.CurrentChainID == types.ChainTestnet {
-			if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
+			if h := blockchain.appDB.GetVersionHeight(V340); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix2
+			} else if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
 				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix
 			} else if h := blockchain.appDB.GetVersionHeight(V320); h > 0 && height > h {
 				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix
@@ -479,7 +483,9 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV4
 			}
 		} else {
-			if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
+			if h := blockchain.appDB.GetVersionHeight(V340); h > 0 && height > h {
+				PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix2
+			} else if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
 				if height < h+blockchain.updateStakesAndPayRewardsPeriod {
 					excess := blockchain.stateDeliver.Candidates.FixStakesAfter10509400()
 					blockchain.appDB.SetEmission(big.NewInt(0).Sub(blockchain.appDB.Emission(), excess))
