@@ -74,17 +74,17 @@ func testUpdate(t *testing.T, valCount int, versions ...string) {
 				t.Error("network is not updated")
 			}
 
-			testBlock50(t, helper)
+			testBlocks(t, helper, 50)
 		})
 	}
 }
 
-func testBlock50(t *testing.T, helper *Helper) {
+func testBlocks(t *testing.T, helper *Helper, countBlock uint64) {
 	initial := helper.app.Height()
 
 	c := make(chan struct{})
 	go func() {
-		for h := uint64(0); h <= initial+50; h, _ = helper.NextBlock() {
+		for h := uint64(0); h <= initial+countBlock; h, _ = helper.NextBlock() {
 		}
 		c <- struct{}{}
 	}()

@@ -16,7 +16,7 @@ type diffBalance struct {
 }
 
 func TestEditBalance(t *testing.T) {
-	sender := CreateAddress() // create account for test
+	sender := CreateAddress()
 
 	helper := NewHelper(DefaultAppState(sender.address))
 

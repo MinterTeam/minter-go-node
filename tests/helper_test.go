@@ -4,6 +4,8 @@ import (
 	"crypto/ecdsa"
 	"fmt"
 	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
+	"math/big"
+	"sort"
 	"time"
 
 	"github.com/MinterTeam/minter-go-node/cmd/utils"
@@ -210,6 +212,9 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 				Coin:  0,
 				Value: "1000000000000000000000000000000000",
 			}, {
+				Coin:  1,
+				Value: "1000000000000000000000000000000",
+			}, {
 				Coin:  types.USDTID,
 				Value: "1000000000000000000000000000000",
 			}},
@@ -219,17 +224,17 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 		})
 		validators = append(validators, types.Validator{
 			TotalBipStake: "2000000000000000000000000000000000",
-			PubKey:        types.Pubkey{byte(i)},
-			AccumReward:   "100",
+			PubKey:        getValidatorAddress(i),
+			AccumReward:   "0",
 			AbsentTimes:   types.NewBitArray(24),
 		})
 		candidates = append(candidates, types.Candidate{
 			ID:             uint64(i + 1),
-			RewardAddress:  types.Address{byte(0), byte(i)},
+			RewardAddress:  getRewardAddress(i),
 			OwnerAddress:   addr,
 			ControlAddress: addr,
 			TotalBipStake:  "2000000000000000000000000000000000",
-			PubKey:         types.Pubkey{byte(i)},
+			PubKey:         getValidatorAddress(i),
 			Commission:     10,
 			Stakes: []types.Stake{{
 				Owner:    addr,
@@ -237,7 +242,7 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 				Value:    "1000000000000000000000000000000000",
 				BipValue: "1000000000000000000000000000000000",
 			}, {
-				Owner:    types.Address{byte(i)},
+				Owner:    getCustomAddress(i),
 				Coin:     0,
 				Value:    "1000000000000000000000000000000000",
 				BipValue: "1000000000000000000000000000000000",
@@ -272,6 +277,19 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 		NextOrderID: 0,
 		Accounts:    accounts,
 		Coins: []types.Coin{
+			{
+				ID:           1,
+				Name:         "Reserve Coin 1",
+				Symbol:       types.StrToCoinSymbol("COIN1RES"),
+				Volume:       fmt.Sprintf("%d000000000000000000000000000000", len(accounts)),
+				Crr:          50,
+				Reserve:      "1000000000000000000000000000",
+				MaxSupply:    coins.MaxCoinSupply().String(),
+				Version:      0,
+				OwnerAddress: &types.Address{},
+				Mintable:     false,
+				Burnable:     false,
+			},
 			{
 				ID:           types.USDTID,
 				Name:         "USDT Eth",
@@ -355,4 +373,21 @@ func DefaultAppState(addresses ...types.Address) types.AppState {
 		Version:  "v300",
 		Versions: nil,
 	}
+}
+
+func getValidatorAddress(i int) types.Pubkey {
+	return types.Pubkey{byte(i)}
+}
+
+func getRewardAddress(i int) (addr types.Address) {
+	copy(addr[:], big.NewInt(int64(i)).Bytes())
+	return
+}
+func getCustomAddress(i int) (addr types.Address) {
+	bytes := big.NewInt(int64(i)).Bytes()
+	copy(addr[:], bytes)
+	sort.Slice(addr[:], func(i, j int) bool {
+		return false
+	})
+	return
 }
