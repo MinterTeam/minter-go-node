@@ -3,7 +3,7 @@ module github.com/MinterTeam/minter-go-node
 go 1.17
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220521100308-a6e3f89cfa42
+	github.com/MinterTeam/node-grpc-gateway v1.7.0
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/cosmos/cosmos-sdk v0.44.5
@@ -14,7 +14,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
@@ -30,8 +30,8 @@ require (
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
-	google.golang.org/grpc v1.45.0
-	google.golang.org/protobuf v1.27.1
+	google.golang.org/grpc v1.46.2
+	google.golang.org/protobuf v1.28.0
 )
 
 replace github.com/gogo/protobuf => github.com/regen-network/protobuf v1.3.3-alpha.regen.1
@@ -98,8 +98,8 @@ require (
 	go.etcd.io/bbolt v1.3.6 // indirect
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220317150908-0efb43f6373e // indirect
+	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
-	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
