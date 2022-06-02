@@ -211,8 +211,8 @@ func (tx *Transaction) Gas() int64 {
 	if tx.CommissionCoin() != types.GetBaseCoinID() {
 		base += 1
 	}
-	if tx.payloadAndServiceDataLen() != 0 {
-		base += tx.payloadAndServiceDataLen() / 1000
+	if tx.PayloadAndServiceDataLen() != 0 {
+		base += tx.PayloadAndServiceDataLen() / 1000
 	}
 	if tx.SignatureType == SigTypeMulti {
 		base += int64(len(tx.multisig.Signatures)) * gasSign
@@ -221,11 +221,11 @@ func (tx *Transaction) Gas() int64 {
 }
 
 func (tx *Transaction) Price(price *commission.Price) *big.Int {
-	payloadAndServiceData := big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), price.PayloadByte)
+	payloadAndServiceData := big.NewInt(0).Mul(big.NewInt(tx.PayloadAndServiceDataLen()), price.PayloadByte)
 	return big.NewInt(0).Add(tx.decodedData.CommissionData(price), payloadAndServiceData)
 }
 
-func (tx *Transaction) payloadAndServiceDataLen() int64 {
+func (tx *Transaction) PayloadAndServiceDataLen() int64 {
 	return int64(len(tx.Payload) + len(tx.ServiceData))
 }
 
