@@ -89,7 +89,7 @@ func getState(evnts ...events.IEventsDB) *state.State {
 	} else {
 		e = evnts[0]
 	}
-	s, err := state.NewState(0, db.NewMemDB(), e, 1, 1, 0)
+	s, err := state.NewState(0, db.NewMemDB(), e, 1, 1, 0) // todo: Use NewStateV3
 	if err != nil {
 		panic(err)
 	}

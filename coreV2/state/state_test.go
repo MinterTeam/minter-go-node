@@ -18,7 +18,7 @@ func TestStateExport(t *testing.T) {
 	t.Parallel()
 	height := uint64(0)
 
-	state, err := NewState(height, db.NewMemDB(), &eventsdb.MockEvents{}, 1, 2, 0)
+	state, err := NewStateV3(height, db.NewMemDB(), &eventsdb.MockEvents{}, 1, 2, 0)
 	if err != nil {
 		log.Panic("Cannot create state")
 	}
