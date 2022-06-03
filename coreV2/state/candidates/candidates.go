@@ -1155,6 +1155,9 @@ func (c *Candidates) DeletedCandidates() (result []*deletedID) {
 
 	c.loadDeletedCandidates()
 	for _, c := range c.deletedCandidates {
+		if c.PubKey.String() == invalidIDCandidate {
+			continue
+		}
 		result = append(result, &deletedID{
 			ID:     c.ID,
 			PubKey: c.PubKey,
@@ -1399,6 +1402,8 @@ func (c *Candidates) ID(pubKey types.Pubkey) uint32 {
 	return c.id(pubKey)
 }
 
+const invalidIDCandidate = "Mp0e11415ef24919557dcea4890d9e8aa26dc31ef8e77c6343114e1180ebeccde3"
+
 // PubKey returns a public key of candidate by it's ID
 func (c *Candidates) PubKey(id uint32) types.Pubkey {
 	c.lock.RLock()
@@ -1411,7 +1416,7 @@ func (c *Candidates) PubKey(id uint32) types.Pubkey {
 
 		c.loadDeletedCandidates()
 		for pubkey, d := range c.deletedCandidates {
-			if d.ID == id { // todo: FIXME
+			if d.ID == id && d.PubKey.String() != invalidIDCandidate {
 				return pubkey
 			}
 		}
