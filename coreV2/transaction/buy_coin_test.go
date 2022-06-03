@@ -107,6 +107,10 @@ func getTestCoinSymbol() types.CoinSymbol {
 	return coin
 }
 
+func init() {
+	rand.Seed(1)
+}
+
 func createTestCoin(stateDB *state.State) types.CoinID {
 	volume := helpers.BipToPip(big.NewInt(100000))
 	reserve := helpers.BipToPip(big.NewInt(100000))
