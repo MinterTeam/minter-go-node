@@ -727,7 +727,12 @@ func (v *Validators) PayRewardsV5Fix(height uint64, period int64) (moreRewards *
 
 					calcRewards.Sub(calcRewards, taxDAO)
 					calcRewards.Sub(calcRewards, taxDEV)
-					//calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+
+					{
+						// backward compatibility
+						calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(developers.Commission+dao.Commission))), big.NewInt(100)))
+					}
+
 					calcRewards.Sub(calcRewards, big.NewInt(0).Div(big.NewInt(0).Mul(calcRewards, big.NewInt(int64(candidate.Commission))), big.NewInt(100)))
 
 					diffDAO := big.NewInt(0).Sub(taxDAOx3, taxDAO)
