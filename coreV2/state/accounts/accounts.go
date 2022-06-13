@@ -382,12 +382,12 @@ func (a *Accounts) GetLockStakeUntilBlock(address types.Address) uint64 {
 func (a *Accounts) GetBalances(address types.Address) []Balance {
 	account := a.getOrNew(address)
 
-	balances := make([]Balance, len(account.coins))
-	for key, id := range account.coins {
-		balances[key] = Balance{
+	balances := make([]Balance, 0, len(account.coins))
+	for _, id := range account.coins {
+		balances = append(balances, Balance{
 			Coin:  *a.bus.Coins().GetCoin(id),
 			Value: a.GetBalance(address, id),
-		}
+		})
 	}
 
 	return balances
