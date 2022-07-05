@@ -429,8 +429,8 @@ func (s *SwapV2) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	s.muNextOrdersID.Unlock()
 
-	s.muPairs.RLock()
-	defer s.muPairs.RUnlock()
+	s.muPairs.Lock()
+	defer s.muPairs.Unlock()
 
 	for _, key := range s.getOrderedDirtyPairs() {
 		pair, _ := s.pair(key)
