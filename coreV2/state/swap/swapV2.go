@@ -26,8 +26,10 @@ type trader interface {
 }
 
 type SwapV2 struct {
-	muPairs       sync.RWMutex
-	pairs         map[PairKey]*PairV2
+	muPairs sync.RWMutex
+	pairs   map[PairKey]*PairV2
+
+	muDirties     sync.RWMutex
 	dirties       map[PairKey]struct{}
 	dirtiesOrders map[PairKey]struct{}
 
@@ -429,8 +431,11 @@ func (s *SwapV2) Commit(db *iavl.MutableTree, version int64) error {
 	}
 	s.muNextOrdersID.Unlock()
 
-	s.muPairs.Lock()
-	defer s.muPairs.Unlock()
+	s.muPairs.RLock()
+	defer s.muPairs.RUnlock()
+
+	s.muDirties.Lock()
+	defer s.muDirties.Unlock()
 
 	for _, key := range s.getOrderedDirtyPairs() {
 		pair, _ := s.pair(key)
@@ -715,15 +720,15 @@ func (s *SwapV2) ReturnPair(coin0, coin1 types.CoinID) *PairV2 {
 
 func (s *SwapV2) markDirty(key PairKey) func() {
 	return func() {
-		s.muPairs.Lock()
-		defer s.muPairs.Unlock()
+		s.muDirties.Lock()
+		defer s.muDirties.Unlock()
 		s.dirties[key] = struct{}{}
 	}
 }
 func (s *SwapV2) markDirtyOrders(key PairKey) func() {
 	return func() {
-		s.muPairs.Lock()
-		defer s.muPairs.Unlock()
+		s.muDirties.Lock()
+		defer s.muDirties.Unlock()
 		s.dirtiesOrders[key] = struct{}{}
 	}
 }
