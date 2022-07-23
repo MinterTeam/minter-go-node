@@ -23,7 +23,7 @@ func (s *Service) Transaction(ctx context.Context, req *pb.TransactionRequest) (
 
 	tx, err := s.client.Tx(ctx, decodeString, false)
 	if err != nil {
-		return nil, status.Error(codes.FailedPrecondition, err.Error()) // todo: NotFound
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	decodedTx, _ := s.decoderTx.DecodeFromBytes(tx.Tx)
