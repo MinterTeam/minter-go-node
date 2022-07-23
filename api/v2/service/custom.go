@@ -50,6 +50,7 @@ func (s *Service) changeAmountsForPrice(c *gin.Context) {
 
 // CustomHandlers return custom http methods
 func (s *Service) CustomHandlers() http.Handler {
+	gin.SetMode(gin.ReleaseMode)
 	r := gin.Default()
 	r.GET("/change_amounts_for_price/:coin0/:coin1/:price", s.changeAmountsForPrice)
 	return r
