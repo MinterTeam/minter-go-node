@@ -169,10 +169,15 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 
 	return resp, nil
 }
+
 func (s *Service) LimitOrdersByOwner(ctx context.Context, req *pb.LimitOrdersByOwnerRequest) (*pb.LimitOrdersResponse, error) {
 	cState, err := s.blockchain.GetStateForHeight(req.Height)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
 	}
 
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
@@ -189,6 +194,10 @@ func (s *Service) LimitOrdersByOwner(ctx context.Context, req *pb.LimitOrdersByO
 	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, 0)}
 
 	orders := cState.Swap().GetOrdersByOwner(ctx, address)
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
 
 	for _, order := range orders {
 		if order.IsBuy {
