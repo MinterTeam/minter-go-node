@@ -11,6 +11,7 @@
 
 ### Fixed
 
+- API Balance deadlock
 - Calculation of x3 rewards
 
 ## [v3.3.0](https://github.com/MinterTeam/minter-go-node/tree/v3.3.0)

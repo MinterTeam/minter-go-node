@@ -1,7 +1,6 @@
 package service
 
 import (
-	"log"
 	"math/big"
 	"net/http"
 	"strconv"
@@ -10,24 +9,48 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func (s *Service) customExample(c *gin.Context) {
+func (s *Service) changeAmountsForPrice(c *gin.Context) {
 	coin0S := c.Param("coin0")
 	coin1S := c.Param("coin1")
 	priceS := c.Param("price")
-	coin0I, _ := strconv.Atoi(coin0S)
-	coin1I, _ := strconv.Atoi(coin1S)
-	priceF, _ := strconv.ParseFloat(priceS, 10)
-	log.Println(coin0I, coin1I, priceF)
-	amount0, amount1 := s.blockchain.CurrentState().Swap().GetSwapper(types.CoinID(coin1I), types.CoinID(coin0I)).CalculateAddAmountsForPrice(big.NewFloat(1 / priceF))
+	coin0I, err := strconv.Atoi(coin0S)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": map[string]string{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+	coin1I, err := strconv.Atoi(coin1S)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": map[string]string{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+	priceF, err := strconv.ParseFloat(priceS, 10)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": map[string]string{
+				"message": err.Error(),
+			},
+		})
+		return
+	}
+	amount0, amount1 := s.blockchain.CurrentState().Swap().GetSwapper(types.CoinID(coin0I), types.CoinID(coin1I)).CalculateAddAmountsForPrice(big.NewFloat(1 / priceF))
 	c.JSON(200, gin.H{
-		"amount0": amount0,
-		"amount1": amount1,
+		"amount0In":  amount0,
+		"amount1Out": amount1,
+		// todo: reverse price if amounts nil
 	})
 }
 
 // CustomHandlers return custom http methods
 func (s *Service) CustomHandlers() http.Handler {
 	r := gin.Default()
-	r.GET("/swap_pool/:coin0/:coin1/:price", s.customExample)
+	r.GET("/change_amounts_for_price/:coin0/:coin1/:price", s.changeAmountsForPrice)
 	return r
 }

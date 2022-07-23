@@ -3,12 +3,13 @@ package swap
 import (
 	"encoding/binary"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"log"
 	"math"
 	"math/big"
 	"sort"
 	"sync"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
@@ -323,7 +324,6 @@ func (p *PairV2) calculateBuyForSellWithOrders(amount0In *big.Int) (amountOut *b
 
 func (p *PairV2) CalculateAddAmountsForPrice(price *big.Float) (amount0In, amount1Out *big.Int) {
 	if price.Cmp(p.Price()) == 1 {
-		fmt.Println("price cur and first ord", price, p.Price())
 		return nil, nil
 	}
 	return p.calculateAddAmountsForPrice(price)

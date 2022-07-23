@@ -117,7 +117,7 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))).ServeHTTP(writer, request)
 	})
 
-	mux.Handle("/v2/custom/", http.StripPrefix("/v2/custom", srv.CustomHandlers()))
+	mux.Handle("/v2/customs/", http.StripPrefix("/v2/customs", srv.CustomHandlers()))
 
 	group.Go(func() error {
 		return http.ListenAndServe(addrAPI, mux)
