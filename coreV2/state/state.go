@@ -138,6 +138,7 @@ func (s *State) Bus() *bus.Bus {
 
 func (s *State) isValue_State() {}
 
+// Deprecated
 func NewState(height uint64, db db.DB, events eventsdb.IEventsDB, cacheSize int, keepLastStates int64, initialVersion uint64) (*State, error) {
 	iavlTree, err := tree.NewMutableTree(height, db, cacheSize, initialVersion)
 	if err != nil {

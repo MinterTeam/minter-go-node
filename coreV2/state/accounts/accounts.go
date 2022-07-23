@@ -3,6 +3,9 @@ package accounts
 import (
 	"bytes"
 	"fmt"
+	"math/big"
+	"sort"
+	"sync"
 	"sync/atomic"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
@@ -10,10 +13,6 @@ import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
 	"github.com/MinterTeam/minter-go-node/rlp"
 	"github.com/cosmos/iavl"
-
-	"math/big"
-	"sort"
-	"sync"
 )
 
 const mainPrefix = byte('a')
@@ -40,7 +39,8 @@ type Accounts struct {
 	db  atomic.Value
 	bus *bus.Bus
 
-	lock sync.RWMutex
+	lock        sync.RWMutex
+	lockDirties sync.RWMutex
 }
 
 type Balance struct {
@@ -75,9 +75,9 @@ func (a *Accounts) Commit(db *iavl.MutableTree, version int64) error {
 	accounts := a.getOrderedDirtyAccounts()
 	for _, address := range accounts {
 		account := a.getFromMap(address)
-		a.lock.Lock()
+		a.lockDirties.Lock()
 		delete(a.dirty, address)
-		a.lock.Unlock()
+		a.lockDirties.Unlock()
 
 		// save info (nonce and multisig data)
 		if a.IsNewOrDirty(account) {
@@ -166,12 +166,12 @@ func (a *Accounts) IsNewOrDirty(account *Model) bool {
 }
 
 func (a *Accounts) getOrderedDirtyAccounts() []types.Address {
-	a.lock.RLock()
+	a.lockDirties.RLock()
 	keys := make([]types.Address, 0, len(a.dirty))
 	for k := range a.dirty {
 		keys = append(keys, k)
 	}
-	a.lock.RUnlock()
+	a.lockDirties.RUnlock()
 
 	sort.SliceStable(keys, func(i, j int) bool {
 		return bytes.Compare(keys[i].Bytes(), keys[j].Bytes()) == 1
@@ -373,8 +373,6 @@ func (a *Accounts) SetLockStakeUntilBlock(address types.Address, h uint64) {
 
 func (a *Accounts) GetLockStakeUntilBlock(address types.Address) uint64 {
 	account := a.getOrNew(address)
-	account.lock.RLock()
-	defer account.lock.RUnlock()
 
 	return account.getLockStakeUntilBlock()
 }
@@ -382,24 +380,20 @@ func (a *Accounts) GetLockStakeUntilBlock(address types.Address) uint64 {
 func (a *Accounts) GetBalances(address types.Address) []Balance {
 	account := a.getOrNew(address)
 
-	account.lock.RLock()
-	coins := account.coins
-	account.lock.RUnlock()
-
-	balances := make([]Balance, len(coins))
-	for key, id := range coins {
-		balances[key] = Balance{
+	balances := make([]Balance, 0, len(account.coins))
+	for _, id := range account.coins {
+		balances = append(balances, Balance{
 			Coin:  *a.bus.Coins().GetCoin(id),
 			Value: a.GetBalance(address, id),
-		}
+		})
 	}
 
 	return balances
 }
 
 func (a *Accounts) markDirty(addr types.Address) {
-	a.lock.Lock()
-	defer a.lock.Unlock()
+	a.lockDirties.Lock()
+	defer a.lockDirties.Unlock()
 
 	a.dirty[addr] = struct{}{}
 }

@@ -4,6 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"mime"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/MinterTeam/minter-go-node/api/v2/service"
 	gw "github.com/MinterTeam/node-grpc-gateway/api_pb"
 	"github.com/MinterTeam/node-grpc-gateway/docs"
@@ -25,13 +33,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 	_struct "google.golang.org/protobuf/types/known/structpb"
-	"io"
-	"mime"
-	"net"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // Run initialises gRPC and API v2 interfaces
@@ -115,6 +116,8 @@ func Run(srv *service.Service, addrGRPC, addrAPI string, logger log.Logger) erro
 		}
 		http.StripPrefix("/v2", handlers.CompressHandler(allowCORS(wsproxy.WebsocketProxy(gwmux)))).ServeHTTP(writer, request)
 	})
+
+	mux.Handle("/v2/custom/", http.StripPrefix("/v2/custom", srv.CustomHandlers()))
 
 	group.Go(func() error {
 		return http.ListenAndServe(addrAPI, mux)

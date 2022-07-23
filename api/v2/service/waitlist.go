@@ -11,6 +11,56 @@ import (
 	"strings"
 )
 
+// WaitLists returns the list stakes in waitlist.
+func (s *Service) WaitLists(ctx context.Context, req *pb.WaitListsRequest) (*pb.WaitListsResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if req.Height != 0 {
+		cState.Candidates().LoadCandidates()
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	response := new(pb.WaitListsResponse)
+
+	model := cState.WaitList().GetAll()
+
+	if len(model) == 0 {
+		return response, nil
+	}
+
+	response.Addresses = make([]*pb.WaitListsResponse_Address, 0, len(model))
+	for _, items := range model {
+		addr := &pb.WaitListsResponse_Address{
+			Address: items.Address().String(),
+			List:    make([]*pb.WaitListsResponse_Address_Wait, 0, len(items.List)),
+		}
+
+		for _, item := range items.List {
+			if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+				return nil, timeoutStatus.Err()
+			}
+
+			addr.List = append(addr.List, &pb.WaitListsResponse_Address_Wait{
+				PublicKey: cState.Candidates().PubKey(item.CandidateId).String(),
+				Coin: &pb.Coin{
+					Id:     uint64(item.Coin),
+					Symbol: cState.Coins().GetCoin(item.Coin).GetFullSymbol(),
+				},
+				Value: item.Value.String(),
+			})
+		}
+		response.Addresses = append(response.Addresses, addr)
+	}
+
+	return response, nil
+}
+
 // WaitList returns the list of address stakes in waitlist.
 func (s *Service) WaitList(ctx context.Context, req *pb.WaitListRequest) (*pb.WaitListResponse, error) {
 	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {

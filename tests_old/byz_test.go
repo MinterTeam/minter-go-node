@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/types"

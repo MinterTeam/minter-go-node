@@ -54,6 +54,13 @@ func (data MintTokenData) basicCheck(tx *Transaction, context *state.CheckState)
 	symbolInfo := context.Coins().GetSymbolInfo(coin.Symbol())
 	if coin.Version() != 0 || symbolInfo == nil || symbolInfo.OwnerAddress().Compare(sender) != 0 {
 		var owner *string
+		if coin.Version() != 0 {
+			return &Response{
+				Code: code.IsNotOwnerOfCoin,
+				Log:  "Archived coin has no owner and cannot be changed",
+				Info: EncodeError(code.NewIsNotOwnerOfCoin(coin.Symbol().String(), nil)),
+			}
+		}
 		if symbolInfo != nil && symbolInfo.OwnerAddress() != nil {
 			own := symbolInfo.OwnerAddress().String()
 			owner = &own

@@ -100,6 +100,18 @@ type Blockchain struct {
 	wgSnapshot         sync.WaitGroup
 }
 
+func (blockchain *Blockchain) Executor() transaction.ExecutorTx {
+	return blockchain.executor
+}
+
+func (blockchain *Blockchain) UpdateStakesAndPayRewardsPeriod() uint64 {
+	return blockchain.updateStakesAndPayRewardsPeriod
+}
+
+func (blockchain *Blockchain) ExpiredOrdersPeriod() uint64 {
+	return blockchain.expiredOrdersPeriod
+}
+
 func (blockchain *Blockchain) GetCurrentRewards() *big.Int {
 	return blockchain.rewards
 }
@@ -148,6 +160,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			V310: {}, // hotfix
 			V320: {},
 			V330: {},
+			V340: {},
 		},
 		executor: GetExecutor(V3),
 	}
@@ -181,6 +194,7 @@ const ( // known update versions
 	V310 = "v310" // hotfix
 	V320 = "v320" // hotfix
 	V330 = "v330" // hotfix
+	V340 = "v340" // hotfix
 )
 
 func (blockchain *Blockchain) initState() {
@@ -201,7 +215,11 @@ func (blockchain *Blockchain) initState() {
 	}
 	blockchain.appDB.SetState(stateDeliver.Tree())
 
-	atomic.StoreUint64(&blockchain.height, currentHeight)
+	height := currentHeight
+	if height == 0 {
+		height = initialHeight
+	}
+	atomic.StoreUint64(&blockchain.height, height)
 	blockchain.stateDeliver = stateDeliver
 	blockchain.stateCheck = state.NewCheckState(stateDeliver)
 
@@ -328,7 +346,7 @@ func (blockchain *Blockchain) BeginBlock(req abciTypes.RequestBeginBlock) abciTy
 
 	versionName := blockchain.appDB.GetVersionName(height)
 	if _, ok := blockchain.knownUpdates[versionName]; !ok {
-		log.Printf("Update your node binary to the latest version: %s", versionName)
+		log.Printf("Update your node binary to the latest version: %s, height: %d", versionName, height)
 		blockchain.stop()
 		return abciTypes.ResponseBeginBlock{}
 	}
@@ -454,8 +472,11 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 	var moreRewards = big.NewInt(0)
 	if height%blockchain.updateStakesAndPayRewardsPeriod == 0 {
 		PayRewards := blockchain.stateDeliver.Validators.PayRewardsV3
-		if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
-			if height < h+blockchain.updateStakesAndPayRewardsPeriod {
+
+		if h := blockchain.appDB.GetVersionHeight(V340); h > 0 && height > h {
+			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV5Fix2
+		} else if h := blockchain.appDB.GetVersionHeight(V330); h > 0 && height > h {
+			if height < h+blockchain.updateStakesAndPayRewardsPeriod && types.CurrentChainID == types.ChainMainnet {
 				excess := blockchain.stateDeliver.Candidates.FixStakesAfter10509400()
 				blockchain.appDB.SetEmission(big.NewInt(0).Sub(blockchain.appDB.Emission(), excess))
 				log.Println("fixEmission", blockchain.appDB.Emission())
@@ -466,6 +487,7 @@ func (blockchain *Blockchain) EndBlock(req abciTypes.RequestEndBlock) abciTypes.
 		} else if h := blockchain.appDB.GetVersionHeight(V310); h > 0 && height > h {
 			PayRewards = blockchain.stateDeliver.Validators.PayRewardsV4
 		}
+
 		moreRewards = PayRewards(heightIsMaxIfIssueIsOverOrNotDynamic, int64(blockchain.updateStakesAndPayRewardsPeriod))
 		blockchain.appDB.SetEmission(big.NewInt(0).Add(blockchain.appDB.Emission(), moreRewards))
 		blockchain.stateDeliver.Checker.AddCoinVolume(types.GetBaseCoinID(), moreRewards)

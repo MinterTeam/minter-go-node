@@ -28,6 +28,7 @@ func main() {
 		cmd.VerifyGenesis,
 		cmd.Version,
 		cmd.ExportCommand,
+		cmd.LoadLastEventsCommand,
 	)
 
 	rootCmd.PersistentFlags().String("home-dir", "", "base dir (default is $HOME/.minter)")
@@ -38,6 +39,8 @@ func main() {
 	rootCmd.PersistentFlags().String("genesis", "https://github.com/MinterTeam/minter-go-node/releases/download/v3.0.3/genesis.json", "path with the genesis file to download")
 	rootCmd.PersistentFlags().String("persistent-peers", "", "")
 	rootCmd.PersistentFlags().Bool("state-sync", false, "enable state sync snapshots")
+
+	cmd.RunNode.PersistentFlags().Bool("only-api-mode", false, "enable API only")
 
 	cmd.ExportCommand.Flags().Uint64("height", 0, "export height")
 	cmd.ExportCommand.Flags().Bool("indent", false, "using indent")

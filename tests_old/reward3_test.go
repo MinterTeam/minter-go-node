@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -53,7 +53,7 @@ func TestReward_Simple(t *testing.T) {
 			Votes: []types.Pubkey{
 				[32]byte{1},
 			},
-			Version: "v300",
+			Version: "v310",
 		},
 	}
 	state.Coins = []types.Coin{
@@ -97,11 +97,12 @@ func TestReward_Simple(t *testing.T) {
 	SendCommit(app)         // send Commit
 
 	t.Log(app.UpdateVersions()[1])
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	//t.Log(app.GetEventsDB().LoadEvents(11)[0])
 	t.Log(app.CurrentState().App().Reward())
 }
 
 func TestReward_X3Cmp(t *testing.T) {
+	t.Skip("move to tests_new")
 	state := DefaultAppState() // generate default state
 
 	stake := helpers.BipToPip(big.NewInt(10_000))

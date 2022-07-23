@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"math/big"
@@ -67,7 +67,7 @@ func TestOrder_checkBalanceGas0(t *testing.T) {
 	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV260{
 		Coins:              []types.CoinID{1, 0},
 		ValueToBuy:         helpers.StringToBigInt("39919492393318821938180"),
-		MaximumValueToSell: helpers.StringToBigInt("4000000000000000000"), // 3999999999999999999
+		MaximumValueToSell: helpers.StringToBigInt("4004004004004004004"), // 3999999999999999999
 	}, 0)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
@@ -141,7 +141,7 @@ func TestOrder_checkBalanceGas1(t *testing.T) {
 	tx := CreateTx(app, address, transaction.TypeBuySwapPool, transaction.BuySwapPoolDataV260{
 		Coins:              []types.CoinID{1, 0},
 		ValueToBuy:         helpers.StringToBigInt("39919492393318821938180"),
-		MaximumValueToSell: helpers.StringToBigInt("4000000000000000000"), // 3999999999999999999
+		MaximumValueToSell: helpers.StringToBigInt("4004004004004004005"), // 3999999999999999999
 	}, 1)
 
 	response := SendTx(app, SignTx(pk, tx)) // compose and send tx
@@ -1000,8 +1000,8 @@ func TestOrder_buy(t *testing.T) {
 	// check taker's balance
 	{
 		balance := app.CurrentState().Accounts().GetBalance(address, 1)
-		if balance.String() != big.NewInt(20000000000-10010000000).String() {
-			t.Fatalf("Taker balance is not correct. Expected %s, got %s", big.NewInt(20000000000-10010000000).String(), balance)
+		if balance.String() != big.NewInt(20000000000-10020020021).String() {
+			t.Fatalf("Taker balance is not correct. Expected %s, got %s", big.NewInt(20000000000-10020020021).String(), balance)
 		}
 	}
 
@@ -1089,8 +1089,8 @@ func TestOrder_sell(t *testing.T) {
 	// check seller's balance
 	{
 		balance1 := app.CurrentState().Accounts().GetBalance(seller, 1)
-		if balance1.String() != "10000000000" {
-			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "10000000000", balance1)
+		if balance1.String() != "9990000000" {
+			t.Fatalf("Saller balance is not correct. Expected %s, got %s", "9990000000", balance1)
 		}
 
 		//balance0 := app.CurrentState().Accounts().GetBalance(seller, 0)
@@ -2091,7 +2091,7 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 		ID:           2,
 		Name:         "Test 2",
 		Symbol:       types.StrToCoinBaseSymbol("TEST2"),
-		Volume:       "10010030214021935652033695",
+		Volume:       "10020040254276211863897593",
 		Crr:          0,
 		Reserve:      "0",
 		MaxSupply:    "90000000000000000000000000000",
@@ -2133,7 +2133,7 @@ func TestOrder_buy_10_more_a_lot(t *testing.T) {
 			},
 			{
 				Coin:  2,
-				Value: helpers.StringToBigInt("10000030214021935652033695").String(),
+				Value: helpers.StringToBigInt("10010040254276211863897593").String(),
 			},
 		},
 		Nonce:        0,
