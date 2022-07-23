@@ -3,12 +3,6 @@ package minter
 import (
 	"context"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
-	"github.com/MinterTeam/minter-go-node/helpers"
-	"github.com/cosmos/cosmos-sdk/snapshots"
-	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
-	"github.com/cosmos/cosmos-sdk/types/errors"
-	tmlog "github.com/tendermint/tendermint/libs/log"
 	"log"
 	"math"
 	"math/big"
@@ -16,6 +10,13 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/candidates"
+	"github.com/MinterTeam/minter-go-node/helpers"
+	"github.com/cosmos/cosmos-sdk/snapshots"
+	snapshottypes "github.com/cosmos/cosmos-sdk/snapshots/types"
+	"github.com/cosmos/cosmos-sdk/types/errors"
+	tmlog "github.com/tendermint/tendermint/libs/log"
 
 	l "github.com/MinterTeam/minter-go-node/log"
 
@@ -160,7 +161,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			V310: {}, // hotfix
 			V320: {},
 			V330: {},
-			V340: {},
+			//V340: {}, // TODO: Only for release version
 		},
 		executor: GetExecutor(V3),
 	}
