@@ -1,9 +1,9 @@
 module github.com/MinterTeam/minter-go-node
 
-go 1.17
+go 1.18
 
 require (
-	github.com/MinterTeam/node-grpc-gateway v1.7.0
+	github.com/MinterTeam/node-grpc-gateway v1.6.2-0.20220723123624-0e70deb77803
 	github.com/btcsuite/btcd v0.22.0-beta
 	github.com/c-bata/go-prompt v0.2.5
 	github.com/cosmos/cosmos-sdk v0.44.5
@@ -15,7 +15,7 @@ require (
 	github.com/gorilla/handlers v1.5.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.10.3
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.11.0
 	github.com/marcusolsson/tui-go v0.4.0
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.12.1
@@ -30,8 +30,8 @@ require (
 	github.com/urfave/cli/v2 v2.0.0
 	golang.org/x/crypto v0.0.0-20211202192323-5770296d904e
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-	golang.org/x/sys v0.0.0-20220114195835-da31bd327af9
-	google.golang.org/grpc v1.46.2
+	golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
+	google.golang.org/grpc v1.48.0
 	google.golang.org/protobuf v1.28.0
 )
 
@@ -106,9 +106,9 @@ require (
 	github.com/tecbot/gorocksdb v0.0.0-20191217155057-f0fad39f321c // indirect
 	github.com/ugorji/go/codec v1.1.7 // indirect
 	go.etcd.io/bbolt v1.3.6 // indirect
-	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd // indirect
+	golang.org/x/net v0.0.0-20220722155237-a158d28d115b // indirect
 	golang.org/x/text v0.3.7 // indirect
-	google.golang.org/genproto v0.0.0-20220519153652-3a47de7e79bd // indirect
+	google.golang.org/genproto v0.0.0-20220722212130-b98a9ff5e252 // indirect
 	gopkg.in/ini.v1 v1.66.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect

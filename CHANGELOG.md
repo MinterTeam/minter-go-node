@@ -6,7 +6,7 @@
 
 ### Added
 
-- API method: `waitlist_all`
+- API methods: `waitlist_all`, `limit_orders_by_owner`
 - Indexed tags to search for transactions by order
 
 ### Fixed
