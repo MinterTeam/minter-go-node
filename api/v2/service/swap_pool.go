@@ -126,8 +126,8 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 	}
 
 	capacity := len(req.Ids)
-	if capacity > 50 {
-		capacity = 50
+	if capacity > 1000 || capacity == 0 {
+		capacity = 1000
 	}
 
 	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity)}
