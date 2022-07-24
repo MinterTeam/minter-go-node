@@ -129,7 +129,39 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 	if capacity > 50 {
 		capacity = 50
 	}
+
 	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity)}
+	if capacity == 0 {
+		orders := cState.Swap().GetOrdersAll(ctx)
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
+		for _, order := range orders {
+			if order.IsBuy {
+				order = order.Reverse()
+			}
+
+			resp.Orders = append(resp.Orders, &pb.LimitOrderResponse{
+				Id: uint64(order.ID()),
+				CoinSell: &pb.Coin{
+					Id:     uint64(order.Coin1),
+					Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),
+				},
+				CoinBuy: &pb.Coin{
+					Id:     uint64(order.Coin0),
+					Symbol: cState.Coins().GetCoin(order.Coin0).GetFullSymbol(),
+				},
+				WantSell: order.WantSell.String(),
+				WantBuy:  order.WantBuy.String(),
+				Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
+				Owner:    order.Owner.String(),
+				Height:   order.Height,
+			})
+		}
+
+		return resp, nil
+	}
 
 	for _, id := range req.Ids {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {

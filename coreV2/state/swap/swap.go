@@ -73,6 +73,7 @@ type RSwap interface {
 	GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade
 
 	GetOrdersByOwner(ctx context.Context, address types.Address) []*Limit
+	GetOrdersAll(ctx context.Context) []*Limit
 	SwapPools(context.Context) []EditableChecker
 	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
@@ -1303,5 +1304,8 @@ func startingSupply(amount0 *big.Int, amount1 *big.Int) *big.Int {
 }
 
 func (s *Swap) GetOrdersByOwner(ctx context.Context, address types.Address) []*Limit {
+	return nil
+}
+func (s *Swap) GetOrdersAll(ctx context.Context) []*Limit {
 	return nil
 }

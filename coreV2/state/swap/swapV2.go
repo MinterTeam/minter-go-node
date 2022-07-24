@@ -173,6 +173,37 @@ func (s *SwapV2) loadPools() {
 	s.loadedPools = true
 }
 
+func (s *SwapV2) GetOrdersAll(ctx context.Context) []*Limit {
+	var orders []*Limit
+	s.immutableTree().IterateRange(pathOrder(0), pathOrder(math.MaxUint32), true, func(key []byte, value []byte) bool {
+		if value == nil {
+			return false
+		}
+
+		id := binary.BigEndian.Uint32(key[1:])
+
+		order := &Limit{
+			id:           id,
+			oldSortPrice: new(big.Float).SetPrec(Precision),
+			mu:           new(sync.RWMutex),
+		}
+		err := rlp.DecodeBytes(value, order)
+		if err != nil {
+			panic(err)
+		}
+
+		select {
+		case <-ctx.Done():
+			return true
+		default:
+		}
+
+		return false
+	})
+
+	return orders
+}
+
 func (s *SwapV2) GetOrdersByOwner(ctx context.Context, address types.Address) []*Limit {
 	var orders []*Limit
 	s.immutableTree().IterateRange(pathOrder(0), pathOrder(math.MaxUint32), true, func(key []byte, value []byte) bool {
