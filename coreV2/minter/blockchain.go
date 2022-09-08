@@ -161,7 +161,7 @@ func NewMinterBlockchain(storages *utils.Storage, cfg *config.Config, ctx contex
 			V310: {}, // hotfix
 			V320: {},
 			V330: {},
-			//V340: {}, // TODO: Only for release version
+			V340: {}, // TODO: Only for release version
 		},
 		executor: GetExecutor(V3),
 	}
