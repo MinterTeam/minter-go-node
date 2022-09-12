@@ -129,7 +129,7 @@ func (s *Service) EstimateCoinSellAll(ctx context.Context, req *pb.EstimateCoinS
 		valueBancor, errBancor = s.calcSellAllFromBancor(valueToSell, coinTo, coinFrom, commissionInBaseCoin)
 	}
 	if req.SwapFrom == pb.SwapFrom_pool || req.SwapFrom == pb.SwapFrom_optimal {
-		commissionInBaseCoin := new(big.Int).Set(commissions.SellAllPoolBase)
+		commissionInBaseCoin := new(big.Int).Add(commissions.SellAllPoolBase, new(big.Int).Mul(commissions.SellAllPoolDelta, big.NewInt(int64(len(req.Route)))))
 		if !commissions.Coin.IsBaseCoin() {
 			commissionInBaseCoin, _ = cState.Swap().GetSwapper(types.GetBaseCoinID(), commissions.Coin).CalculateSellForBuyWithOrders(commissionInBaseCoin)
 		}

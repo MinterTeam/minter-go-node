@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"math/big"
@@ -12,7 +12,7 @@ import (
 func TestRemoveCandidate(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v260"
+	state.Version = "v300"
 
 	for i := byte(1); i < 255; i++ {
 
@@ -104,7 +104,7 @@ func TestRemoveCandidate(t *testing.T) {
 func TestRemoveCandidate1(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v260"
+	state.Version = "v300"
 
 	stake := helpers.BipToPip(big.NewInt(10000)).String()
 
@@ -194,7 +194,7 @@ func TestRemoveCandidate1(t *testing.T) {
 func TestRemoveCandidate2(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v260"
+	state.Version = "v300"
 
 	stake := helpers.BipToPip(big.NewInt(10000)).String()
 
@@ -284,7 +284,7 @@ func TestRemoveCandidate2(t *testing.T) {
 func TestRemoveCandidate4(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v260"
+	state.Version = "v300"
 
 	stake := helpers.BipToPip(big.NewInt(10000)).String()
 
@@ -374,7 +374,7 @@ func TestRemoveCandidate4(t *testing.T) {
 func TestRemoveCandidate5(t *testing.T) {
 
 	state := DefaultAppState() // generate default state
-	state.Version = "v260"
+	state.Version = "v300"
 
 	stake := helpers.BipToPip(big.NewInt(10000)).String()
 

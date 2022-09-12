@@ -82,126 +82,8 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	if req.Events {
 		loadEvents := s.blockchain.GetEventsDB().LoadEvents(uint32(req.Height))
 		for _, event := range loadEvents {
-			var m proto.Message
-			switch e := event.(type) {
-			case *events.JailEvent:
-				m = &pb.JailEvent{
-					ValidatorPubKey: e.ValidatorPubKeyString(),
-					JailedUntil:     e.JailedUntil,
-				}
-			case *events.OrderExpiredEvent:
-				m = &pb.OrderExpiredEvent{
-					Id:      e.ID,
-					Address: e.AddressString(),
-					Coin:    e.Coin,
-					Amount:  e.Amount,
-				}
-			case *events.RewardEvent:
-				m = &pb.RewardEvent{
-					Role:            pb.RewardEvent_Role(pb.RewardEvent_Role_value[e.Role]),
-					Address:         e.AddressString(),
-					Amount:          e.Amount,
-					ForCoin:         e.ForCoin,
-					ValidatorPubKey: e.ValidatorPubKeyString(),
-				}
-			case *events.SlashEvent:
-				m = &pb.SlashEvent{
-					Address:         e.AddressString(),
-					Amount:          e.Amount,
-					Coin:            e.Coin,
-					ValidatorPubKey: e.ValidatorPubKeyString(),
-				}
-			case *events.StakeKickEvent:
-				m = &pb.StakeKickEvent{
-					Address:         e.AddressString(),
-					Amount:          e.Amount,
-					Coin:            e.Coin,
-					ValidatorPubKey: e.ValidatorPubKeyString(),
-				}
-			case *events.UnbondEvent:
-				m = &pb.UnbondEvent{
-					Address:         e.AddressString(),
-					Amount:          e.Amount,
-					Coin:            e.Coin,
-					ValidatorPubKey: e.ValidatorPubKeyString(),
-				}
-			case *events.UnlockEvent:
-				m = &pb.UnlockEvent{
-					Address: e.AddressString(),
-					Amount:  e.Amount,
-					Coin:    e.Coin,
-				}
-			case *events.StakeMoveEvent:
-				m = &pb.StakeMoveEvent{
-					Address:           e.AddressString(),
-					Amount:            e.Amount,
-					Coin:              e.Coin,
-					CandidatePubKey:   e.CandidatePubKey.String(),
-					ToCandidatePubKey: e.ToCandidatePubKey.String(),
-				}
-			case *events.RemoveCandidateEvent:
-				m = &pb.RemoveCandidateEvent{
-					CandidatePubKey: e.CandidatePubKeyString(),
-				}
-			case *events.UpdateNetworkEvent:
-				m = &pb.UpdateNetworkEvent{
-					Version: e.Version,
-				}
-			case *events.UpdatedBlockRewardEvent:
-				m = &pb.UpdatedBlockRewardEvent{
-					Value:                   e.Value,
-					ValueLockedStakeRewards: e.ValueLockedStakeRewards,
-				}
-			case *events.UpdateCommissionsEvent:
-				m = &pb.UpdateCommissionsEvent{
-					Coin:                    e.Coin,
-					PayloadByte:             e.PayloadByte,
-					Send:                    e.Send,
-					BuyBancor:               e.BuyBancor,
-					SellBancor:              e.SellBancor,
-					SellAllBancor:           e.SellAllBancor,
-					BuyPoolBase:             e.BuyPoolBase,
-					BuyPoolDelta:            e.BuyPoolDelta,
-					SellPoolBase:            e.SellPoolBase,
-					SellPoolDelta:           e.SellPoolDelta,
-					SellAllPoolBase:         e.SellAllPoolBase,
-					SellAllPoolDelta:        e.SellAllPoolDelta,
-					CreateTicker3:           e.CreateTicker3,
-					CreateTicker4:           e.CreateTicker4,
-					CreateTicker5:           e.CreateTicker5,
-					CreateTicker6:           e.CreateTicker6,
-					CreateTicker7_10:        e.CreateTicker7_10,
-					CreateCoin:              e.CreateCoin,
-					CreateToken:             e.CreateToken,
-					RecreateCoin:            e.RecreateCoin,
-					RecreateToken:           e.RecreateToken,
-					DeclareCandidacy:        e.DeclareCandidacy,
-					Delegate:                e.Delegate,
-					Unbond:                  e.Unbond,
-					RedeemCheck:             e.RedeemCheck,
-					SetCandidateOn:          e.SetCandidateOn,
-					SetCandidateOff:         e.SetCandidateOff,
-					CreateMultisig:          e.CreateMultisig,
-					MultisendBase:           e.MultisendBase,
-					MultisendDelta:          e.MultisendDelta,
-					EditCandidate:           e.EditCandidate,
-					SetHaltBlock:            e.SetHaltBlock,
-					EditTickerOwner:         e.EditTickerOwner,
-					EditMultisig:            e.EditMultisig,
-					EditCandidatePublicKey:  e.EditCandidatePublicKey,
-					CreateSwapPool:          e.CreateSwapPool,
-					AddLiquidity:            e.AddLiquidity,
-					RemoveLiquidity:         e.RemoveLiquidity,
-					EditCandidateCommission: e.EditCandidateCommission,
-					MintToken:               e.MintToken,
-					BurnToken:               e.BurnToken,
-					VoteCommission:          e.VoteCommission,
-					VoteUpdate:              e.VoteUpdate,
-					FailedTx:                e.FailedTx,
-					AddLimitOrder:           e.AddLimitOrder,
-					RemoveLimitOrder:        e.RemoveLimitOrder,
-				}
-			default:
+			m := DecodeEvent(event)
+			if m == nil {
 				return nil, status.Error(codes.Internal, "unknown event type")
 			}
 
@@ -256,6 +138,132 @@ func (s *Service) Block(ctx context.Context, req *pb.BlockRequest) (*pb.BlockRes
 	}
 
 	return response, nil
+}
+
+func DecodeEvent(event events.Event) proto.Message {
+	var m proto.Message
+	switch e := event.(type) {
+	case *events.JailEvent:
+		m = &pb.JailEvent{
+			ValidatorPubKey: e.ValidatorPubKeyString(),
+			JailedUntil:     e.JailedUntil,
+		}
+	case *events.OrderExpiredEvent:
+		m = &pb.OrderExpiredEvent{
+			Id:      e.ID,
+			Address: e.AddressString(),
+			Coin:    e.Coin,
+			Amount:  e.Amount,
+		}
+	case *events.RewardEvent:
+		m = &pb.RewardEvent{
+			Role:            pb.RewardEvent_Role(pb.RewardEvent_Role_value[e.Role]),
+			Address:         e.AddressString(),
+			Amount:          e.Amount,
+			ForCoin:         e.ForCoin,
+			ValidatorPubKey: e.ValidatorPubKeyString(),
+		}
+	case *events.SlashEvent:
+		m = &pb.SlashEvent{
+			Address:         e.AddressString(),
+			Amount:          e.Amount,
+			Coin:            e.Coin,
+			ValidatorPubKey: e.ValidatorPubKeyString(),
+		}
+	case *events.StakeKickEvent:
+		m = &pb.StakeKickEvent{
+			Address:         e.AddressString(),
+			Amount:          e.Amount,
+			Coin:            e.Coin,
+			ValidatorPubKey: e.ValidatorPubKeyString(),
+		}
+	case *events.UnbondEvent:
+		m = &pb.UnbondEvent{
+			Address:         e.AddressString(),
+			Amount:          e.Amount,
+			Coin:            e.Coin,
+			ValidatorPubKey: e.ValidatorPubKeyString(),
+		}
+	case *events.UnlockEvent:
+		m = &pb.UnlockEvent{
+			Address: e.AddressString(),
+			Amount:  e.Amount,
+			Coin:    e.Coin,
+		}
+	case *events.StakeMoveEvent:
+		m = &pb.StakeMoveEvent{
+			Address:           e.AddressString(),
+			Amount:            e.Amount,
+			Coin:              e.Coin,
+			CandidatePubKey:   e.CandidatePubKey.String(),
+			ToCandidatePubKey: e.ToCandidatePubKey.String(),
+		}
+	case *events.RemoveCandidateEvent:
+		m = &pb.RemoveCandidateEvent{
+			CandidatePubKey: e.CandidatePubKeyString(),
+		}
+	case *events.UpdateNetworkEvent:
+		m = &pb.UpdateNetworkEvent{
+			Version: e.Version,
+		}
+	case *events.UpdatedBlockRewardEvent:
+		m = &pb.UpdatedBlockRewardEvent{
+			Value:                   e.Value,
+			ValueLockedStakeRewards: e.ValueLockedStakeRewards,
+		}
+	case *events.UpdateCommissionsEvent:
+		m = &pb.UpdateCommissionsEvent{
+			Coin:                    e.Coin,
+			PayloadByte:             e.PayloadByte,
+			Send:                    e.Send,
+			BuyBancor:               e.BuyBancor,
+			SellBancor:              e.SellBancor,
+			SellAllBancor:           e.SellAllBancor,
+			BuyPoolBase:             e.BuyPoolBase,
+			BuyPoolDelta:            e.BuyPoolDelta,
+			SellPoolBase:            e.SellPoolBase,
+			SellPoolDelta:           e.SellPoolDelta,
+			SellAllPoolBase:         e.SellAllPoolBase,
+			SellAllPoolDelta:        e.SellAllPoolDelta,
+			CreateTicker3:           e.CreateTicker3,
+			CreateTicker4:           e.CreateTicker4,
+			CreateTicker5:           e.CreateTicker5,
+			CreateTicker6:           e.CreateTicker6,
+			CreateTicker7_10:        e.CreateTicker7_10,
+			CreateCoin:              e.CreateCoin,
+			CreateToken:             e.CreateToken,
+			RecreateCoin:            e.RecreateCoin,
+			RecreateToken:           e.RecreateToken,
+			DeclareCandidacy:        e.DeclareCandidacy,
+			Delegate:                e.Delegate,
+			Unbond:                  e.Unbond,
+			RedeemCheck:             e.RedeemCheck,
+			SetCandidateOn:          e.SetCandidateOn,
+			SetCandidateOff:         e.SetCandidateOff,
+			CreateMultisig:          e.CreateMultisig,
+			MultisendBase:           e.MultisendBase,
+			MultisendDelta:          e.MultisendDelta,
+			EditCandidate:           e.EditCandidate,
+			SetHaltBlock:            e.SetHaltBlock,
+			EditTickerOwner:         e.EditTickerOwner,
+			EditMultisig:            e.EditMultisig,
+			EditCandidatePublicKey:  e.EditCandidatePublicKey,
+			CreateSwapPool:          e.CreateSwapPool,
+			AddLiquidity:            e.AddLiquidity,
+			RemoveLiquidity:         e.RemoveLiquidity,
+			EditCandidateCommission: e.EditCandidateCommission,
+			MintToken:               e.MintToken,
+			BurnToken:               e.BurnToken,
+			VoteCommission:          e.VoteCommission,
+			VoteUpdate:              e.VoteUpdate,
+			FailedTx:                e.FailedTx,
+			AddLimitOrder:           e.AddLimitOrder,
+			RemoveLimitOrder:        e.RemoveLimitOrder,
+		}
+	default:
+		return nil
+	}
+	return m
 }
 
 func blockEvidence(block *core_types.ResultBlock) (*pb.BlockResponse_Evidence, error) {

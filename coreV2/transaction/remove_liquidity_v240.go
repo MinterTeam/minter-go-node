@@ -183,7 +183,7 @@ func (data RemoveLiquidityV240) Run(tx *Transaction, context state.Interface, re
 			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol()), Index: true},
 			{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String()), Index: true},
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
-			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
+			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1)), Index: true},
 			{Key: []byte("tx.pool_id"), Value: []byte(types.CoinID(swapper.GetID()).String()), Index: true},
 		}
 	}

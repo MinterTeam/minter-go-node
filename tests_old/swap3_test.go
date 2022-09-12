@@ -1,4 +1,4 @@
-package tests
+package tests_old
 
 import (
 	"github.com/MinterTeam/minter-go-node/coreV2/code"
@@ -144,7 +144,7 @@ func TestSwap3_BuyGas0(t *testing.T) {
 	SendCommit(app)         // send Commit
 
 	t.Log(app.UpdateVersions()[1])
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	//t.Log(app.GetEventsDB().LoadEvents(11)[0])
 
 	SendBeginBlock(app, 12) // send BeginBlock
 	{
@@ -322,7 +322,7 @@ func TestSwap3_BuyGas1(t *testing.T) {
 	SendCommit(app)         // send Commit
 
 	t.Log(app.UpdateVersions()[1])
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	//t.Log(app.GetEventsDB().LoadEvents(11)[0])
 
 	SendBeginBlock(app, 12) // send BeginBlock
 	{
@@ -517,7 +517,7 @@ func TestSwap3_SellGas0(t *testing.T) {
 	SendCommit(app)         // send Commit
 
 	t.Log(app.UpdateVersions()[1])
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	//t.Log(app.GetEventsDB().LoadEvents(11)[0])
 
 	SendBeginBlock(app, 12) // send BeginBlock
 	{
@@ -716,7 +716,7 @@ func TestSwap3_SellGas0_2(t *testing.T) {
 	SendCommit(app)         // send Commit
 
 	t.Log(app.UpdateVersions()[1])
-	t.Log(app.GetEventsDB().LoadEvents(11)[0])
+	//t.Log(app.GetEventsDB().LoadEvents(11)[0])
 
 	SendBeginBlock(app, 12) // send BeginBlock
 	{

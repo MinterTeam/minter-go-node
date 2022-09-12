@@ -39,7 +39,8 @@ func (s *Service) Subscribe(request *pb.SubscribeRequest, stream pb.ApiService_S
 		}
 	}()
 
-	ctxSubscribeConnection, _ := context.WithTimeout(stream.Context(), s.minterCfg.WSConnectionDuration)
+	ctxSubscribeConnection, cancel2 := context.WithTimeout(stream.Context(), s.minterCfg.WSConnectionDuration)
+	defer cancel2()
 
 	for {
 		select {

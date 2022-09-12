@@ -20,6 +20,10 @@ type Model struct {
 	lock      sync.RWMutex
 }
 
+func (m *Model) Address() types.Address {
+	return m.address
+}
+
 func (m *Model) AddToList(candidateId uint32, coin types.CoinID, value *big.Int) {
 	m.lock.Lock()
 	defer m.lock.Unlock()

@@ -49,7 +49,7 @@ var (
 type RCandidates interface {
 	// Deprecated
 	ExportV1(state *types.AppState, height uint64, validators []*types.Candidate) []uint32
-
+	DeletedCandidates() (result []*deletedID)
 	Export(state *types.AppState)
 	Exists(pubkey types.Pubkey) bool
 	IsBlockedPubKey(pubkey types.Pubkey) bool
@@ -95,7 +95,7 @@ type Candidates struct {
 
 type deletedID struct {
 	ID      uint32
-	PybKey  types.Pubkey
+	PubKey  types.Pubkey
 	isDirty bool
 }
 
@@ -161,9 +161,13 @@ func (c *Candidates) SetDeletedCandidates(list []types.DeletedCandidate) {
 
 	c.dirtyDeletedCandidates = true
 	for _, deleted := range list {
+		id := uint32(deleted.ID)
+		//if c.maxID < id { // TODO: FIXME
+		//	c.maxID = id
+		//}
 		c.deletedCandidates[deleted.PubKey] = &deletedID{
-			ID:      uint32(deleted.ID),
-			PybKey:  deleted.PubKey,
+			ID:      id,
+			PubKey:  deleted.PubKey,
 			isDirty: true,
 		}
 	}
@@ -258,6 +262,9 @@ func (c *Candidates) Commit(db *iavl.MutableTree, version int64) error {
 		}
 
 		sort.Slice(deletedCandidates, func(i, j int) bool {
+			if deletedCandidates[i].ID == deletedCandidates[j].ID {
+				return deletedCandidates[i].PubKey.String() > deletedCandidates[j].PubKey.String()
+			}
 			return deletedCandidates[i].ID < deletedCandidates[j].ID
 		})
 
@@ -1131,12 +1138,38 @@ func (c *Candidates) Export(state *types.AppState) {
 	for _, c := range c.deletedCandidates {
 		state.DeletedCandidates = append(state.DeletedCandidates, types.DeletedCandidate{
 			ID:     uint64(c.ID),
-			PubKey: c.PybKey,
+			PubKey: c.PubKey,
 		})
 	}
 	sort.SliceStable(state.DeletedCandidates, func(i, j int) bool {
+		if state.DeletedCandidates[i].ID == state.DeletedCandidates[j].ID {
+			return state.DeletedCandidates[i].PubKey.String() > state.DeletedCandidates[j].PubKey.String()
+		}
 		return state.DeletedCandidates[i].ID < state.DeletedCandidates[j].ID
 	})
+}
+
+func (c *Candidates) DeletedCandidates() (result []*deletedID) {
+	c.muDeletedCandidates.Lock()
+	defer c.muDeletedCandidates.Unlock()
+
+	c.loadDeletedCandidates()
+	for _, c := range c.deletedCandidates {
+		if c.PubKey.String() == invalidIDCandidate {
+			continue
+		}
+		result = append(result, &deletedID{
+			ID:     c.ID,
+			PubKey: c.PubKey,
+		})
+	}
+	sort.SliceStable(result, func(i, j int) bool {
+		if result[i].ID == result[j].ID {
+			return result[i].PubKey.String() > result[j].PubKey.String()
+		}
+		return result[i].ID < result[j].ID
+	})
+	return result
 }
 
 // Deprecated: Use getOrderedCandidatesLessID
@@ -1369,6 +1402,8 @@ func (c *Candidates) ID(pubKey types.Pubkey) uint32 {
 	return c.id(pubKey)
 }
 
+const invalidIDCandidate = "Mp0e11415ef24919557dcea4890d9e8aa26dc31ef8e77c6343114e1180ebeccde3"
+
 // PubKey returns a public key of candidate by it's ID
 func (c *Candidates) PubKey(id uint32) types.Pubkey {
 	c.lock.RLock()
@@ -1381,7 +1416,7 @@ func (c *Candidates) PubKey(id uint32) types.Pubkey {
 
 		c.loadDeletedCandidates()
 		for pubkey, d := range c.deletedCandidates {
-			if d.ID == id {
+			if d.ID == id && d.PubKey.String() != invalidIDCandidate {
 				return pubkey
 			}
 		}
@@ -1467,19 +1502,19 @@ func (c *Candidates) DeleteCandidate(height uint64, candidate *Candidate) {
 	}
 
 	c.lock.Lock()
-	c.deleteCandaditeFromList(candidate)
+	c.deleteCandidateFromList(candidate)
 	c.totalStakes.Sub(c.totalStakes, candidate.totalBipStake)
 	c.lock.Unlock()
 }
 
-func (c *Candidates) deleteCandaditeFromList(candidate *Candidate) {
+func (c *Candidates) deleteCandidateFromList(candidate *Candidate) {
 	c.muDeletedCandidates.Lock()
 	defer c.muDeletedCandidates.Unlock()
 
 	c.loadDeletedCandidates()
 	c.deletedCandidates[candidate.PubKey] = &deletedID{
 		ID:      candidate.ID,
-		PybKey:  candidate.PubKey,
+		PubKey:  candidate.PubKey,
 		isDirty: true,
 	}
 	c.dirtyDeletedCandidates = true
@@ -1508,7 +1543,7 @@ func (c *Candidates) loadDeletedCandidates() {
 	}
 
 	for _, id := range list {
-		c.deletedCandidates[id.PybKey] = id
+		c.deletedCandidates[id.PubKey] = id
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/MinterTeam/minter-go-node/coreV2/state/coins"
 	"math/big"
 	"testing"
 	"time"
@@ -126,9 +127,10 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	data := transaction.VoteCommissionDataV1{
+	data := transaction.VoteCommissionDataV3{
 		PubKey:                  types.BytesToPubkey(pv.Key.PubKey.Bytes()[:]),
 		Height:                  110,
+		Coin:                    0,
 		PayloadByte:             helpers.StringToBigInt("200000000000000000"),
 		Send:                    helpers.StringToBigInt("1000000000000000000"),
 		BuyBancor:               helpers.StringToBigInt("10000000000000000000"),
@@ -171,11 +173,17 @@ func TestBlockchain_UpdateCommission(t *testing.T) {
 		BurnToken:               helpers.StringToBigInt("10000000000000000000"),
 		VoteCommission:          helpers.StringToBigInt("100000000000000000000"),
 		VoteUpdate:              helpers.StringToBigInt("100000000000000000000"),
-		More: []*big.Int{
-			helpers.StringToBigInt("1000000000000000000"),
-			helpers.StringToBigInt("1000000000000000000"),
-			helpers.StringToBigInt("1000000000000000000"),
-		},
+		FailedTx:                helpers.StringToBigInt("1000000000000000000"),
+		AddLimitOrder:           helpers.StringToBigInt("1000000000000000000"),
+		RemoveLimitOrder:        helpers.StringToBigInt("1000000000000000000"),
+		MoveStake:               helpers.StringToBigInt("1000000000000000000"),
+		LockStake:               helpers.StringToBigInt("1000000000000000000"),
+		Lock:                    helpers.StringToBigInt("1000000000000000000"),
+		//More: []*big.Int{
+		//	helpers.StringToBigInt("1000000000000000000"),
+		//	helpers.StringToBigInt("1000000000000000000"),
+		//	helpers.StringToBigInt("1000000000000000000"),
+		//},
 	}
 
 	encodedData, err := rlp.EncodeToBytes(data)
@@ -409,6 +417,7 @@ func TestBlockchain_SetStatisticData(t *testing.T) {
 }
 
 func TestBlockchain_IsApplicationHalted(t *testing.T) {
+	//t.Skip("todo")
 	blockchain, tmCli, pv, cancel := initTestNode(t, 0)
 	defer cancel() // unexpected call to os.Exit(0) during test
 	data := transaction.SetHaltBlockData{
@@ -1018,8 +1027,21 @@ func getTestGenesis(pv *privval.FilePV, home string, initialState int64) func() 
 		validators, candidates := makeTestValidatorsAndCandidates([]string{string(pv.Key.PubKey.Bytes()[:])}, helpers.BipToPip(big.NewInt(12444011)))
 
 		appState := types.AppState{
-			Version:      V3,
-			TotalSlashed: "0",
+			Note:                "",
+			Validators:          validators,
+			Candidates:          candidates,
+			BlockListCandidates: nil,
+			DeletedCandidates:   nil,
+			Waitlist:            nil,
+			Pools: []types.Pool{{
+				Coin0:    0,
+				Coin1:    1993,
+				Reserve0: "350000000000000000000000000000000",
+				Reserve1: "1000000000000000000000000000000",
+				ID:       1,
+				Orders:   nil,
+			}},
+			NextOrderID: 0,
 			Accounts: []types.Account{
 				{
 					Address: crypto.PubkeyToAddress(getPrivateKey().PublicKey),
@@ -1028,11 +1050,28 @@ func getTestGenesis(pv *privval.FilePV, home string, initialState int64) func() 
 							Coin:  uint64(types.GetBaseCoinID()),
 							Value: helpers.BipToPip(big.NewInt(9223372036854775807)).String(),
 						},
+						{
+							Coin:  uint64(types.USDTID),
+							Value: "1000000000000000000000000000000",
+						},
 					},
 				},
 			},
-			Validators: validators,
-			Candidates: candidates,
+			Coins: []types.Coin{{
+				ID:           1993,
+				Name:         "USDT Eth",
+				Symbol:       types.StrToCoinSymbol("USDTE"),
+				Volume:       "2000000000000000000000000000000",
+				Crr:          0,
+				Reserve:      "0",
+				MaxSupply:    coins.MaxCoinSupply().String(),
+				Version:      0,
+				OwnerAddress: nil,
+				Mintable:     false,
+				Burnable:     false,
+			}},
+			FrozenFunds: nil,
+			HaltBlocks:  nil,
 			Commission: types.Commission{
 				Coin:                    0,
 				PayloadByte:             "2000000000000000",
@@ -1073,11 +1112,32 @@ func getTestGenesis(pv *privval.FilePV, home string, initialState int64) func() 
 				AddLiquidity:            "100000000000000000",
 				RemoveLiquidity:         "100000000000000000",
 				EditCandidateCommission: "10000000000000000000",
-				BurnToken:               "100000000000000000",
 				MintToken:               "100000000000000000",
+				BurnToken:               "100000000000000000",
 				VoteCommission:          "1000000000000000000",
 				VoteUpdate:              "1000000000000000000",
+				FailedTx:                "10000000000000000",
+				AddLimitOrder:           "10000000000000000",
+				RemoveLimitOrder:        "10000000000000000",
+				MoveStake:               "10000000000000000",
+				LockStake:               "10000000000000000",
+				Lock:                    "10000000000000000",
 			},
+			CommissionVotes: nil,
+			UpdateVotes:     nil,
+			UsedChecks:      nil,
+			MaxGas:          0,
+			TotalSlashed:    "0",
+			Emission:        "1111",
+			PrevReward: types.RewardPrice{
+				Time:       0,
+				AmountBIP:  "350",
+				AmountUSDT: "1",
+				Off:        false,
+				Reward:     "79",
+			},
+			Version:  V3,
+			Versions: nil,
 		}
 
 		appStateJSON, err := tmjson.Marshal(appState)

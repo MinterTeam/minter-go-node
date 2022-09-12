@@ -185,7 +185,7 @@ func (data AddLiquidityDataV1) Run(tx *Transaction, context state.Interface, rew
 			{Key: []byte("tx.liquidity"), Value: []byte(liquidity.String())},
 			{Key: []byte("tx.pool_token"), Value: []byte(coinLiquidity.GetFullSymbol()), Index: true},
 			{Key: []byte("tx.pool_token_id"), Value: []byte(coinLiquidity.ID().String()), Index: true},
-			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1))},
+			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(data.Coin0, data.Coin1)), Index: true},
 			{Key: []byte("tx.pool_id"), Value: []byte(types.CoinID(swapper.GetID()).String()), Index: true},
 		}
 	}

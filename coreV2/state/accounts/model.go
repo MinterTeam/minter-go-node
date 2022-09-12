@@ -1,12 +1,13 @@
 package accounts
 
 import (
-	"github.com/MinterTeam/minter-go-node/coreV2/types"
-	"github.com/MinterTeam/minter-go-node/crypto"
-	"github.com/MinterTeam/minter-go-node/rlp"
 	"math/big"
 	"sort"
 	"sync"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/types"
+	"github.com/MinterTeam/minter-go-node/crypto"
+	"github.com/MinterTeam/minter-go-node/rlp"
 )
 
 type Model struct {
@@ -120,16 +121,13 @@ func (model *Model) setBalance(coin types.CoinID, amount *big.Int) {
 
 		var newCoins []types.CoinID
 
-		model.lock.RLock()
+		model.lock.Lock()
 		for _, c := range model.coins {
 			if coin == c {
 				continue
 			}
 			newCoins = append(newCoins, c)
 		}
-		model.lock.RUnlock()
-
-		model.lock.Lock()
 		model.hasDirtyCoins = true
 		model.coins = newCoins
 		model.balances[coin] = amount

@@ -182,8 +182,8 @@ func (data AddLimitOrderData) Run(tx *Transaction, context state.Interface, rewa
 			{Key: []byte("tx.commission_conversion"), Value: []byte(isGasCommissionFromPoolSwap.String()), Index: true},
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
-			{Key: []byte("tx.pool_id"), Value: []byte(strconv.Itoa(int(poolID)))},
-			{Key: []byte("tx.order_id"), Value: []byte(strconv.Itoa(int(orderID)))},
+			{Key: []byte("tx.pool_id"), Value: []byte(strconv.Itoa(int(poolID))), Index: true},
+			{Key: []byte("tx.order_id"), Value: []byte(strconv.Itoa(int(orderID))), Index: true},
 		}
 	}
 

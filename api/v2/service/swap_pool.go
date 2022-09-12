@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/hex"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
-	"github.com/MinterTeam/minter-go-node/helpers"
 	"sort"
 	"strings"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/state/swap"
+	"github.com/MinterTeam/minter-go-node/helpers"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/transaction"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -125,10 +126,42 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 	}
 
 	capacity := len(req.Ids)
-	if capacity > 50 {
-		capacity = 50
+	if capacity > 1000 || capacity == 0 {
+		capacity = 1000
 	}
+
 	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, capacity)}
+	if capacity == 0 {
+		orders := cState.Swap().GetOrdersAll(ctx)
+		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+			return nil, timeoutStatus.Err()
+		}
+
+		for _, order := range orders {
+			if order.IsBuy {
+				order = order.Reverse()
+			}
+
+			resp.Orders = append(resp.Orders, &pb.LimitOrderResponse{
+				Id: uint64(order.ID()),
+				CoinSell: &pb.Coin{
+					Id:     uint64(order.Coin1),
+					Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),
+				},
+				CoinBuy: &pb.Coin{
+					Id:     uint64(order.Coin0),
+					Symbol: cState.Coins().GetCoin(order.Coin0).GetFullSymbol(),
+				},
+				WantSell: order.WantSell.String(),
+				WantBuy:  order.WantBuy.String(),
+				Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
+				Owner:    order.Owner.String(),
+				Height:   order.Height,
+			})
+		}
+
+		return resp, nil
+	}
 
 	for _, id := range req.Ids {
 		if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
@@ -144,6 +177,61 @@ func (s *Service) LimitOrders(ctx context.Context, req *pb.LimitOrdersRequest) (
 			return nil, timeoutStatus.Err()
 		}
 
+		if order.IsBuy {
+			order = order.Reverse()
+		}
+
+		resp.Orders = append(resp.Orders, &pb.LimitOrderResponse{
+			Id: uint64(order.ID()),
+			CoinSell: &pb.Coin{
+				Id:     uint64(order.Coin1),
+				Symbol: cState.Coins().GetCoin(order.Coin1).GetFullSymbol(),
+			},
+			CoinBuy: &pb.Coin{
+				Id:     uint64(order.Coin0),
+				Symbol: cState.Coins().GetCoin(order.Coin0).GetFullSymbol(),
+			},
+			WantSell: order.WantSell.String(),
+			WantBuy:  order.WantBuy.String(),
+			Price:    swap.CalcPriceSellRat(order.WantBuy, order.WantSell).FloatString(precision),
+			Owner:    order.Owner.String(),
+			Height:   order.Height,
+		})
+	}
+
+	return resp, nil
+}
+
+func (s *Service) LimitOrdersByOwner(ctx context.Context, req *pb.LimitOrdersByOwnerRequest) (*pb.LimitOrdersResponse, error) {
+	cState, err := s.blockchain.GetStateForHeight(req.Height)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	if !strings.HasPrefix(strings.Title(req.Address), "Mx") {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	decodeString, err := hex.DecodeString(req.Address[2:])
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, "invalid address")
+	}
+
+	address := types.BytesToAddress(decodeString)
+
+	resp := &pb.LimitOrdersResponse{Orders: make([]*pb.LimitOrderResponse, 0, 0)}
+
+	orders := cState.Swap().GetOrdersByOwner(ctx, address)
+
+	if timeoutStatus := s.checkTimeout(ctx); timeoutStatus != nil {
+		return nil, timeoutStatus.Err()
+	}
+
+	for _, order := range orders {
 		if order.IsBuy {
 			order = order.Reverse()
 		}

@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/MinterTeam/minter-go-node/coreV2/events"
 	"math"
 	"math/big"
 	"sort"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"github.com/MinterTeam/minter-go-node/coreV2/events"
 
 	"github.com/MinterTeam/minter-go-node/coreV2/state/bus"
 	"github.com/MinterTeam/minter-go-node/coreV2/types"
@@ -71,6 +72,8 @@ type RSwap interface {
 	GetBestTradeExactIn(ctx context.Context, outId, inId uint64, inAmount *big.Int, maxHops int32) *Trade
 	GetBestTradeExactOut(ctx context.Context, inId, outId uint64, outAmount *big.Int, maxHops int32) *Trade
 
+	GetOrdersByOwner(ctx context.Context, address types.Address) []*Limit
+	GetOrdersAll(ctx context.Context) []*Limit
 	SwapPools(context.Context) []EditableChecker
 	GetOrder(id uint32) *Limit
 	Export(state *types.AppState)
@@ -1298,4 +1301,11 @@ func (p *Pair) Amounts(liquidity, totalSupply *big.Int) (amount0 *big.Int, amoun
 func startingSupply(amount0 *big.Int, amount1 *big.Int) *big.Int {
 	mul := new(big.Int).Mul(amount0, amount1)
 	return new(big.Int).Sqrt(mul)
+}
+
+func (s *Swap) GetOrdersByOwner(ctx context.Context, address types.Address) []*Limit {
+	return nil
+}
+func (s *Swap) GetOrdersAll(ctx context.Context) []*Limit {
+	return nil
 }

@@ -150,7 +150,8 @@ func (data RemoveLimitOrderData) Run(tx *Transaction, context state.Interface, r
 			{Key: []byte("tx.commission_amount"), Value: []byte(commission.String())},
 			{Key: []byte("tx.commission_details"), Value: []byte(tagsCom.string())},
 			{Key: []byte("tx.order_id"), Value: []byte(strconv.Itoa(int(data.ID))), Index: true},
-			{Key: []byte("tx.pair_id"), Value: []byte(strconv.Itoa(int(swapper.GetID()))), Index: true},
+			{Key: []byte("tx.pool_id"), Value: []byte(strconv.Itoa(int(swapper.GetID()))), Index: true},
+			{Key: []byte("tx.pair_ids"), Value: []byte(liquidityCoinName(swapper.Coin0(), swapper.Coin1())), Index: true},
 		}
 	}
 

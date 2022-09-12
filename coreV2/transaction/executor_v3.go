@@ -44,14 +44,6 @@ func (e *ExecutorV3) RunTx(context state.Interface, rawTx []byte, rewardPool *bi
 		}
 	}
 
-	if tx.Type == TypeLockStake && currentBlock <= 10197360 {
-		return Response{
-			Code: code.Unavailable,
-			Log:  "LockStake available from block 10197360 ",
-			Info: EncodeError(code.NewCustomCode(code.Unavailable)),
-		}
-	}
-
 	if tx.ChainID != types.CurrentChainID {
 		return Response{
 			Code: code.WrongChainID,
@@ -211,7 +203,7 @@ func (e *ExecutorV3) RunTx(context state.Interface, rawTx []byte, rewardPool *bi
 
 	if !isCheck {
 		if response.Code != 0 {
-			commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTx, big.NewInt(0).Mul(big.NewInt(tx.payloadAndServiceDataLen()), commissions.PayloadByte))
+			commissionInBaseCoin := big.NewInt(0).Add(commissions.FailedTx, big.NewInt(0).Mul(big.NewInt(tx.PayloadAndServiceDataLen()), commissions.PayloadByte))
 			commissionInBaseCoin = tx.MulGasPrice(commissionInBaseCoin)
 
 			if !commissions.Coin.IsBaseCoin() {

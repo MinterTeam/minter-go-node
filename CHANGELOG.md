@@ -1,5 +1,20 @@
 # Changelog
 
+## [v3.4.0](https://github.com/MinterTeam/minter-go-node/tree/v3.4.0)
+
+[Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.3.0...v3.4.0)
+
+### Added
+
+- API methods: `waitlist_all`, `limit_orders_by_owner`
+- Indexed tags to search for transactions by order
+- Starting a node without processing new states with tag `--only-api-mode`
+
+### Fixed
+
+- API Balance deadlock
+- Calculation of x3 rewards
+
 ## [v3.3.0](https://github.com/MinterTeam/minter-go-node/tree/v3.3.0)
 
 [Full Changelog](https://github.com/MinterTeam/minter-go-node/compare/v3.2.0...v3.3.0)
